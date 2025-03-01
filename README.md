@@ -7,7 +7,8 @@ Die Webapplikation „Tennis Ranking List“ dient der Verwaltung von Tennis-Spi
 
 ## Ziel des Projekts
 
-### Spielerverwaltung: Ermöglichen des Hinzufügens, Bearbeitens und Löschens von Spielern.
+### Spielerverwaltung:
+Ermöglichen des Hinzufügens, Bearbeitens und Löschens von Spielern.
 ### Challenge-Management: Erstellen, Verwalten und Auswerten von Herausforderungen zwischen Spielern.
 ### Dynamisches Ranking: Automatisches Aktualisieren der Rangliste basierend auf den Spielergebnissen.
 ### Echtzeit-Updates: Übertragung von Änderungen in Echtzeit an alle verbundenen Clients mittels Socket.IO.
