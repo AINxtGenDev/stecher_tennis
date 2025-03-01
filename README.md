@@ -1,5 +1,5 @@
 
-Projektdokumentation: Tennis Ranking List Webapplikation
+# Tennis Ranking List Webapplikation
 
 1. Einleitung
 
