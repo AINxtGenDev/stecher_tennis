@@ -118,3 +118,7 @@ def get_current_time():
 
 #######################################################################
 
+git status
+git add .
+git commit -m "Initial commit"
+git push -u origin main
