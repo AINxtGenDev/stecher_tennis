@@ -1,6 +1,6 @@
 192.168.1.213
 user: stecher
-psw:  werner1307
+psw:  
 
 ##########################################
 ssh stecher@192.168.1.213 -v -o PreferredAuthentications=password -v
