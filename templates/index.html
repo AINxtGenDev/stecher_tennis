@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tennis Ranking List 2025 - Light Modern 3D</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    /* Global Light Modern Theme with 3D enhancements */
+    body {
+      background: #f5f5f5;
+      color: #333;
+      font-family: 'Roboto', sans-serif;
+      perspective: 1200px;
+    }
+    h2, h4 {
+      color: #0056b3;
+    }
+    .container {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform-style: preserve-3d;
+    }
+    /* 3D effect for container on hover */
+    .three-d {
+      transform: perspective(1200px) rotateY(10deg);
+      transition: transform 0.5s;
+    }
+    .three-d:hover {
+      transform: perspective(1200px) rotateY(0deg);
+    }
+    /* Pyramid / Ranking List with 3D Effects */
+    .ranking-list {
+      perspective: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .ranking-list .row {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+      transform: rotateX(8deg);
+    }
+    /* Player Styles */
+    .ranking-list .player {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(145deg, #ffa500, #ff8c00);
+      border: 2px solid #ff8c00;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+      position: relative;
+      transition: transform 0.3s, box-shadow 0.3s;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .ranking-list .player:hover {
+      transform: scale(1.05) translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .ranking-list .player.unavailable {
+      background: #ffffff;
+      border: 2px solid #cccccc;
+      color: #333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .ranking-list .player.challenger {
+      background: linear-gradient(145deg, #e6ffe6, #ccffcc);
+      border-color: #28a745;
+      box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+    .ranking-list .player.opponent {
+      background: linear-gradient(145deg, #ffe6e6, #ffcccc);
+      border-color: #dc3545;
+      box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+    .ranking-list .player.in-challenge {
+      background: linear-gradient(145deg, #fff5cc, #fff0b3);
+      border-color: #ffc107;
+      box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+    }
+    .ranking-list .player.blocked {
+      background: linear-gradient(145deg, #e6e6e6, #cccccc);
+      border-color: #6c757d;
+      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
+    }
+    .ranking-list .player.blocked.in-challenge {
+      background: linear-gradient(145deg, #fff5cc, #e6e6e6);
+      position: relative;
+      color: #333;
+    }
+    .ranking-list .player.blocked.in-challenge::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(200, 200, 200, 0.5);
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+      z-index: 0;
+    }
+    .ranking-list .player .player-info {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+    .availability-toggle {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 15px;
+      height: 15px;
+      background-color: white;
+      border: 1px solid #ff8c00;
+      cursor: pointer;
+      z-index: 10;
+      transition: background-color 0.3s;
+    }
+    .availability-toggle.available {
+      background-color: white;
+    }
+    /* Legend Styling */
+    .legend {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      margin: 0 10px;
+      font-size: 0.9rem;
+    }
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      margin-right: 5px;
+      border: 1px solid #ff8c00;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .legend-item.unavailable .legend-color {
+      background: #ffffff;
+      border-color: #cccccc;
+    }
+    /* Dynamic Sections Styling */
+    .active-challenges,
+    .blocked-players,
+    .unavailable-players {
+      max-width: 500px;
+      margin: 0 auto 20px;
+      text-align: left;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    .challenge-entry,
+    .blocked-entry,
+    .unavailable-entry {
+      display: flex;
+      align-items: center;
+      padding: 5px 0;
+    }
+    .challenge-deadline,
+    .blocked-info,
+    .unavailable-info {
+      margin-left: auto;
+      white-space: nowrap;
+      font-size: 0.8rem;
+      color: #555;
+    }
+    .newplayer-challenge h4 {
+      margin-top: 20px;
+    }
+    .newplayer-challenge .card {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      border-radius: 5px;
+    }
+    /* Footer Styling */
+    footer {
+      background: #f8f9fa;
+      color: #333;
+      padding: 20px 0;
+      border-top: 1px solid #ddd;
+    }
+    footer a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container three-d">
+    <h2 class="text-center mb-4">Tennis Ranking List 2025</h2>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(145deg, #ffa500, #ff8c00); border-color: #ff8c00;"></div>
+        Available
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(145deg, #e6ffe6, #ccffcc); border-color: #28a745;"></div>
+        Challenger
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(145deg, #ffe6e6, #ffcccc); border-color: #dc3545;"></div>
+        Opponent
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(145deg, #fff5cc, #fff0b3); border-color: #ffc107;"></div>
+        In Challenge
+      </div>
+      <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(145deg, #e6e6e6, #cccccc); border-color: #6c757d;"></div>
+        Blocked
+      </div>
+      <div class="legend-item unavailable">
+        <div class="legend-color" style="background: #ffffff; border-color: #cccccc;"></div>
+        Unavailable
+      </div>
+    </div>
+
+    <!-- Pyramid / Ranking List -->
+    <div class="ranking-list">
+      {% if pyramid %}
+        {% for row in pyramid %}
+          <div class="row">
+            {% for player in row %}
+              {% if player %}
+                <div id="player-{{ player['id'] }}"
+                     class="player {% if not player['available'] %}unavailable{% endif %} {% if player['in_challenge'] %}in-challenge{% endif %} {% if player.blocked %}blocked{% endif %}"
+                     data-player-id="{{ player['id'] }}">
+                  <div class="player-info">
+                    Rank {{ player['rank'] }}<br>{{ player['name'] }}
+                  </div>
+                  <div class="availability-toggle {% if player['available'] %}available{% endif %}" data-player-id="{{ player['id'] }}"></div>
+                </div>
+              {% else %}
+                <div class="player missing">Missing Player</div>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>No players found. Please load player data.</p>
+      {% endif %}
+    </div>
+
+    <!-- Challenge Form -->
+    <form id="challengeForm">
+      <div class="mb-3">
+        <label for="challenger" class="form-label">Challenger:</label>
+        <select class="form-select" id="challenger" name="challenger" required>
+          <option value="">Select Challenger...</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="opponent" class="form-label">Opponent:</label>
+        <select class="form-select" id="opponent" name="opponent" required disabled>
+          <option value="">Select Opponent...</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" id="challengeButton" disabled>Challenge</button>
+    </form>
+    <div id="challengeResult"></div>
+
+    <!-- Active Challenges Section -->
+    <div class="active-challenges">
+      <h4>Active Challenges</h4>
+      <div id="active-challenges-list">
+        {% if active_challenges %}
+          {% for challenge in active_challenges %}
+            <div class="challenge-entry">
+              <span class="challenge-names">{{ challenge['challenger_name'] }} vs {{ challenge['opponent_name'] }}</span>
+              <span class="challenge-deadline">(Deadline: {{ challenge['deadline'] }})</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No active challenges at the moment.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Blocked Players Section -->
+    <div class="blocked-players">
+      <h4>Blocked Players</h4>
+      <div id="blocked-players-list">
+        {% if blocked_challenger_players %}
+          {% for player in blocked_challenger_players %}
+            <div class="blocked-entry">
+              <span class="blocked-name">{{ player['name'] }}</span>
+              <span class="blocked-info">- Blocked challenger until: {{ player['block_challenger_until'] }}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No players blocked from challenging.</p>
+        {% endif %}
+        <br>
+        {% if blocked_opponent_players %}
+          {% for player in blocked_opponent_players %}
+            <div class="blocked-entry">
+              <span class="blocked-name">{{ player['name'] }}</span>
+              <span class="blocked-info">- Blocked opponent until: {{ player['block_opponent_until'] }}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No players blocked from being challenged.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Unavailable Players Section -->
+    <div class="unavailable-players">
+      <h4>Unavailable Players</h4>
+      <div id="unavailable-players-list">
+        {% if unavailable_players %}
+          {% for player in unavailable_players %}
+            <div class="unavailable-entry">
+              <span class="unavailable-name">{{ player['name'] }}</span>
+              <span class="unavailable-info">not available since: {{ player['unavailable_since'] or 'N/A' }}</span>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>All players are currently available.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- New Player Challenge Section -->
+    <div class="newplayer-challenge mt-4">
+      <h4>New Player Challenge</h4>
+      <div class="card p-3">
+        <div class="mb-3">
+          <label for="newplayer" class="form-label">New Player:</label>
+          <input type="text" class="form-control" id="newplayer" name="newplayer" placeholder="Enter name" />
+        </div>
+        <div class="mb-3">
+          <label for="newplayer-opponent" class="form-label">Select Opponent (Rank 11-35):</label>
+          <select class="form-select" id="newplayer-opponent" name="newplayer-opponent">
+            <option value="">Please select...</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <button type="button" class="btn btn-primary" id="newplayer-challenge" disabled>New Player Challenge</button>
+        </div>
+        <div id="newplayer-result" class="alert" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Socket.IO client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      // Reset player color classes
+      function resetPlayerColors() {
+        $(".player").removeClass("challenger opponent");
+      }
+
+      // Combined function to load players for dropdowns
+      function loadPlayersData() {
+        fetch("/get_players")
+          .then((res) => res.json())
+          .then((players) => {
+            const challengerSelect = document.getElementById("challenger");
+            challengerSelect.innerHTML = '<option value="">Select Challenger...</option>';
+            players.forEach((p) => {
+              if (p.available && !p.in_challenge && !p.block_challenger) {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = `${p.name} (Rank ${p.rank})`;
+                challengerSelect.appendChild(opt);
+              }
+            });
+            const opponentSelect = document.getElementById("newplayer-opponent");
+            opponentSelect.innerHTML = '<option value="">Please select...</option>';
+            players
+              .filter((p) => p.rank >= 11 && p.rank <= 35 && p.available && !p.in_challenge && !p.block_opponent)
+              .forEach((p) => {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = `${p.name} (Rank ${p.rank})`;
+                opponentSelect.appendChild(opt);
+              });
+          });
+      }
+
+      // Combined function to update dynamic sections
+      function pollData() {
+        $.get("/index", function (data) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data, "text/html");
+          // Update ranking list
+          const newPyramid = doc.querySelector(".ranking-list").innerHTML;
+          $(".ranking-list").html(newPyramid);
+          // Update active challenges
+          const newChallenges = doc.querySelectorAll(".challenge-entry");
+          const $activeChallenges = $("#active-challenges-list");
+          $activeChallenges.empty();
+          newChallenges.forEach((challenge) => {
+            $activeChallenges.append(challenge);
+          });
+          // Update unavailable players list
+          const newUnavailable = doc.getElementById("unavailable-players-list").innerHTML;
+          $("#unavailable-players-list").html(newUnavailable);
+          // Update blocked players list
+          const newBlocked = doc.getElementById("blocked-players-list").innerHTML;
+          $("#blocked-players-list").html(newBlocked);
+          // Refresh player dropdowns
+          loadPlayersData();
+        });
+      }
+
+      // Initialize Socket.IO and listen for update events
+      var socket = io();
+      socket.on("update", function (data) {
+        console.log("Received update event", data);
+        pollData();
+      });
+
+      // Load initial data
+      loadPlayersData();
+
+      // Bind challenge form submission
+      $("#challengeForm").on("submit", function (e) {
+        e.preventDefault();
+        const challengerId = $("#challenger").val();
+        const opponentId = $("#opponent").val();
+        if (!challengerId || !opponentId) return;
+        $.post("/challenge", { challenger: challengerId, opponent: opponentId }, function (response) {
+          $("#challengeResult").html(`<div class="alert alert-success">${response.message} (at ${response.timestamp})</div>`);
+          resetPlayerColors();
+          $("#challenger, #opponent").val("");
+          $("#opponent").prop("disabled", true);
+          $("#challengeButton").prop("disabled", true);
+          $("#player-" + challengerId).addClass("in-challenge");
+          $("#player-" + opponentId).addClass("in-challenge");
+          pollData();
+        });
+      });
+
+      // When a challenger is selected, fetch eligible opponents
+      $("#challenger").on("change", function () {
+        resetPlayerColors();
+        const challengerId = $(this).val();
+        if (challengerId) {
+          $("#player-" + challengerId).addClass("challenger");
+          $.post("/eligible_opponents", { challenger_id: challengerId }, function (data) {
+            const opponentSelect = document.getElementById("opponent");
+            opponentSelect.innerHTML = '<option value="">Select Opponent...</option>';
+            data.forEach((o) => {
+              const opt = document.createElement("option");
+              opt.value = o.id;
+              opt.textContent = `${o.name} (Rank ${o.rank})`;
+              opponentSelect.appendChild(opt);
+            });
+            opponentSelect.disabled = opponentSelect.options.length <= 1;
+          });
+        } else {
+          $("#opponent").html('<option value="">Select Opponent...</option>').prop("disabled", true);
+          $("#challengeButton").prop("disabled", true);
+        }
+      });
+
+      // Highlight opponent on selection
+      $("#opponent").on("change", function () {
+        $(".player").removeClass("opponent");
+        const opponentId = $(this).val();
+        if (opponentId) {
+          $("#player-" + opponentId).addClass("opponent");
+        }
+        if ($("#challenger").val() && opponentId) {
+          $("#challengeButton").prop("disabled", false);
+        } else {
+          $("#challengeButton").prop("disabled", true);
+        }
+      });
+
+      // Toggle availability click event
+      $(document).on("click", ".availability-toggle", function (e) {
+        e.stopPropagation();
+        const playerId = $(this).data("player-id");
+        $.ajax({
+          url: "/toggle_availability",
+          type: "POST",
+          data: { player_id: playerId },
+          success: function (response) {
+            if (response.success) {
+              const $playerDiv = $("#player-" + playerId);
+              if (response.new_availability === 0) {
+                $playerDiv.removeClass("available").addClass("unavailable");
+                $playerDiv.find(".availability-toggle").removeClass("available");
+              } else {
+                $playerDiv.removeClass("unavailable").addClass("available");
+                $playerDiv.find(".availability-toggle").addClass("available");
+              }
+              pollData();
+            } else {
+              alert("Error toggling availability: " + response.message);
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error("Error:", error);
+            alert("An error occurred while toggling availability.");
+          },
+        });
+      });
+
+      // Validate new player challenge input
+      function validateNewPlayerChallenge() {
+        var name = $("#newplayer").val().trim();
+        var opponent = $("#newplayer-opponent").val();
+        var lettersCount = (name.match(/[A-Za-z]/g) || []).length;
+        var hasDigits = /\d/.test(name);
+        if (lettersCount >= 5 && !hasDigits && opponent) {
+          $("#newplayer-challenge").prop("disabled", false);
+        } else {
+          $("#newplayer-challenge").prop("disabled", true);
+        }
+      }
+      $("#newplayer, #newplayer-opponent").on("keyup change", validateNewPlayerChallenge);
+      $("#newplayer-opponent").on("change", function () {
+        $(".player").removeClass("opponent");
+        const opponentId = $(this).val();
+        if (opponentId) {
+          $("#player-" + opponentId).addClass("opponent");
+        }
+      });
+      // New player challenge button click
+      $("#newplayer-challenge").click(function () {
+        var newplayerName = $("#newplayer").val().trim();
+        var opponentId = $("#newplayer-opponent").val();
+        if (!newplayerName || !opponentId) {
+          alert("Please enter a valid new player name and select an opponent.");
+          return;
+        }
+        $.post("/newplayer_challenge", { newplayer_name: newplayerName, opponent_id: opponentId }, function (response) {
+          var resultDiv = $("#newplayer-result");
+          resultDiv.removeClass("alert-danger alert-success").addClass("alert-success").html(response.message).show();
+          pollData();
+          $("#newplayer").val("");
+          $("#newplayer-opponent").val("");
+          $("#newplayer-challenge").prop("disabled", true);
+        }).fail(function (xhr) {
+          var resultDiv = $("#newplayer-result");
+          resultDiv.removeClass("alert-danger alert-success").addClass("alert-danger").html(xhr.responseJSON.error || "An error occurred.").show();
+        });
+      });
+    });
+  </script>
+
+  <!-- Footer Section -->
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <h5>Contact Information</h5>
+          <p>
+            Matthias Stecher<br />
+            <a href="mailto:matthias.stecher@hpe.com">matthias.stecher@hpe.com</a><br />
+            Mobile: 0664 105 25 56
+          </p>
+        </div>
+        <div class="col-md-6">
+          <h5>Legal Information</h5>
+          <p>
+            © 2025 Matthias Stecher. The content of this website is subject to copyright.<br />
+            Disclaimer: No liability for errors or delays in rankings.
+          </p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-12 text-center mt-3">
+          <small>Version: 1.52  •  February 28, 2025</small>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

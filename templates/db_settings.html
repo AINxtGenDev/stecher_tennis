@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Player Database Settings - 3D Optimized</title>
+  <style>
+    /* Global Styles with 3D Enhancements */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f2f2f2;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform-style: preserve-3d;
+      transition: transform 0.5s;
+      perspective: 1200px;
+    }
+    .container.three-d:hover {
+      transform: rotateY(3deg);
+    }
+    h1 {
+      font-size: 2.5rem;
+      background-color: #f8e473;
+      color: #000;
+      padding: 20px;
+      text-align: center;
+      border-bottom: 3px solid #ccc;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    h2 {
+      font-size: 1.8rem;
+      margin: 20px 0 15px;
+      color: #000;
+    }
+    /* Notification */
+    #notification {
+      margin-bottom: 15px;
+      padding: 10px 15px;
+      border-radius: 4px;
+      display: none;
+      font-size: 1.1rem;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #notification.success { border-left: 5px solid #f8e473; }
+    #notification.error   { border-left: 5px solid #000; }
+    #notification.info    { border-left: 5px solid #ccc; }
+    /* Table Styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th { background-color: #f7f7f7; font-weight: bold; }
+    tr:hover {
+      transform: translateZ(10px);
+      transition: transform 0.3s;
+    }
+    /* Form Styling */
+    form {
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    form label { margin-right: 5px; font-size: 1rem; }
+    form input { margin-right: 10px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+    button {
+      padding: 8px 15px;
+      margin-right: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background-color: #f8e473;
+      color: #000;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+    button:hover { background-color: #e6d661; }
+  </style>
+</head>
+<body>
+  <div class="container three-d">
+    <h1>Player Database Settings</h1>
+    
+    <!-- Notification Area -->
+    <div id="notification"></div>
+    
+    <!-- Add New Player Form -->
+    <h2>Add New Player</h2>
+    <form id="addPlayerForm">
+      <label for="newPlayerName">Name:</label>
+      <input type="text" id="newPlayerName" name="newPlayerName" required>
+      <label for="newPlayerRank">Rank:</label>
+      <input type="number" id="newPlayerRank" name="newPlayerRank" required min="1">
+      <button type="submit">Add Player</button>
+    </form>
+    
+    <!-- Players List Table -->
+    <h2>Players List</h2>
+    <table id="playersTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Rank</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table rows will be inserted dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let playersData = [];
+
+    // Utility: show notification messages
+    function showNotification(message, type) {
+      const notif = document.getElementById("notification");
+      notif.textContent = message;
+      notif.className = type;
+      notif.style.display = "block";
+      setTimeout(() => {
+        notif.style.display = "none";
+      }, 3000);
+    }
+
+    // Fetch and display players from the server
+    function loadPlayers() {
+      fetch('/get_players')
+        .then(response => {
+          if (!response.ok) throw new Error("Database connection error.");
+          return response.json();
+        })
+        .then(data => {
+          playersData = data;
+          populateTable(data);
+        })
+        .catch(error => {
+          showNotification(error.message, "error");
+          console.error(error);
+        });
+    }
+
+    // Populate the players table
+    function populateTable(players) {
+      const tbody = document.querySelector("#playersTable tbody");
+      tbody.innerHTML = "";
+      players.forEach(player => {
+        const tr = document.createElement("tr");
+        tr.dataset.id = player.id;
+        
+        const tdId = document.createElement("td");
+        tdId.textContent = player.id;
+        tr.appendChild(tdId);
+        
+        const tdName = document.createElement("td");
+        tdName.textContent = player.name;
+        tdName.className = "player-name";
+        tr.appendChild(tdName);
+        
+        const tdRank = document.createElement("td");
+        tdRank.textContent = player.rank;
+        tdRank.className = "player-rank";
+        tr.appendChild(tdRank);
+        
+        const tdActions = document.createElement("td");
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.onclick = () => editPlayer(tr, player);
+        tdActions.appendChild(editButton);
+        
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.onclick = () => deletePlayer(player.id);
+        tdActions.appendChild(deleteButton);
+        
+        tr.appendChild(tdActions);
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Enable edit mode for a player row
+    function editPlayer(row, player) {
+      row.innerHTML = "";
+      row.dataset.id = player.id;
+      
+      const tdId = document.createElement("td");
+      tdId.textContent = player.id;
+      row.appendChild(tdId);
+      
+      const tdName = document.createElement("td");
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.value = player.name;
+      tdName.appendChild(nameInput);
+      row.appendChild(tdName);
+      
+      const tdRank = document.createElement("td");
+      const rankInput = document.createElement("input");
+      rankInput.type = "number";
+      rankInput.value = player.rank;
+      rankInput.min = 1;
+      tdRank.appendChild(rankInput);
+      row.appendChild(tdRank);
+      
+      const tdActions = document.createElement("td");
+      const saveButton = document.createElement("button");
+      saveButton.textContent = "Save";
+      saveButton.onclick = () => updatePlayer(player.id, nameInput.value.trim(), parseInt(rankInput.value), player.rank);
+      tdActions.appendChild(saveButton);
+      
+      const cancelButton = document.createElement("button");
+      cancelButton.textContent = "Cancel";
+      cancelButton.onclick = loadPlayers;
+      tdActions.appendChild(cancelButton);
+      
+      row.appendChild(tdActions);
+    }
+
+    // Update player details
+    function updatePlayer(playerId, newName, newRank, oldRank) {
+      if (!newName) {
+        showNotification("Name cannot be empty.", "error");
+        return;
+      }
+      if (newRank !== oldRank && playersData.find(p => p.rank === newRank && p.id !== playerId)) {
+        showNotification("Duplicate rank not allowed.", "error");
+        return;
+      }
+      fetch('/update_player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: playerId, name: newName, rank: newRank })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          showNotification("Player updated successfully.", "success");
+          loadPlayers();
+        } else {
+          showNotification(result.message || "Error updating player.", "error");
+        }
+      })
+      .catch(error => {
+        showNotification("Error updating player.", "error");
+        console.error(error);
+      });
+    }
+
+    // Delete a player
+    function deletePlayer(playerId) {
+      if (!confirm("Are you sure you want to delete this player?")) return;
+      fetch('/delete_player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: playerId })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          showNotification("Player deleted successfully.", "success");
+          loadPlayers();
+        } else {
+          showNotification(result.message || "Error deleting player.", "error");
+        }
+      })
+      .catch(error => {
+        showNotification("Error deleting player.", "error");
+        console.error(error);
+      });
+    }
+
+    // Add a new player
+    function addPlayer() {
+      const nameField = document.getElementById("newPlayerName");
+      const rankField = document.getElementById("newPlayerRank");
+      const newName = nameField.value.trim();
+      const newRank = parseInt(rankField.value);
+      if (!newName) {
+        showNotification("Name cannot be empty.", "error");
+        return;
+      }
+      if (isNaN(newRank) || newRank < 1) {
+        showNotification("Rank must be a positive number.", "error");
+        return;
+      }
+      if (playersData.find(p => p.rank === newRank)) {
+        showNotification("Duplicate rank not allowed.", "error");
+        return;
+      }
+      fetch('/add_player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, rank: newRank })
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          showNotification("Player added successfully.", "success");
+          nameField.value = "";
+          rankField.value = "";
+          loadPlayers();
+        } else {
+          showNotification(result.message || "Error adding player.", "error");
+        }
+      })
+      .catch(error => {
+        showNotification("Error adding player.", "error");
+        console.error(error);
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadPlayers();
+      document.getElementById("addPlayerForm").addEventListener("submit", e => {
+        e.preventDefault();
+        addPlayer();
+      });
+    });
+  </script>
+</body>
+</html>

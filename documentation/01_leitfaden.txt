@@ -1,0 +1,75 @@
+################################################
+################################################
+## WPL: Rankinglogik
+################################################
+################################################
+
+Ranking-Pyramide (36 Plätze)
+Die Plätze sind in 8 Reihen angeordnet:
+
+Reihe 1: 1
+Reihe 2: 2 3
+Reihe 3: 4 5 6
+Reihe 4: 7 8 9 10
+Reihe 5: 11 12 13 14 15
+Reihe 6: 16 17 18 19 20 21
+Reihe 7: 22 23 24 25 26 27 28
+Reihe 8: 29 30 31 32 33 34 35 36
+
+Herausforderungs-Logik
+
+Top 10 (Ränge 1–10):
+Jeder Spieler in den Top 10 darf einen beliebigen, vor ihm platzierten Rang (1 bis eigener Rang−1) fordern.
+
+Ränge 11–36 (in Reihen 5–8):
+Jede Reihe hat eine maximale Anzahl an Plätzen, die man „nach oben“ fordern darf:
+
+Reihe	Ränge	Max. Aufwärts-Forderung
+5	11–15	4 Plätze
+6	16–21	5 Plätze
+7	22–28	6 Plätze
+8	29–36	7 Plätze
+
+Beispiel einer Herausforderung
+
+Spieler mit Rang 24 fordert Spieler mit Rang 19 heraus.
+Ausgabe: "Ich, Spieler mit Rang 24, fordere hiermit den Spieler mit Rang 19 heraus."
+Gültigkeit der Herausforderung: 10 Tage.
+
+Ausgang eines Spiels
+Gewinnt der Herausforderer (z. B. Rang 24) gegen den Geforderten (z. B. Rang 19):
+Der Herausforderer übernimmt den Rang 19.
+Der Verlierer (ehemals Rang 19) und alle Spieler dazwischen rutschen um einen Platz nach hinten (hier: Rang 19 → 20).
+Verliert der Herausforderer (Rang 24):
+Er bleibt auf Rang 24.
+
+Sperrfristen
+Der Sieger darf sofort neue Herausforderungen aussprechen, darf aber 7 Tage lang nicht von anderen herausgefordert werden.
+Der Verlierer darf sofort herausgefordert werden, kann selbst jedoch erst nach 7 Tagen wieder neue Herausforderungen aussprechen.
+
+Sonderfall 1 für nicht verfügbare Spieler (ab Rang 11)
+Ist ein Spieler in den Rängen 11–36, der eigentlich gefordert werden könnte, in einer Datenbank als „nicht verfügbar“ markiert, so darf der Herausfordernde für diesen nicht verfügbaren Rang jeweils einen zusätzlichen Rang weiter oben in die Liste der möglichen Forderungen aufnehmen.
+
+Beispiele:
+
+Reihe 5 (z. B. Rang 15) darf normalerweise die Ränge 14, 13, 12 und 11 fordern (max. 4 Plätze nach oben).
+Falls Rang 11 als „nicht verfügbar“ markiert ist, wird Rang 11 aus der Liste entfernt. Gleichzeitig darf zusätzlich Rang 10 aufgenommen werden, also genau einen Platz höher als eigentlich erlaubt.
+Reihe 6 (z. B. Rang 19) darf normalerweise die Ränge 18, 17, 16, 15 und 14 fordern (max. 5 Plätze nach oben).
+Falls Rang 14 als „nicht verfügbar“ markiert ist, wird Rang 14 aus der Liste entfernt. Gleichzeitig darf zusätzlich Rang 13 aufgenommen werden.
+Praktisch bedeutet das: Für jeden nicht verfügbaren Spieler innerhalb der normalen Forderungsspanne kann ein zusätzlicher Rang oberhalb dieser Spanne forderbar werden.
+
+#####
+Ist ein Spieler als nicht verfügbar markiert und wird danach wieder als verfügbardargestellt,
+darf er 3 Tage lang keine Forderungen ausprechen selbt aber gefordert werden. 
+Beispiel: Spieler "14" könnte im Normalfall nur bis Spieler "10" fordern.
+Da Spieler "10" aber "umgedreht" ist dürfte er ebenso Spieler "9" einfordern.
+Wenn sich dieser Spieler wieder "Zurückgedreht" meldet, darf er 3 Tage lang gefordert werden,
+selbst aber diese 3 Tage nicht fordern.
+#####
+
+Sonderfall 2: Neuer Spieler
+Ein Spieler, der bisher nicht in der Rangliste (1–36) geführt wird, darf bis Rang 11 fordern.
+Gewinnt der neue Spieler die Forderung, übernimmt er diesen Rang; der bisherige Inhaber des Rangs rückt einen Platz nach hinten. Verliert der neue Spieler, so nimmt er den letzten Platz in der Rangliste (also Rang 36) ein.
+
+
+

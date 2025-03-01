@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Admin Panel</title>
+  <style>
+    /* Global Styles using lemon yellow/grey theme with 3D effects */
+    :root {
+      --primary-color: #f8e473;
+      --primary-dark: #e6d661;
+      --bg-color: #f2f2f2;
+      --container-bg: #fff;
+      --text-color: #333;
+      --border-color: #ccc;
+      --shadow-color: rgba(0, 0, 0, 0.2);
+      --highlight-shadow: rgba(248, 228, 115, 0.4);
+    }
+    
+    body {
+      background-color: var(--bg-color);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: var(--text-color);
+      perspective: 1000px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      background-color: var(--primary-color);
+      padding: 20px;
+      border-bottom: 3px solid var(--border-color);
+      transform: translateZ(30px);
+      box-shadow: 0 10px 25px var(--shadow-color);
+      border-radius: 10px;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+    
+    header:hover {
+      transform: translateZ(40px) rotateX(2deg);
+    }
+    
+    header h1 {
+      font-size: 3rem;
+      margin: 0;
+      color: #000;
+      text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
+    }
+    
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      transform-style: preserve-3d;
+    }
+    
+    .challenge-container {
+      background-color: var(--container-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 15px 25px var(--shadow-color);
+      transition: all 0.4s ease;
+      transform: translateZ(10px);
+      position: relative;
+    }
+    
+    .challenge-container:hover {
+      transform: translateZ(25px) translateY(-5px);
+      box-shadow: 0 25px 40px var(--shadow-color);
+    }
+    
+    .challenge-container p {
+      margin: 0 0 15px;
+      font-size: 1.5rem;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+    
+    .challenge-container form {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .challenge-container form label {
+      font-size: 1.5rem;
+      color: #000;
+      transform: translateZ(5px);
+    }
+    
+    .challenge-container form select {
+      font-size: 1.5rem;
+      padding: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background-color: #f7f7f7;
+      color: var(--text-color);
+      outline: none;
+      appearance: none;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      transform: translateZ(5px);
+    }
+    
+    .challenge-container form select:hover {
+      border-color: var(--primary-color);
+      transform: translateZ(10px);
+    }
+    
+    .challenge-container form select:focus {
+      border-color: var(--primary-dark);
+      box-shadow: 0 0 0 3px var(--highlight-shadow);
+    }
+    
+    .challenge-container form button {
+      font-size: 1.5rem;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--primary-color);
+      color: #000;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 8px var(--shadow-color);
+      transform: translateZ(10px);
+      position: relative;
+    }
+    
+    .challenge-container form button:hover {
+      background-color: var(--primary-dark);
+      transform: translateZ(15px) translateY(-2px);
+      box-shadow: 0 8px 16px var(--shadow-color);
+    }
+    
+    .challenge-container form button:active {
+      transform: translateZ(5px) translateY(1px);
+      box-shadow: 0 2px 4px var(--shadow-color);
+    }
+    
+    /* 3D button effect */
+    .challenge-container form button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--primary-dark);
+      transform: translateZ(-1px);
+      z-index: -1;
+      border-radius: 6px;
+    }
+    
+    /* Custom scrollbar for modern touch */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--bg-color);
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 10px;
+      box-shadow: inset 0 0 5px var(--shadow-color);
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-color);
+    }
+    
+    /* No results message */
+    .no-challenges {
+      font-size: 1.5rem;
+      text-align: center;
+      padding: 30px;
+      background-color: var(--container-bg);
+      border-radius: 8px;
+      box-shadow: 0 10px 20px var(--shadow-color);
+      transform: translateZ(5px);
+      transition: all 0.3s ease;
+    }
+    
+    .no-challenges:hover {
+      transform: translateZ(15px);
+    }
+  </style>
+  <!-- Load jQuery (for DOM manipulation and AJAX) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Load Socket.IO client from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Pending Challenges</h1>
+  </header>
+  <main>
+    <!-- Wrap challenges in a container to allow dynamic updating -->
+    <div id="challenges-container">
+      {% for challenge in challenges %}
+        <div class="challenge-container" data-challenge-id="{{ challenge.id }}">
+          <p>
+            {{ challenge.challenger_name }} vs {{ challenge.opponent_name }} 
+            (Deadline: {{ challenge.deadline }})
+          </p>
+          <form class="result-form" method="POST" action="/submit_result">
+            <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
+            <label for="result-{{ challenge.id }}">Result:</label>
+            <select id="result-{{ challenge.id }}" name="result">
+              <option value="challenger_wins">{{ challenge.challenger_name }} Wins</option>
+              <option value="opponent_wins">{{ challenge.opponent_name }} Wins</option>
+              <option value="not_happened">Not Happened</option>
+            </select>
+            <button type="submit">Submit Result</button>
+          </form>
+        </div>
+      {% endfor %}
+      
+      {% if not challenges %}
+        <div class="no-challenges">
+          No pending challenges at this time.
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script>
+    $(document).ready(function(){
+      // Initialize Socket.IO client with reconnection options
+      const socket = io({
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        timeout: 10000
+      });
+      
+      // Cache DOM elements
+      const $challengesContainer = $("#challenges-container");
+      
+      // Function to update the challenge list from the /admin route
+      function updateChallenges() {
+        $.get("/admin", function(data){
+          try {
+            // Use DOMParser to extract the new challenges container
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data, "text/html");
+            const newContent = doc.querySelector("#challenges-container").innerHTML;
+            
+            // Only update if content has changed
+            if (newContent !== $challengesContainer.html()) {
+              $challengesContainer.html(newContent);
+              // Add 3D depth effect to newly loaded elements
+              add3DEffects();
+            }
+          } catch (error) {
+            console.error("Error updating challenges:", error);
+          }
+        });
+      }
+      
+      // Add 3D staggered effects to challenge containers
+      function add3DEffects() {
+        $(".challenge-container").each(function(index) {
+          $(this).css({
+            'transition-delay': `${index * 0.1}s`,
+            'transform': `translateZ(${10 + index * 2}px)`
+          });
+        });
+      }
+      
+      // Socket.IO event handlers
+      socket.on("connect", function() {
+        console.log("Connected to server");
+        updateChallenges();
+      });
+      
+      socket.on("update", function(data) {
+        console.log("Received update event", data);
+        updateChallenges();
+      });
+      
+      socket.on("connect_error", function(error) {
+        console.error("Connection error:", error);
+      });
+      
+      socket.on("disconnect", function(reason) {
+        console.log("Disconnected:", reason);
+      });
+      
+      // Form submission delegation - use event delegation for forms
+      $challengesContainer.on("submit", ".result-form", function(e) {
+        e.preventDefault();
+        
+        const $form = $(this);
+        const formData = $form.serialize();
+        const $container = $form.closest(".challenge-container");
+        
+        // Visual feedback during submission
+        $container.css('opacity', '0.7');
+        
+        $.post("/submit_result", formData, function(response) {
+          // Success handling
+          $container.css({
+            'transform': 'translateZ(50px) scale(1.05)',
+            'opacity': '1',
+            'background-color': '#e6ffe6'
+          });
+          
+          // Remove the container with animation after success
+          setTimeout(function() {
+            $container.css({
+              'transform': 'translateZ(-50px) scale(0.8)',
+              'opacity': '0'
+            });
+            
+            setTimeout(function() {
+              updateChallenges();
+            }, 500);
+          }, 1000);
+        }).fail(function(xhr, status, error) {
+          // Error handling
+          console.error("Error submitting result:", error);
+          $container.css({
+            'transform': 'translateZ(10px)',
+            'opacity': '1',
+            'background-color': '#ffe6e6'
+          });
+          
+          // Reset after error feedback
+          setTimeout(function() {
+            $container.css('background-color', '#fff');
+          }, 2000);
+        });
+      });
+      
+      // Add initial 3D effects
+      add3DEffects();
+      
+      // Set up automatic polling as fallback (every 2 minutes)
+      setInterval(updateChallenges, 120000);
+    });
+  </script>
+</body>
+</html>

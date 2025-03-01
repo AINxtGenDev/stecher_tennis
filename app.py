@@ -1,0 +1,784 @@
+import re
+import os
+import sqlite3
+import json
+import logging
+from datetime import datetime, timedelta
+from flask import Flask, g, request, jsonify, render_template, redirect, url_for, flash
+from flask_socketio import SocketIO, emit  # Ensure Flask-SocketIO is installed
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
+app.secret_key = "your-secret-key"  # In production, load this from an environment variable
+
+# Initialize SocketIO
+socketio = SocketIO(app, async_mode="threading")
+
+
+# NEW: Centralized current time function
+def get_current_time():
+    """
+    Returns the current datetime.
+    If the environment variable TEST_DATE is set (in format YYYY-MM-DD-HH-MM-SS),
+    it parses and returns that value. This enables testing by simulating a future/past date.
+    """
+    test_date_str = os.environ.get("TEST_DATE")
+    if test_date_str:
+        try:
+            # Expected format: "2025-03-13-21-13-23"
+            return datetime.strptime(test_date_str, "%Y-%m-%d-%H-%M-%S")
+        except Exception as e:
+            logger.exception("Invalid TEST_DATE format: %s. Falling back to system time.", test_date_str)
+    return datetime.now()
+
+
+def get_db():
+    if "db" not in g:
+        try:
+            g.db = sqlite3.connect(
+                app.config["DATABASE"], timeout=10, detect_types=sqlite3.PARSE_DECLTYPES
+            )
+            g.db.row_factory = sqlite3.Row
+        except sqlite3.Error as e:
+            logger.exception("Database connection failed.")
+            raise e
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db(error):
+    db = g.pop("db", None)
+    if db is not None:
+        try:
+            db.close()
+        except sqlite3.Error:
+            logger.exception("Failed to close the database connection.")
+
+
+def init_db():
+    db = get_db()
+    try:
+        with app.open_resource("schema.sql") as f:
+            db.executescript(f.read().decode("utf8"))
+        db.commit()
+        logger.info("Database schema initialized.")
+    except Exception as e:
+        logger.exception("Error initializing the database schema.")
+        raise e
+
+    # Load initial players if the table is empty.
+    cur = db.execute("SELECT COUNT(*) as count FROM players")
+    count = cur.fetchone()["count"]
+    logger.info("Players count in DB: %s", count)
+    if count == 0:
+        try:
+            json_path = os.path.join(app.root_path, "initial_players.json")
+            with open(json_path, encoding="utf8") as json_file:
+                data = json.load(json_file)
+                for player in data["players"]:
+                    db.execute(
+                        "INSERT INTO players (id, name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?, ?)",
+                        (
+                            player["id"],
+                            player["name"],
+                            int(player["is_available"]),
+                            player["rank"],
+                            None,
+                            0,  # original players are not new
+                        ),
+                    )
+            db.commit()
+            logger.info("Loaded initial players from JSON.")
+        except Exception as e:
+            logger.exception("Error loading initial players from JSON.")
+            raise e
+
+
+def create_pyramid(players):
+    pyramid = []
+    start = 0
+    row_sizes = [1, 2, 3, 4, 5, 6, 7, 8]
+    for size in row_sizes:
+        row = []
+        for i in range(size):
+            if start < len(players):
+                row.append(players[start])
+            else:
+                row.append(None)
+            start += 1
+        pyramid.append(row)
+    return pyramid
+
+
+def get_active_challenges():
+    db = get_db()
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur = db.execute(
+            "SELECT c.*, p1.name as challenger_name, p2.name as opponent_name FROM challenges c "
+            "JOIN players p1 ON c.challenger_id = p1.id "
+            "JOIN players p2 ON c.opponent_id = p2.id "
+            "WHERE c.resolved = 0 AND c.deadline > ?",
+            (now,),
+        )
+        challenges = cur.fetchall()
+        logger.info("Active challenges count: %d", len(challenges))
+        return challenges
+    except sqlite3.Error:
+        logger.exception("Error fetching active challenges.")
+        return []
+
+
+def get_active_challenge_ids():
+    db = get_db()
+    now_str = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    cur = db.execute(
+        "SELECT challenger_id, opponent_id FROM challenges WHERE resolved = 0 AND deadline > ?",
+        (now_str,),
+    )
+    active_ids = set()
+    for row in cur.fetchall():
+        active_ids.add(row["challenger_id"])
+        active_ids.add(row["opponent_id"])
+    return active_ids
+
+
+def get_unavailable_players():
+    db = get_db()
+    cur = db.execute("SELECT * FROM players WHERE available = 0")
+    players = cur.fetchall()
+    return players
+
+
+def get_blocked_players():
+    db = get_db()
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur = db.execute(
+            "SELECT * FROM players WHERE block_opponent_until IS NOT NULL AND block_opponent_until > ?",
+            (now,),
+        )
+        return cur.fetchall()
+    except sqlite3.Error:
+        logger.exception("Error fetching blocked players.")
+        return []
+
+
+def get_blocked_challenger_players():
+    db = get_db()
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur = db.execute(
+            "SELECT * FROM players WHERE block_challenger_until IS NOT NULL AND block_challenger_until > ?",
+            (now,),
+        )
+        return cur.fetchall()
+    except sqlite3.Error:
+        logger.exception("Error fetching blocked challenger players.")
+        return []
+
+
+def get_blocked_opponent_players():
+    db = get_db()
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        cur = db.execute(
+            "SELECT * FROM players WHERE block_opponent_until IS NOT NULL AND block_opponent_until > ?",
+            (now,),
+        )
+        return cur.fetchall()
+    except sqlite3.Error:
+        logger.exception("Error fetching blocked opponent players.")
+        return []
+
+
+def eligible_opponents_for(challenger):
+    db = get_db()
+    challenger_rank = challenger["rank"]
+    now_str = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    active_ids = get_active_challenge_ids()
+
+    if challenger_rank <= 10:
+        query = (
+            "SELECT * FROM players WHERE rank < ? AND available = 1 "
+            "AND (block_opponent_until IS NULL OR block_opponent_until <= ?) ORDER BY rank ASC"
+        )
+        parameters = (challenger_rank, now_str)
+        cur = db.execute(query, parameters)
+        eligible = cur.fetchall()
+        eligible = [p for p in eligible if p["id"] not in active_ids]
+        logger.info(
+            "Eligible opponents for rank %s (<=10): %d", challenger_rank, len(eligible)
+        )
+        return eligible
+
+    if 11 <= challenger_rank <= 15:
+        max_count = 4
+    elif 16 <= challenger_rank <= 21:
+        max_count = 5
+    elif 22 <= challenger_rank <= 28:
+        max_count = 6
+    elif 29 <= challenger_rank <= 36:
+        max_count = 7
+    else:
+        max_count = 0
+
+    eligible = []
+    for r in range(challenger_rank - 1, 0, -1):
+        cur = db.execute(
+            "SELECT * FROM players WHERE rank = ? AND available = 1 AND (block_opponent_until IS NULL OR block_opponent_until <= ?)",
+            (r, now_str),
+        )
+        player = cur.fetchone()
+        if player and (player["id"] not in active_ids):
+            eligible.append(player)
+        if len(eligible) >= max_count:
+            break
+    eligible = sorted(eligible, key=lambda p: p["rank"])
+    logger.info(
+        "Eligible opponents for rank %s (>=11): %d", challenger_rank, len(eligible)
+    )
+    return eligible
+
+
+# --------------- ROUTES ---------------
+
+@app.route("/")
+def home():
+    return redirect(url_for("stecher_start"))
+
+
+@app.route("/stecher_start")
+def stecher_start():
+    return render_template("stecher_start.html")
+
+
+@app.route("/index")
+def index():
+    db = get_db()
+    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    cur = db.execute(
+        """
+        SELECT p.*, 
+            CASE 
+              WHEN EXISTS (
+                SELECT 1 FROM challenges c
+                WHERE c.resolved = 0
+                  AND c.deadline > ?
+                  AND (c.challenger_id = p.id OR c.opponent_id = p.id)
+              ) THEN 1 ELSE 0 
+            END as in_challenge
+        FROM players p
+        ORDER BY rank ASC
+        """,
+        (now,),
+    )
+    players = cur.fetchall()
+    players_list = []
+    now_dt = get_current_time()
+    for p in players:
+        p = dict(p)
+        blocked = False
+        if p.get("block_challenger_until"):
+            try:
+                dt = datetime.strptime(p["block_challenger_until"], "%Y-%m-%d %H:%M:%S")
+                if now_dt < dt:
+                    blocked = True
+            except Exception:
+                pass
+        if p.get("block_opponent_until"):
+            try:
+                dt = datetime.strptime(p["block_opponent_until"], "%Y-%m-%d %H:%M:%S")
+                if now_dt < dt:
+                    blocked = True
+            except Exception:
+                pass
+        p["blocked"] = blocked
+        players_list.append(p)
+
+    pyramid = create_pyramid(players_list)
+    active_challenges = get_active_challenges()
+    blocked_challenger_players = get_blocked_challenger_players()
+    blocked_opponent_players = get_blocked_opponent_players()
+    unavailable_players = get_unavailable_players()
+    logger.info("Rendering index: players=%d, pyramid rows=%d", len(players_list), len(pyramid))
+    return render_template(
+        "index.html",
+        pyramid=pyramid,
+        players=players_list,
+        active_challenges=active_challenges,
+        blocked_challenger_players=blocked_challenger_players,
+        blocked_opponent_players=blocked_opponent_players,
+        unavailable_players=unavailable_players,
+    )
+
+
+@app.route("/admin")
+def admin():
+    db = get_db()
+    cur = db.execute(
+        "SELECT c.*, p1.name as challenger_name, p2.name as opponent_name FROM challenges c "
+        "JOIN players p1 ON c.challenger_id = p1.id "
+        "JOIN players p2 ON c.opponent_id = p2.id "
+        "WHERE c.resolved = 0"
+    )
+    challenges = cur.fetchall()
+    logger.info("Rendering admin: challenges=%d", len(challenges))
+    return render_template("admin.html", challenges=challenges)
+
+
+@app.route("/get_players")
+def get_players():
+    db = get_db()
+    cur = db.execute("SELECT * FROM players ORDER BY rank ASC")
+    players = cur.fetchall()
+    active_ids = get_active_challenge_ids()
+    current_time = get_current_time()
+    players_list = []
+    for p in players:
+        block_challenger = False
+        block_opponent = False
+        if p["block_challenger_until"]:
+            try:
+                block_until = datetime.strptime(p["block_challenger_until"], "%Y-%m-%d %H:%M:%S")
+                if current_time < block_until:
+                    block_challenger = True
+            except Exception:
+                pass
+        if p["block_opponent_until"]:
+            try:
+                block_until = datetime.strptime(p["block_opponent_until"], "%Y-%m-%d %H:%M:%S")
+                if current_time < block_until:
+                    block_opponent = True
+            except Exception:
+                pass
+
+        in_challenge = p["id"] in active_ids
+        players_list.append(
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "rank": p["rank"],
+                "available": bool(p["available"]),
+                "unavailable_since": p["unavailable_since"],
+                "block_challenger": block_challenger,
+                "block_opponent": block_opponent,
+                "in_challenge": in_challenge,
+            }
+        )
+    logger.info("get_players returning %d players", len(players_list))
+    return jsonify(players_list)
+
+
+@app.route("/eligible_opponents", methods=["POST"])
+def eligible_opponents():
+    challenger_id = request.form.get("challenger_id")
+    if not challenger_id:
+        return jsonify({"error": "Missing challenger_id"}), 400
+
+    db = get_db()
+    cur = db.execute("SELECT * FROM players WHERE id = ?", (challenger_id,))
+    challenger = cur.fetchone()
+    if not challenger:
+        return jsonify({"error": "Challenger not found."}), 404
+
+    opponents = eligible_opponents_for(challenger)
+    opponents_list = []
+    for opp in opponents:
+        opponents_list.append(
+            {
+                "id": opp["id"],
+                "name": opp["name"],
+                "rank": opp["rank"],
+                "available": bool(opp["available"]),
+            }
+        )
+    logger.info(
+        "Eligible opponents for challenger %s: %d", challenger_id, len(opponents_list)
+    )
+    return jsonify(opponents_list)
+
+
+@app.route("/challenge", methods=["POST"])
+def challenge():
+    challenger_id = request.form.get("challenger")
+    opponent_id = request.form.get("opponent")
+    if not challenger_id or not opponent_id:
+        return jsonify({"error": "Both challenger and opponent must be selected."}), 400
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (challenger_id,))
+        challenger = cur.fetchone()
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (opponent_id,))
+        opponent = cur.fetchone()
+        if not challenger or not opponent:
+            return jsonify({"error": "Invalid player selection."}), 400
+
+        timestamp = get_current_time()
+        deadline = timestamp + timedelta(days=10)
+        db.execute(
+            "INSERT INTO challenges (challenger_id, opponent_id, timestamp, deadline, resolved) VALUES (?, ?, ?, ?, ?)",
+            (
+                challenger_id,
+                opponent_id,
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                deadline.strftime("%Y-%m-%d %H:%M:%S"),
+                0,
+            ),
+        )
+        db.commit()
+        socketio.emit("update")
+        message = f"I, {challenger['name']} (Rank {challenger['rank']}), hereby challenge {opponent['name']} (Rank {opponent['rank']})."
+        logger.info("Challenge created: %s", message)
+        return jsonify(
+            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+        )
+    except sqlite3.Error:
+        logger.exception("Database error during challenge creation.")
+        return jsonify({"error": "Internal server error."}), 500
+
+
+@app.route("/toggle_availability", methods=["POST"])
+def toggle_availability():
+    player_id = request.form.get("player_id")
+    if not player_id:
+        return jsonify({"success": False, "message": "No player_id provided."}), 400
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (player_id,))
+        player = cur.fetchone()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found."}), 404
+
+        new_availability = 0 if player["available"] == 1 else 1
+        new_unavailable_since = None
+        if new_availability == 0:
+            new_unavailable_since = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+        if new_availability == 1:
+            block_opponent_until = (get_current_time() + timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            block_opponent_until = None
+
+        db.execute(
+            "UPDATE players SET available = ?, unavailable_since = ?, block_opponent_until = ? WHERE id = ?",
+            (new_availability, new_unavailable_since, block_opponent_until, player_id),
+        )
+        db.commit()
+        socketio.emit("update")
+        logger.info("Toggled availability for player %s to %s", player_id, new_availability)
+        return jsonify({"success": True, "new_availability": new_availability})
+    except sqlite3.Error:
+        logger.exception("Error toggling availability.")
+        return jsonify({"success": False, "message": "Internal server error."}), 500
+
+
+@app.route("/submit_result", methods=["POST"])
+def submit_result():
+    challenge_id = request.form.get("challenge_id")
+    result = request.form.get("result")
+    if not challenge_id or not result:
+        flash("Invalid submission.", "danger")
+        return redirect(url_for("admin"))
+
+    db = get_db()
+    try:
+        cur = db.execute(
+            "SELECT * FROM challenges WHERE id = ? AND resolved = 0", (challenge_id,)
+        )
+        challenge_record = cur.fetchone()
+        if not challenge_record:
+            flash("Challenge not found or already resolved.", "danger")
+            return redirect(url_for("admin"))
+
+        resolved_at = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(
+            "UPDATE challenges SET resolved = 1, result = ?, resolved_at = ? WHERE id = ?",
+            (result, resolved_at, challenge_id),
+        )
+
+        now = get_current_time()
+        block_until = (now + timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
+
+        if result == "challenger_wins":
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?",
+                (challenge_record["challenger_id"],),
+            )
+            challenger = cur.fetchone()
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?", (challenge_record["opponent_id"],)
+            )
+            opponent = cur.fetchone()
+            if challenger and opponent and challenger["rank"] > opponent["rank"]:
+                if challenger["rank"] == 36:
+                    new_rank = opponent["rank"]
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank, challenger["id"]),
+                    )
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank + 1, opponent["id"]),
+                    )
+                else:
+                    old_challenger_rank = challenger["rank"]
+                    new_rank = opponent["rank"]
+                    db.execute(
+                        "UPDATE players SET rank = rank + 1 WHERE rank >= ? AND rank < ?",
+                        (new_rank, old_challenger_rank),
+                    )
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank, challenger["id"]),
+                    )
+                flash("Rankings updated: Challenger wins.", "success")
+            else:
+                flash("Invalid ranking update.", "warning")
+            db.execute(
+                "UPDATE players SET block_opponent_until = ? WHERE id = ?",
+                (block_until, challenge_record["challenger_id"]),
+            )
+            db.execute(
+                "UPDATE players SET block_challenger_until = ? WHERE id = ?",
+                (block_until, challenge_record["opponent_id"]),
+            )
+        elif result == "opponent_wins":
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?",
+                (challenge_record["challenger_id"],),
+            )
+            challenger = cur.fetchone()
+            flash("No ranking changes: Challenger lost.", "info")
+            db.execute(
+                "UPDATE players SET block_opponent_until = ? WHERE id = ?",
+                (block_until, challenge_record["opponent_id"]),
+            )
+            db.execute(
+                "UPDATE players SET block_challenger_until = ? WHERE id = ?",
+                (block_until, challenge_record["challenger_id"]),
+            )
+        elif result == "not_happened":
+            flash("Challenge marked as not happened. No ranking changes.", "info")
+            db.execute(
+                "UPDATE players SET block_challenger_until = NULL, block_opponent_until = NULL WHERE id IN (?, ?)",
+                (challenge_record["challenger_id"], challenge_record["opponent_id"]),
+            )
+        else:
+            flash("Unknown result.", "danger")
+
+        cur = db.execute(
+            "SELECT id FROM players ORDER BY rank ASC, is_new DESC, rowid ASC"
+        )
+        new_rank_value = 1
+        for row in cur.fetchall():
+            db.execute(
+                "UPDATE players SET rank = ? WHERE id = ?", (new_rank_value, row["id"])
+            )
+            new_rank_value += 1
+
+        db.execute("DELETE FROM players WHERE rank > 36")
+        db.commit()
+        socketio.emit("update")
+    except sqlite3.Error:
+        db.rollback()
+        logger.exception("Database error during challenge result submission.")
+        flash("Internal error while updating challenge result.", "danger")
+    return redirect(url_for("admin"))
+
+
+@app.route("/newplayer_challenge", methods=["POST"])
+def newplayer_challenge():
+    newplayer_name = request.form.get("newplayer_name", "").strip()
+    opponent_id = request.form.get("opponent_id")
+    if not newplayer_name or not opponent_id:
+        return jsonify({"error": "New player name and opponent must be provided."}), 400
+
+    if len(newplayer_name) < 5 or re.search(r"\d", newplayer_name):
+        return (
+            jsonify(
+                {
+                    "error": "New player name must be at least 5 letters and contain no digits."
+                }
+            ),
+            400,
+        )
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (opponent_id,))
+        opponent = cur.fetchone()
+        if not opponent:
+            return jsonify({"error": "Opponent not found."}), 404
+
+        timestamp = get_current_time()
+        db.execute(
+            "INSERT INTO players (name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?)",
+            (newplayer_name, 1, 36, None, 1),
+        )
+        newplayer_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+        deadline = timestamp + timedelta(days=10)
+        db.execute(
+            "INSERT INTO challenges (challenger_id, opponent_id, timestamp, deadline, resolved) VALUES (?, ?, ?, ?, ?)",
+            (
+                newplayer_id,
+                opponent_id,
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                deadline.strftime("%Y-%m-%d %H:%M:%S"),
+                0,
+            ),
+        )
+        db.commit()
+        socketio.emit("update")
+        message = f"{newplayer_name} vs {opponent['name']} (Deadline: {deadline.strftime('%Y-%m-%d %H:%M:%S')})"
+        logger.info("New player challenge created: %s", message)
+        return jsonify(
+            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+        )
+    except sqlite3.Error:
+        db.rollback()
+        logger.exception("Database error during new player challenge creation.")
+        return jsonify({"error": "Internal server error."}), 500
+
+
+@app.route("/update_player", methods=["POST"])
+def update_player():
+    data = request.get_json()
+    if not data or "id" not in data or "name" not in data or "rank" not in data:
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+
+    player_id = data["id"]
+    new_name = data["name"].strip()
+    try:
+        new_rank = int(data["rank"])
+    except ValueError:
+        return jsonify({"success": False, "message": "Invalid rank."}), 400
+
+    if new_name == "":
+        return jsonify({"success": False, "message": "Name cannot be empty."}), 400
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (player_id,))
+        player = cur.fetchone()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found."}), 404
+
+        cur = db.execute(
+            "SELECT * FROM players WHERE rank = ? AND id != ?", (new_rank, player_id)
+        )
+        duplicate = cur.fetchone()
+        if duplicate:
+            return (
+                jsonify({"success": False, "message": "Duplicate rank not allowed."}),
+                400,
+            )
+
+        db.execute(
+            "UPDATE players SET name = ?, rank = ? WHERE id = ?",
+            (new_name, new_rank, player_id),
+        )
+        db.commit()
+        socketio.emit("update")
+        logger.info("Player %s updated.", player_id)
+        return jsonify({"success": True, "message": "Player updated successfully."})
+    except sqlite3.Error:
+        db.rollback()
+        logger.exception("Error updating player.")
+        return jsonify({"success": False, "message": "Internal server error."}), 500
+
+
+@app.route("/delete_player", methods=["POST"])
+def delete_player():
+    data = request.get_json()
+    if not data or "id" not in data:
+        return jsonify({"success": False, "message": "Missing player id."}), 400
+
+    player_id = data["id"]
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (player_id,))
+        player = cur.fetchone()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found."}), 404
+
+        db.execute("DELETE FROM players WHERE id = ?", (player_id,))
+        db.commit()
+
+        cur = db.execute("SELECT id FROM players ORDER BY rank ASC, rowid ASC")
+        new_rank = 1
+        for row in cur.fetchall():
+            db.execute(
+                "UPDATE players SET rank = ? WHERE id = ?", (new_rank, row["id"])
+            )
+            new_rank += 1
+        db.commit()
+        socketio.emit("update")
+        logger.info("Player %s deleted.", player_id)
+        return jsonify({"success": True, "message": "Player deleted successfully."})
+    except sqlite3.Error:
+        db.rollback()
+        logger.exception("Error deleting player.")
+        return jsonify({"success": False, "message": "Internal server error."}), 500
+
+
+@app.route("/add_player", methods=["POST"])
+def add_player():
+    data = request.get_json()
+    if not data or "name" not in data or "rank" not in data:
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+
+    name = data["name"].strip()
+    try:
+        rank = int(data["rank"])
+    except ValueError:
+        return jsonify({"success": False, "message": "Invalid rank."}), 400
+
+    if name == "":
+        return jsonify({"success": False, "message": "Name cannot be empty."}), 400
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT * FROM players WHERE rank = ?", (rank,))
+        duplicate = cur.fetchone()
+        if duplicate:
+            return (
+                jsonify({"success": False, "message": "Duplicate rank not allowed."}),
+                400,
+            )
+
+        db.execute(
+            "INSERT INTO players (name, available, rank, unavailable_since) VALUES (?, ?, ?, ?)",
+            (name, 1, rank, None),
+        )
+        db.commit()
+        socketio.emit("update")
+        logger.info("Player %s added.", name)
+        return jsonify({"success": True, "message": "Player added successfully."})
+    except sqlite3.Error:
+        db.rollback()
+        logger.exception("Error adding player.")
+        return jsonify({"success": False, "message": "Internal server error."}), 500
+
+
+@app.route("/db_settings")
+def db_settings():
+    return render_template("db_settings.html")
+
+
+@socketio.on("connect")
+def handle_connect():
+    logger.info("Client connected.")
+
+
+if __name__ == "__main__":
+    with app.app_context():
+        init_db()
+    socketio.run(app, debug=True)
+

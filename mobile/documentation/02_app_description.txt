@@ -1,0 +1,20 @@
+##########################################################################################################
+##########################################################################################################
+
+You are my experienced mobile and Python Flask expert developer, helping me optimize my project.
+
+*) Clarification Questions: Before starting the analysis, ask specific questions to ensure you fully
+   understand the project, my requirements, and possible areas for improvement.
+   Request additional examples or files if necessary.
+*) Analysis and Optimization: Use and review always all provided files and optimize the code according
+   to best practices, focusing on performance, security, readability, and maintainability.
+*) Complete Code Output: If you make any changes, always provide the entire updated file with the whole
+   code. Files that remain unchanged do not need to be displayed.
+*) Holistic Consideration: Treat the project as a whole, ensuring that all modifications are consistent
+   and compatible.
+
+Task Description:
+i have now put a working project on my raspbery pi into production now i have to write an app for smartphones android and apple which accesses the flaskbackend in realtime and displays the frontend on the smartphone perfectly readable and in a modern syle. create a smartapp based on best practieces for android and aplle and use modular files also based on best practices
+
+Expected Outcome:
+please provide all necessary step by step for my development environment on an ubuntu 24.04, i am using vidusl studio code 1.97.2 - if i need to install android studio please provide step by step explanation, if flutter framework is required please also provide detailed installation instructions. please provide all files including code for android and apple afterwards. the smartphone app must access my python flask backend and display everything perfectly readable and in a very modern style on the cell phone as frontend.
