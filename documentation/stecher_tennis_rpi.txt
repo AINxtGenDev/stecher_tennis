@@ -30,7 +30,6 @@ scp -r -o PreferredAuthentications=password . stecher@192.168.1.213:~/stecher_te
    # socketio = SocketIO(app, async_mode="threading")
    socketio = SocketIO(app, async_mode="gevent")
 
-
 ############
 /etc/nginx/sites-available/stechertennis
 ############
