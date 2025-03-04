@@ -167,8 +167,7 @@ Sonderfall ab Rang 11: Ist ein Spieler in den Rängen 11–36, der eigentlich ge
 Beispiel: Reihe 5 (z. B. Rang 15) darf normalerweise die Ränge 14, 13, 12 und 11 fordern (max. 4 Plätze nach oben).
 Falls Rang 11 als „nicht verfügbar“ markiert ist, wird Rang 11 aus der Liste entfernt. Gleichzeitig darf zusätzlich Rang 10 aufgenommen werden, also genau einen Platz höher als eigentlich erlaubt.
 
-Sind mehrere Spieler in den Rängen 11-36, die eigentlich gefordert werden können, ebenfalls in der Datenbank als "„nicht verfügbar“ markiert," so darf
-der Herausfordernde für diese niht verfügbaren Ränge ebenfalls die zusätzlichen Ränge weter oben in die Liste der möglichen nach oben in der Liste der Forderungen aufnehmen.
+Sind mehrere Spieler in den Rängen 11-36, die eigentlich gefordert werden können, ebenfalls in der Datenbank als "„nicht verfügbar“ markiert," so darf der Herausfordernde für diese niht verfügbaren Ränge ebenfalls die zusätzlichen Ränge weter oben in die Liste der möglichen nach oben in der Liste der Forderungen aufnehmen.
 Beispiel: Reihe 8 (z. B. Rang 31) darf normalerweise die Ränge 30, 29, 28, 27, 26, 25 und 24 fordern (max. 7 Plätze nach oben).
 Falls Rang 30, 29, 28 als „nicht verfügbar“ markiert sind, werden diese Ränge 30, 29, 28 aus der Liste entfernt. Gleichzeitig darf zusätzlich
 Rang 21, 22, 23, 24, 25, 26, 27 aufgenommen werden. Praktisch bedeutet das: Für jeden nicht verfügbaren Spieler innerhalb der normalen Forderungsspanne können ein zusätzliche
@@ -224,5 +223,37 @@ For a blocked player engaged in an active challenge (Gray/Yellow) , a square tha
 by a diagonal line running from the top right corner to the bottom left corner. One triangular section (the upper left portion)
 is colored gray, while the other triangular section (the lower right portion) is colored yellow.
 Blocked player engaged in an active challenge are stored in the database.
+
+##########################################################################################################
+##########################################################################################################
+
+You are my experienced Python Flask expert, assisting in optimizing my project so it provides real-time updates without manually refreshing the webpage.
+
+Clarification Questions
+
+Before starting, please ask any specific questions about the project, requirements, or file structure.
+Request additional examples or files if necessary.
+Analysis, Code Review, and Optimization
+
+Perform a thorough review of all provided files, applying best practices for performance, security, readability, and maintainability.
+Suggest and implement improvements to ensure real-time updates.
+Complete Code Output
+
+If you modify any file, provide the complete, updated code for that file.
+For files unchanged, no output is required.
+Holistic Consideration
+
+Treat the project as a single system, ensuring consistency and compatibility across all changes.
+Task Description
+
+When running the project locally (e.g., python3 app.py --host=0.0.0.0 --port=5000) and visiting pages like 127.0.0.1:5000/index, 127.0.0.1:5000/admin, or 127.0.0.1:5000/db_setting, updates appear immediately without page refresh.
+This behavior is also observed via an external domain (https://stechertennis.duckdns.org:10443/index), except updates on https://stechertennis.duckdns.org:10443/admin or https://stechertennis.duckdns.org:10443/db_settings do not appear on /index in real time. A manual refresh is required.
+Requirements
+
+Enable real-time updates on all pages, without refreshing the page, even when accessed from the external domain.
+Expected Outcome
+
+Any change made in one view (/admin, /db_settings) should instantly reflect on all other relevant pages (/index), without manually refreshing.
+
 
 

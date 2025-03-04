@@ -117,8 +117,9 @@ def get_current_time():
 3) python3 app.py --host=0.0.0.0 --port=5000
 
 #######################################################################
-
 git status
 git add .
 git commit -m "Initial commit"
 git push -u origin main
+#######################################################################
+
