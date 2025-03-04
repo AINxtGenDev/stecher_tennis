@@ -121,5 +121,12 @@ git status
 git add .
 git commit -m "Initial commit"
 git push -u origin main
+git push
+
+backup repository
+git clone --mirror https://github.com/AINxtGenDev/stecher_tennis.git stecher_tennis_backup.git
+
+to check how many byte the directory including subdirectories has
+du -sh .
 #######################################################################
 

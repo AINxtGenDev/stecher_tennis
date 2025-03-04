@@ -189,7 +189,7 @@ Die Applikation bietet eine umfassende Lösung zur Verwaltung von Tennis-Spieler
 Die folgende Konfiguration (aus */etc/nginx/sites-available/stechertennis*) zeigt, wie NGINX so konfiguriert wird, dass WebSocket-Verbindungen an die Flask-App weitergeleitet werden:
 
 ```nginx
-server {
+server { 
     listen 443 ssl http2;
     server_name stechertennis.duckdns.org;
 
@@ -203,18 +203,36 @@ server {
         proxy_read_timeout 86400;
     }
 
-    # Regular HTTP proxy for other routes
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400;
-    }
+# Regular HTTP proxy for other routes
+location / {
+    proxy_pass http://127.0.0.1:5000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 86400;
+}
 
-    ssl_certificate /etc/letsencry
+ssl_certificate /etc/letsencrypt/live/stechertennis.duckdns.org/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/stechertennis.duckdns.org/privkey.pem;
+include /etc/letsencrypt/options-ssl-nginx.conf;
+ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+# Security headers
+add_header X-Frame-Options SAMEORIGIN;
+add_header X-XSS-Protection "1; mode=block";
+add_header X-Content-Type-Options nosniff;
+add_header Referrer-Policy "strict-origin-when-cross-origin";
+add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
+
+# HSTS (optional)
+add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+# Logging
+access_log /var/log/nginx/stechertennis.access.log;
+error_log /var/log/nginx/stechertennis.error.log warn;
+}
 
