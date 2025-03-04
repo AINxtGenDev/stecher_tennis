@@ -1,4 +1,5 @@
 # Tennis Ranking List Webapplikation
+<img src="static/01_tennis_racket.png" alt="Tennis Racket" width="300">
 
 ## Einleitung
 
@@ -215,23 +216,5 @@ server {
         proxy_read_timeout 86400;
     }
 
-    ssl_certificate /etc/letsencrypt/live/stechertennis.duckdns.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/stechertennis.duckdns.org/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Security headers
-    add_header X-Frame-Options SAMEORIGIN;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header X-Content-Type-Options nosniff;
-    add_header Referrer-Policy "strict-origin-when-cross-origin";
-    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
-
-    # HSTS (optional)
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-
-    # Logging
-    access_log /var/log/nginx/stechertennis.access.log;
-    error_log /var/log/nginx/stechertennis.error.log warn;
-}
+    ssl_certificate /etc/letsencry
 
