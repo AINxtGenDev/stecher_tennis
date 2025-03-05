@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tennis Ranking List 2025 - Light Modern 3D</title>
+  <title>Tennis-Rangliste 2025 - Leicht modern 3D</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
@@ -211,31 +211,31 @@
 </head>
 <body>
   <div class="container three-d">
-    <h2 class="text-center mb-4">Tennis Ranking List 2025</h2>
+    <h2 class="text-center mb-4">Tennis-Rangliste 2025</h2>
     <div class="legend">
       <div class="legend-item">
         <div class="legend-color" style="background: linear-gradient(145deg, #ffa500, #ff8c00); border-color: #ff8c00;"></div>
-        Available
+        Verfügbar
       </div>
       <div class="legend-item">
         <div class="legend-color" style="background: linear-gradient(145deg, #e6ffe6, #ccffcc); border-color: #28a745;"></div>
-        Challenger
+        Herausforderer
       </div>
       <div class="legend-item">
         <div class="legend-color" style="background: linear-gradient(145deg, #ffe6e6, #ffcccc); border-color: #dc3545;"></div>
-        Opponent
+        Gegner
       </div>
       <div class="legend-item">
         <div class="legend-color" style="background: linear-gradient(145deg, #fff5cc, #fff0b3); border-color: #ffc107;"></div>
-        In Challenge
+        In Herausforderung
       </div>
       <div class="legend-item">
         <div class="legend-color" style="background: linear-gradient(145deg, #e6e6e6, #cccccc); border-color: #6c757d;"></div>
-        Blocked
+        Gesperrt
       </div>
       <div class="legend-item unavailable">
         <div class="legend-color" style="background: #ffffff; border-color: #cccccc;"></div>
-        Unavailable
+        Nicht verfügbar
       </div>
     </div>
 
@@ -250,117 +250,117 @@
                      class="player {% if not player['available'] %}unavailable{% endif %} {% if player['in_challenge'] %}in-challenge{% endif %} {% if player.blocked %}blocked{% endif %}"
                      data-player-id="{{ player['id'] }}">
                   <div class="player-info">
-                    Rank {{ player['rank'] }}<br>{{ player['name'] }}
+                    Rang {{ player['rank'] }}<br>{{ player['name'] }}
                   </div>
                   <div class="availability-toggle {% if player['available'] %}available{% endif %}" data-player-id="{{ player['id'] }}"></div>
                 </div>
               {% else %}
-                <div class="player missing">Missing Player</div>
+                <div class="player missing">Spieler fehlt</div>
               {% endif %}
             {% endfor %}
           </div>
         {% endfor %}
       {% else %}
-        <p>No players found. Please load player data.</p>
+        <p>Keine Spieler gefunden. Bitte laden Sie die Spieldaten.</p>
       {% endif %}
     </div>
 
     <!-- Challenge Form -->
     <form id="challengeForm">
       <div class="mb-3">
-        <label for="challenger" class="form-label">Challenger:</label>
+        <label for="challenger" class="form-label">Herausforderer:</label>
         <select class="form-select" id="challenger" name="challenger" required>
-          <option value="">Select Challenger...</option>
+          <option value="">Wählen Sie einen Herausforderer...</option>
         </select>
       </div>
       <div class="mb-3">
-        <label for="opponent" class="form-label">Opponent:</label>
+        <label for="opponent" class="form-label">Gegner:</label>
         <select class="form-select" id="opponent" name="opponent" required disabled>
-          <option value="">Select Opponent...</option>
+          <option value="">Wählen Sie einen Gegner...</option>
         </select>
       </div>
-      <button type="submit" class="btn btn-primary" id="challengeButton" disabled>Challenge</button>
+      <button type="submit" class="btn btn-primary" id="challengeButton" disabled>Herausfordern</button>
     </form>
     <div id="challengeResult"></div>
 
     <!-- Active Challenges Section -->
     <div class="active-challenges">
-      <h4>Active Challenges</h4>
+      <h4>Aktive Herausforderungen</h4>
       <div id="active-challenges-list">
         {% if active_challenges %}
           {% for challenge in active_challenges %}
             <div class="challenge-entry">
-              <span class="challenge-names">{{ challenge['challenger_name'] }} vs {{ challenge['opponent_name'] }}</span>
-              <span class="challenge-deadline">(Deadline: {{ challenge['deadline'] }})</span>
+              <span class="challenge-names">{{ challenge['challenger_name'] }} gegen {{ challenge['opponent_name'] }}</span>
+              <span class="challenge-deadline">(Frist: {{ challenge['deadline'] }})</span>
             </div>
           {% endfor %}
         {% else %}
-          <p>No active challenges at the moment.</p>
+          <p>Derzeit keine aktiven Herausforderungen.</p>
         {% endif %}
       </div>
     </div>
 
     <!-- Blocked Players Section -->
     <div class="blocked-players">
-      <h4>Blocked Players</h4>
+      <h4>Gesperrte Spieler</h4>
       <div id="blocked-players-list">
         {% if blocked_challenger_players %}
           {% for player in blocked_challenger_players %}
             <div class="blocked-entry">
               <span class="blocked-name">{{ player['name'] }}</span>
-              <span class="blocked-info">- Blocked challenger until: {{ player['block_challenger_until'] }}</span>
+              <span class="blocked-info">- Herausforderer gesperrt bis: {{ player['block_challenger_until'] }}</span>
             </div>
           {% endfor %}
         {% else %}
-          <p>No players blocked from challenging.</p>
+          <p>Keine Spieler von der Herausforderung ausgeschlossen.</p>
         {% endif %}
         <br>
         {% if blocked_opponent_players %}
           {% for player in blocked_opponent_players %}
             <div class="blocked-entry">
               <span class="blocked-name">{{ player['name'] }}</span>
-              <span class="blocked-info">- Blocked opponent until: {{ player['block_opponent_until'] }}</span>
+              <span class="blocked-info">- Gegner gesperrt bis: {{ player['block_opponent_until'] }}</span>
             </div>
           {% endfor %}
         {% else %}
-          <p>No players blocked from being challenged.</p>
+          <p>Keine Spieler als Gegner gesperrt.</p>
         {% endif %}
       </div>
     </div>
 
     <!-- Unavailable Players Section -->
     <div class="unavailable-players">
-      <h4>Unavailable Players</h4>
+      <h4>Nicht verfügbare Spieler</h4>
       <div id="unavailable-players-list">
         {% if unavailable_players %}
           {% for player in unavailable_players %}
             <div class="unavailable-entry">
               <span class="unavailable-name">{{ player['name'] }}</span>
-              <span class="unavailable-info">not available since: {{ player['unavailable_since'] or 'N/A' }}</span>
+              <span class="unavailable-info">nicht verfügbar seit: {{ player['unavailable_since'] or 'N/A' }}</span>
             </div>
           {% endfor %}
         {% else %}
-          <p>All players are currently available.</p>
+          <p>Alle Spieler sind derzeit verfügbar.</p>
         {% endif %}
       </div>
     </div>
 
     <!-- New Player Challenge Section -->
     <div class="newplayer-challenge mt-4">
-      <h4>New Player Challenge</h4>
+      <h4>Neue Spieler-Herausforderung</h4>
       <div class="card p-3">
         <div class="mb-3">
-          <label for="newplayer" class="form-label">New Player:</label>
-          <input type="text" class="form-control" id="newplayer" name="newplayer" placeholder="Enter name" />
+          <label for="newplayer" class="form-label">Neuer Spieler:</label>
+          <input type="text" class="form-control" id="newplayer" name="newplayer" placeholder="Name eingeben" />
         </div>
         <div class="mb-3">
-          <label for="newplayer-opponent" class="form-label">Select Opponent (Rank 11-35):</label>
+          <label for="newplayer-opponent" class="form-label">Wählen Sie einen Gegner (Rang 11-35):</label>
           <select class="form-select" id="newplayer-opponent" name="newplayer-opponent">
-            <option value="">Please select...</option>
+            <option value="">Bitte auswählen...</option>
           </select>
         </div>
         <div class="mb-3">
-          <button type="button" class="btn btn-primary" id="newplayer-challenge" disabled>New Player Challenge</button>
+          <button type="button" class="btn btn-primary" id="newplayer-challenge" disabled>Neue Spieler-Herausforderung</button>
         </div>
         <div id="newplayer-result" class="alert" style="display: none;"></div>
       </div>
@@ -382,23 +382,23 @@
           .then((res) => res.json())
           .then((players) => {
             const challengerSelect = document.getElementById("challenger");
-            challengerSelect.innerHTML = '<option value="">Select Challenger...</option>';
+            challengerSelect.innerHTML = '<option value="">Wählen Sie einen Herausforderer...</option>';
             players.forEach((p) => {
               if (p.available && !p.in_challenge && !p.block_challenger) {
                 const opt = document.createElement("option");
                 opt.value = p.id;
-                opt.textContent = `${p.name} (Rank ${p.rank})`;
+                opt.textContent = `${p.name} (Rang ${p.rank})`;
                 challengerSelect.appendChild(opt);
               }
             });
             const opponentSelect = document.getElementById("newplayer-opponent");
-            opponentSelect.innerHTML = '<option value="">Please select...</option>';
+            opponentSelect.innerHTML = '<option value="">Bitte auswählen...</option>';
             players
               .filter((p) => p.rank >= 11 && p.rank <= 35 && p.available && !p.in_challenge && !p.block_opponent)
               .forEach((p) => {
                 const opt = document.createElement("option");
                 opt.value = p.id;
-                opt.textContent = `${p.name} (Rank ${p.rank})`;
+                opt.textContent = `${p.name} (Rang ${p.rank})`;
                 opponentSelect.appendChild(opt);
               });
           });
@@ -433,7 +433,7 @@
       // Initialize Socket.IO and listen for update events
       var socket = io();
       socket.on("update", function (data) {
-        console.log("Received update event", data);
+        console.log("Update-Ereignis erhalten", data);
         pollData();
       });
 
@@ -447,7 +447,7 @@
         const opponentId = $("#opponent").val();
         if (!challengerId || !opponentId) return;
         $.post("/challenge", { challenger: challengerId, opponent: opponentId }, function (response) {
-          $("#challengeResult").html(`<div class="alert alert-success">${response.message} (at ${response.timestamp})</div>`);
+          $("#challengeResult").html(`<div class="alert alert-success">${response.message} (um ${response.timestamp})</div>`);
           resetPlayerColors();
           $("#challenger, #opponent").val("");
           $("#opponent").prop("disabled", true);
@@ -466,17 +466,17 @@
           $("#player-" + challengerId).addClass("challenger");
           $.post("/eligible_opponents", { challenger_id: challengerId }, function (data) {
             const opponentSelect = document.getElementById("opponent");
-            opponentSelect.innerHTML = '<option value="">Select Opponent...</option>';
+            opponentSelect.innerHTML = '<option value="">Wählen Sie einen Gegner...</option>';
             data.forEach((o) => {
               const opt = document.createElement("option");
               opt.value = o.id;
-              opt.textContent = `${o.name} (Rank ${o.rank})`;
+              opt.textContent = `${o.name} (Rang ${o.rank})`;
               opponentSelect.appendChild(opt);
             });
             opponentSelect.disabled = opponentSelect.options.length <= 1;
           });
         } else {
-          $("#opponent").html('<option value="">Select Opponent...</option>').prop("disabled", true);
+          $("#opponent").html('<option value="">Wählen Sie einen Gegner...</option>').prop("disabled", true);
           $("#challengeButton").prop("disabled", true);
         }
       });
@@ -515,12 +515,12 @@
               }
               pollData();
             } else {
-              alert("Error toggling availability: " + response.message);
+              alert("Fehler beim Umschalten der Verfügbarkeit: " + response.message);
             }
           },
           error: function (xhr, status, error) {
-            console.error("Error:", error);
-            alert("An error occurred while toggling availability.");
+            console.error("Fehler:", error);
+            alert("Beim Umschalten der Verfügbarkeit ist ein Fehler aufgetreten.");
           },
         });
       });
@@ -550,7 +550,7 @@
         var newplayerName = $("#newplayer").val().trim();
         var opponentId = $("#newplayer-opponent").val();
         if (!newplayerName || !opponentId) {
-          alert("Please enter a valid new player name and select an opponent.");
+          alert("Bitte geben Sie einen gültigen neuen Spielernamen ein und wählen Sie einen Gegner aus.");
           return;
         }
         $.post("/newplayer_challenge", { newplayer_name: newplayerName, opponent_id: opponentId }, function (response) {
@@ -562,7 +562,7 @@
           $("#newplayer-challenge").prop("disabled", true);
         }).fail(function (xhr) {
           var resultDiv = $("#newplayer-result");
-          resultDiv.removeClass("alert-danger alert-success").addClass("alert-danger").html(xhr.responseJSON.error || "An error occurred.").show();
+          resultDiv.removeClass("alert-danger alert-success").addClass("alert-danger").html(xhr.responseJSON.error || "Es ist ein Fehler aufgetreten.").show();
         });
       });
     });
@@ -573,7 +573,7 @@
     <div class="container">
       <div class="row">
         <div class="col-md-6 mb-3 mb-md-0">
-          <h5>Contact Information</h5>
+          <h5>Kontaktinformationen</h5>
           <p>
             Matthias Stecher<br />
             <a href="mailto:matthias.stecher@hpe.com">matthias.stecher@hpe.com</a><br />
@@ -581,16 +581,16 @@
           </p>
         </div>
         <div class="col-md-6">
-          <h5>Legal Information</h5>
+          <h5>Rechtliche Informationen</h5>
           <p>
-            © 2025 Matthias Stecher. The content of this website is subject to copyright.<br />
-            Disclaimer: No liability for errors or delays in rankings.
+            © 2025 Matthias Stecher. Der Inhalt dieser Webseite ist urheberrechtlich geschützt.<br />
+            Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.
           </p>
         </div>
       </div>
       <div class="row">
         <div class="col-12 text-center mt-3">
-          <small>Version: 1.53  •  March 04, 2025</small>
+          <small>Version: 1.54G  •  05. März 2025</small>
         </div>
       </div>
     </div>
