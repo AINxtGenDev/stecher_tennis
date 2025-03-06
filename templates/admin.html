@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Admin Panel</title>
+  <title>Administrationsbereich</title>
   <style>
     /* Global Styles using lemon yellow/grey theme with 3D effects */
     :root {
@@ -200,7 +200,7 @@
 </head>
 <body>
   <header>
-    <h1>Pending Challenges</h1>
+    <h1>Ausstehende Herausforderungen</h1>
   </header>
   <main>
     <!-- Wrap challenges in a container to allow dynamic updating -->
@@ -208,25 +208,25 @@
       {% for challenge in challenges %}
         <div class="challenge-container" data-challenge-id="{{ challenge.id }}">
           <p>
-            {{ challenge.challenger_name }} vs {{ challenge.opponent_name }} 
-            (Deadline: {{ challenge.deadline }})
+            {{ challenge.challenger_name }} gegen {{ challenge.opponent_name }} 
+            (Frist: {{ challenge.deadline }})
           </p>
           <form class="result-form" method="POST" action="/submit_result">
             <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
-            <label for="result-{{ challenge.id }}">Result:</label>
+            <label for="result-{{ challenge.id }}">Ergebnis:</label>
             <select id="result-{{ challenge.id }}" name="result">
-              <option value="challenger_wins">{{ challenge.challenger_name }} Wins</option>
-              <option value="opponent_wins">{{ challenge.opponent_name }} Wins</option>
-              <option value="not_happened">Not Happened</option>
+              <option value="challenger_wins">{{ challenge.challenger_name }} gewinnt</option>
+              <option value="opponent_wins">{{ challenge.opponent_name }} gewinnt</option>
+              <option value="not_happened">Nicht stattgefunden</option>
             </select>
-            <button type="submit">Submit Result</button>
+            <button type="submit">Ergebnis absenden</button>
           </form>
         </div>
       {% endfor %}
       
       {% if not challenges %}
         <div class="no-challenges">
-          No pending challenges at this time.
+          Derzeit keine ausstehenden Herausforderungen.
         </div>
       {% endif %}
     </div>
@@ -260,7 +260,7 @@
               add3DEffects();
             }
           } catch (error) {
-            console.error("Error updating challenges:", error);
+            console.error("Fehler beim Aktualisieren der Herausforderungen:", error);
           }
         });
       }
@@ -277,21 +277,21 @@
       
       // Socket.IO event handlers
       socket.on("connect", function() {
-        console.log("Connected to server");
+        console.log("Mit dem Server verbunden");
         updateChallenges();
       });
       
       socket.on("update", function(data) {
-        console.log("Received update event", data);
+        console.log("Update-Ereignis erhalten", data);
         updateChallenges();
       });
       
       socket.on("connect_error", function(error) {
-        console.error("Connection error:", error);
+        console.error("Verbindungsfehler:", error);
       });
       
       socket.on("disconnect", function(reason) {
-        console.log("Disconnected:", reason);
+        console.log("Getrennt:", reason);
       });
       
       // Form submission delegation - use event delegation for forms
@@ -326,7 +326,7 @@
           }, 1000);
         }).fail(function(xhr, status, error) {
           // Error handling
-          console.error("Error submitting result:", error);
+          console.error("Fehler beim Absenden des Ergebnisses:", error);
           $container.css({
             'transform': 'translateZ(10px)',
             'opacity': '1',

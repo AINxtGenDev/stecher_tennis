@@ -397,7 +397,7 @@ def challenge():
         )
         db.commit()
         socketio.emit("update")
-        message = f"I, {challenger['name']} (Rank {challenger['rank']}), hereby challenge {opponent['name']} (Rank {opponent['rank']})."
+        message = f"Ich, {challenger['name']} (Rang {challenger['rank']}), fordere hiermit {opponent['name']} (Rang {opponent['rank']}) heraus."
         logger.info("Challenge created: %s", message)
         return jsonify({"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")})
     except sqlite3.Error:
