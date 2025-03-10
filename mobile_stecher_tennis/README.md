@@ -1,27 +1,10 @@
 # Mobile Stecher Tennis
 
-A Flutter-based mobile application for tennis ranking and ladder management.
+A Flutter-based mobile application for tennis ranking management.
 
 ## 📋 Overview
 
 Mobile Stecher Tennis is a comprehensive app designed to manage tennis challenges, track player rankings, and visualize the ranking pyramid. Perfect for tennis clubs and communities looking to organize competitive play.
-
-## 🚀 Getting Started
-
-This project is built with Flutter. To get started:
-
-1. Ensure you have Flutter installed on your machine
-2. Clone this repository
-3. Run `flutter pub get` to install dependencies
-4. Run `flutter run` to start the app on your connected device or emulator
-
-## 📚 Resources
-
-If you're new to Flutter, these resources will help you get started:
-
-- [Flutter Documentation](https://docs.flutter.dev/)
-- [Flutter Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-- [Flutter Online Tutorials](https://flutter.dev/docs/development)
 
 ## 🏗️ Project Structure
 
