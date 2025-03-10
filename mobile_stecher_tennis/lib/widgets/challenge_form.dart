@@ -11,45 +11,61 @@ class ChallengeForm extends StatefulWidget {
 }
 
 class _ChallengeFormState extends State<ChallengeForm> {
-  int? _selectedChallengerId;
-  int? _selectedOpponentId;
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context);
+    final selectedChallengerId = provider.selectedChallengerId;
+    final selectedOpponentId = provider.selectedOpponentId;
+
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Herausforderung erstellen',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 12),
+            _buildChallengerDropdown(provider),
+            const SizedBox(height: 8),
+            _buildOpponentDropdown(provider),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (selectedChallengerId != null && selectedOpponentId != null && !_isLoading)
+                    ? () => _submitChallenge(provider)
+                    : null,
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                )
+                    : const Text('Herausfordern'),
               ),
             ),
-            const SizedBox(height: 16),
-            _buildChallengerDropdown(),
-            const SizedBox(height: 12),
-            _buildOpponentDropdown(),
-            const SizedBox(height: 16),
-            _buildSubmitButton(),
             if (_errorMessage != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: Colors.red, fontSize: 12),
               ),
             ],
             if (_successMessage != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 _successMessage!,
-                style: const TextStyle(color: Colors.green),
+                style: const TextStyle(color: Colors.green, fontSize: 12),
               ),
             ],
           ],
@@ -58,42 +74,43 @@ class _ChallengeFormState extends State<ChallengeForm> {
     );
   }
 
-  Widget _buildChallengerDropdown() {
-    final provider = Provider.of<AppProvider>(context);
+  Widget _buildChallengerDropdown(AppProvider provider) {
     final availablePlayers = provider.availablePlayers;
+    final selectedChallengerId = provider.selectedChallengerId;
 
     return DropdownButtonFormField<int>(
       decoration: const InputDecoration(
         labelText: 'Herausforderer',
         border: OutlineInputBorder(),
       ),
-      value: _selectedChallengerId,
-      hint: const Text('Wählen Sie einen Herausforderer...'),
+      value: selectedChallengerId,
+      hint: const Text('Wählen Sie einen Herausforderer...', style: TextStyle(fontSize: 12)),
       isExpanded: true,
       items: availablePlayers.map((player) {
         return DropdownMenuItem<int>(
           value: player.id,
-          child: Text('${player.name} (Rang ${player.rank})'),
+          child: Text(
+              '${player.name} (Rang ${player.rank})',
+              style: const TextStyle(fontSize: 12)
+          ),
         );
       }).toList(),
       onChanged: (int? value) {
-        setState(() {
-          _selectedChallengerId = value;
-          _selectedOpponentId = null; // Reset opponent when challenger changes
-          _errorMessage = null;
-          _successMessage = null;
-        });
-
         if (value != null) {
-          provider.fetchEligibleOpponents(value);
+          provider.selectChallenger(value);
+          setState(() {
+            _errorMessage = null;
+            _successMessage = null;
+          });
         }
       },
     );
   }
 
-  Widget _buildOpponentDropdown() {
-    final provider = Provider.of<AppProvider>(context);
+  Widget _buildOpponentDropdown(AppProvider provider) {
     final eligibleOpponents = provider.eligibleOpponents;
+    final selectedChallengerId = provider.selectedChallengerId;
+    final selectedOpponentId = provider.selectedOpponentId;
     final isLoading = provider.status == LoadingStatus.loading;
 
     return DropdownButtonFormField<int>(
@@ -101,55 +118,46 @@ class _ChallengeFormState extends State<ChallengeForm> {
         labelText: 'Gegner',
         border: OutlineInputBorder(),
       ),
-      value: _selectedOpponentId,
+      value: selectedOpponentId,
       hint: Text(
-        _selectedChallengerId == null
+        selectedChallengerId == null
             ? 'Wählen Sie zuerst einen Herausforderer...'
             : isLoading
             ? 'Lade mögliche Gegner...'
             : eligibleOpponents.isEmpty
             ? 'Keine geeigneten Gegner verfügbar'
             : 'Wählen Sie einen Gegner...',
+        style: const TextStyle(fontSize: 12),
       ),
       isExpanded: true,
       items: eligibleOpponents.map((player) {
         return DropdownMenuItem<int>(
           value: player.id,
-          child: Text('${player.name} (Rang ${player.rank})'),
+          child: Text(
+            '${player.name} (Rang ${player.rank})',
+            style: const TextStyle(fontSize: 12),
+          ),
         );
       }).toList(),
-      onChanged: _selectedChallengerId == null || isLoading || eligibleOpponents.isEmpty
+      onChanged: selectedChallengerId == null || isLoading || eligibleOpponents.isEmpty
           ? null
           : (int? value) {
-        setState(() {
-          _selectedOpponentId = value;
-          _errorMessage = null;
-          _successMessage = null;
-        });
+        if (value != null) {
+          provider.selectOpponent(value);
+          setState(() {
+            _errorMessage = null;
+            _successMessage = null;
+          });
+        }
       },
     );
   }
 
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: (_selectedChallengerId != null && _selectedOpponentId != null && !_isLoading)
-            ? _submitChallenge
-            : null,
-        child: _isLoading
-            ? const SizedBox(
-          height: 20,
-          width: 20,
-          child: CircularProgressIndicator(color: Colors.white),
-        )
-            : const Text('Herausfordern'),
-      ),
-    );
-  }
+  Future<void> _submitChallenge(AppProvider provider) async {
+    final selectedChallengerId = provider.selectedChallengerId;
+    final selectedOpponentId = provider.selectedOpponentId;
 
-  Future<void> _submitChallenge() async {
-    if (_selectedChallengerId == null || _selectedOpponentId == null) {
+    if (selectedChallengerId == null || selectedOpponentId == null) {
       return;
     }
 
@@ -160,18 +168,14 @@ class _ChallengeFormState extends State<ChallengeForm> {
     });
 
     try {
-      final provider = Provider.of<AppProvider>(context, listen: false);
-      final challengerId = _selectedChallengerId!;
-      final opponentId = _selectedOpponentId!;
-
-      final challenger = provider.findPlayerById(challengerId);
-      final opponent = provider.findPlayerById(opponentId);
+      final challenger = provider.findPlayerById(selectedChallengerId);
+      final opponent = provider.findPlayerById(selectedOpponentId);
 
       if (challenger == null || opponent == null) {
         throw Exception('Spieler nicht gefunden');
       }
 
-      final result = await provider.createChallenge(challengerId, opponentId);
+      final result = await provider.createChallenge(selectedChallengerId, selectedOpponentId);
 
       if (result.containsKey('error')) {
         setState(() {
@@ -183,8 +187,6 @@ class _ChallengeFormState extends State<ChallengeForm> {
 
       setState(() {
         _successMessage = 'Ich, ${challenger.name} (Rang ${challenger.rank}), fordere hiermit ${opponent.name} (Rang ${opponent.rank}) heraus.';
-        _selectedChallengerId = null;
-        _selectedOpponentId = null;
         _isLoading = false;
       });
 

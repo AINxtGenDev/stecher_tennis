@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_provider.dart';
 import '../widgets/player_pyramid.dart';
@@ -18,6 +19,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isExpanded = true;
+
   @override
   void initState() {
     super.initState();
@@ -43,12 +46,14 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/db_settings');
             },
+            tooltip: 'Datenbankeinstellungen',
           ),
           IconButton(
             icon: const Icon(Icons.admin_panel_settings),
             onPressed: () {
               Navigator.pushNamed(context, '/admin');
             },
+            tooltip: 'Administrationsbereich',
           ),
         ],
       ),
@@ -61,12 +66,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   LoadingAnimationWidget.staggeredDotsWave(
                     color: Colors.orange,
-                    size: 50,
+                    size: 40,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   const Text(
-                    'Loading player data...',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    'Lade Spielerdaten...',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
@@ -81,18 +86,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(
                     Icons.error_outline,
                     color: Colors.red,
-                    size: 60,
+                    size: 50,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error: ${provider.errorMessage}',
-                    style: const TextStyle(color: Colors.red),
+                    'Fehler: ${provider.errorMessage}',
+                    style: const TextStyle(color: Colors.red, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _refreshData,
-                    child: const Text('Retry'),
+                    child: const Text('Erneut versuchen'),
                   ),
                 ],
               ),
@@ -102,29 +107,61 @@ class _HomeScreenState extends State<HomeScreen> {
           return RefreshIndicator(
             onRefresh: _refreshData,
             child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: const [
+              padding: const EdgeInsets.all(12),
+              children: [
                 // Player pyramid visualization
-                PlayerPyramid(),
+                const PlayerPyramid(),
 
                 // Challenge form
-                ChallengeForm(),
+                const ChallengeForm(),
 
                 // Active challenges section
-                ActiveChallenges(),
+                const ActiveChallenges(),
 
-                // Blocked players section
-                BlockedPlayers(),
+                // Expandable sections - collapsible for better space management
+                ExpansionPanelList(
+                  elevation: 1,
+                  expandedHeaderPadding: EdgeInsets.zero,
+                  expansionCallback: (int index, bool isExpanded) {
+                    setState(() {
+                      _isExpanded = !isExpanded;
+                    });
+                  },
+                  children: [
+                    ExpansionPanel(
+                      headerBuilder: (context, isExpanded) {
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Gesperrte & Nicht verfügbare Spieler',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                      body: const Column(
+                        children: [
+                          // Blocked players section
+                          BlockedPlayers(),
 
-                // Unavailable players section
-                UnavailablePlayers(),
+                          // Unavailable players section
+                          UnavailablePlayers(),
+                        ],
+                      ),
+                      isExpanded: _isExpanded,
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
 
                 // New player challenge section
-                NewPlayerChallenge(),
+                const NewPlayerChallenge(),
 
                 // Footer with contact information
-                SizedBox(height: 16),
-                _FooterWidget(),
+                const SizedBox(height: 10),
+                const _FooterWidget(),
               ],
             ),
           );
@@ -141,59 +178,74 @@ class _FooterWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Kontaktinformationen',
-              style: TextStyle(
-                fontSize: 18,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text('Matthias Stecher'),
+            const SizedBox(height: 6),
+            const Text('Matthias Stecher', style: TextStyle(fontSize: 12)),
             GestureDetector(
               onTap: () {
-                // Launch email app
-                // You'll need to implement url_launcher functionality here
+                _launchEmail('matthias.stecher@hpe.com');
               },
               child: const Text(
                 'matthias.stecher@hpe.com',
                 style: TextStyle(
+                  fontSize: 12,
                   color: Colors.blue,
                   decoration: TextDecoration.underline,
                 ),
               ),
             ),
-            const Text('Mobile: 0664 105 25 56'),
-            const SizedBox(height: 16),
-            const Text(
+            const Text('Mobile: 0664 105 25 56', style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 10),
+            Text(
               'Rechtliche Informationen',
-              style: TextStyle(
-                fontSize: 16,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             const Text(
               '© 2025 Matthias Stecher. Der Inhalt dieser App ist urheberrechtlich geschützt.',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 10),
             ),
             const Text(
               'Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.',
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: 10),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Version: 1.0.0 • März 2025',
-              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
-              textAlign: TextAlign.center,
+            const SizedBox(height: 6),
+            const Center(
+              child: Text(
+                'Version: 1.0.0 • März 2025',
+                style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _launchEmail(String emailAddress) async {
+    final Uri emailLaunchUri = Uri(
+      scheme: 'mailto',
+      path: emailAddress,
+    );
+
+    try {
+      await launchUrl(emailLaunchUri);
+    } catch (e) {
+      // Handle error - could not launch email app
+      debugPrint('Could not launch email: $e');
+    }
   }
 }

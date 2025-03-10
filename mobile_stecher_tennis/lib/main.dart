@@ -34,38 +34,57 @@ class MyApp extends StatelessWidget {
             cardColor: Colors.white,
             errorColor: Colors.red,
           ),
+          textTheme: const TextTheme(
+            // Heading styles
+            headlineMedium: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            // Body text styles
+            bodyLarge: TextStyle(fontSize: 14),
+            bodyMedium: TextStyle(fontSize: 13),
+            bodySmall: TextStyle(fontSize: 11, color: Colors.grey),
+          ),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
             elevation: 2,
+            titleTextStyle: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           cardTheme: const CardTheme(
-            elevation: 4,
+            elevation: 3,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(10)),
+              borderRadius: BorderRadius.all(Radius.circular(8)),
             ),
-            margin: EdgeInsets.symmetric(vertical: 8),
+            margin: EdgeInsets.symmetric(vertical: 6),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 13),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(color: Colors.grey),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               borderSide: const BorderSide(color: Colors.orange, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            labelStyle: const TextStyle(fontSize: 13),
+            hintStyle: const TextStyle(fontSize: 12),
           ),
         ),
         home: const SplashScreen(),
@@ -120,21 +139,21 @@ class _SplashScreenState extends State<SplashScreen> {
             const Text(
               'Tennis Ladder',
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.orange,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             LoadingAnimationWidget.staggeredDotsWave(
               color: Colors.orange,
-              size: 50,
+              size: 40,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'Loading data...',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 color: Colors.grey,
               ),
             ),

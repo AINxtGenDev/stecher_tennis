@@ -13,21 +13,18 @@ class PlayerPyramid extends StatelessWidget {
       builder: (context, provider, child) {
         return Card(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Spieler-Pyramide',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
                 _buildLegend(),
-                const SizedBox(height: 16),
-                _buildPyramid(provider.players),
+                const SizedBox(height: 12),
+                _buildPyramid(context, provider),
               ],
             ),
           ),
@@ -38,11 +35,11 @@ class PlayerPyramid extends StatelessWidget {
 
   Widget _buildLegend() {
     return Wrap(
-      spacing: 16,
-      runSpacing: 8,
+      spacing: 12,
+      runSpacing: 6,
       children: [
         _legendItem(
-          color: Colors.orange,
+          color: Colors.orange.shade300,
           label: 'Verfügbar',
         ),
         _legendItem(
@@ -55,7 +52,7 @@ class PlayerPyramid extends StatelessWidget {
         ),
         _legendItem(
           color: Colors.amber.shade200,
-          label: 'In Herausforderung',
+          label: 'In Challenge',
         ),
         _legendItem(
           color: Colors.grey.shade300,
@@ -79,28 +76,28 @@ class PlayerPyramid extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 16,
-          height: 16,
+          width: 12,
+          height: 12,
           decoration: BoxDecoration(
             color: color,
             border: Border.all(color: borderColor ?? color.darker()),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 3),
         Text(
           label,
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 11),
         ),
       ],
     );
   }
 
-  Widget _buildPyramid(List<Player> players) {
+  Widget _buildPyramid(BuildContext context, AppProvider provider) {
     // Define the pyramid structure (players per row)
     const List<int> pyramidRows = [1, 2, 3, 4, 5, 6, 7, 8];
 
-    final sortedPlayers = List<Player>.from(players);
+    final sortedPlayers = List<Player>.from(provider.players);
     sortedPlayers.sort((a, b) => a.rank.compareTo(b.rank));
 
     List<Widget> rows = [];
@@ -111,10 +108,16 @@ class PlayerPyramid extends StatelessWidget {
 
       for (int i = 0; i < rowSize; i++) {
         if (playerIndex < sortedPlayers.length) {
+          final player = sortedPlayers[playerIndex];
+          final isHighlighted = player.id == provider.selectedChallengerId;
+          final isOpponent = player.id == provider.selectedOpponentId;
+
           rowPlayers.add(
             Expanded(
               child: PlayerTile(
-                player: sortedPlayers[playerIndex],
+                player: player,
+                isHighlighted: isHighlighted,
+                isOpponent: isOpponent,
               ),
             ),
           );
@@ -124,11 +127,17 @@ class PlayerPyramid extends StatelessWidget {
           rowPlayers.add(
             const Expanded(
               child: SizedBox(
-                height: 80,
+                height: 70,
                 child: Card(
                   color: Colors.grey,
                   child: Center(
-                    child: Text('Spieler fehlt', style: TextStyle(color: Colors.white)),
+                    child: Text(
+                      'Fehlt',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -143,7 +152,7 @@ class PlayerPyramid extends StatelessWidget {
           children: rowPlayers,
         ),
       );
-      rows.add(const SizedBox(height: 8));
+      rows.add(const SizedBox(height: 6));
     }
 
     return Column(children: rows);
@@ -166,42 +175,44 @@ class PlayerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Show player details or selection for challenge
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${player.name} (Rang ${player.rank}) ausgewählt'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
+        // Show player details on tap
+        _showPlayerDetails(context);
       },
       child: Container(
-        height: 80,
-        margin: const EdgeInsets.all(4),
+        height: 70,
+        margin: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: _getPlayerColor(),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(6),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 3,
-              offset: const Offset(0, 2),
+              color: Colors.black.withAlpha(26),  // Using withAlpha instead of withOpacity
+              spreadRadius: 0.5,
+              blurRadius: 2,
+              offset: const Offset(0, 1),
             ),
           ],
+          // Add a colored border for selected players
+          border: isHighlighted || isOpponent
+              ? Border.all(
+            color: isHighlighted ? Colors.green : Colors.red,
+            width: 2,
+          )
+              : null,
         ),
         child: Stack(
           children: [
             // Player information
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(3.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Rang ${player.rank}',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -209,7 +220,7 @@ class PlayerTile extends StatelessWidget {
                       player.name,
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12),
+                      style: const TextStyle(fontSize: 10),
                     ),
                   ],
                 ),
@@ -218,17 +229,16 @@ class PlayerTile extends StatelessWidget {
 
             // Availability toggle button
             Positioned(
-              top: 4,
-              right: 4,
+              top: 3,
+              right: 3,
               child: GestureDetector(
                 onTap: () {
                   // Toggle player availability
-                  final provider = Provider.of<AppProvider>(context, listen: false);
-                  provider.toggleAvailability(player.id);
+                  _toggleAvailability(context);
                 },
                 child: Container(
-                  width: 12,
-                  height: 12,
+                  width: 10,
+                  height: 10,
                   decoration: BoxDecoration(
                     color: player.available ? Colors.white : Colors.grey.shade300,
                     border: Border.all(
@@ -243,6 +253,67 @@ class PlayerTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showPlayerDetails(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(player.name, style: const TextStyle(fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Rang: ${player.rank}', style: const TextStyle(fontSize: 14)),
+            Text('Status: ${player.available ? 'Verfügbar' : 'Nicht verfügbar'}',
+                style: const TextStyle(fontSize: 14)),
+            if (player.inChallenge)
+              const Text('In aktiver Herausforderung',
+                  style: TextStyle(fontSize: 14, color: Colors.orange)),
+          ],
+        ),
+        actions: [
+          // Select as challenger button
+          if (player.available && !player.inChallenge && !player.blockChallenger)
+            TextButton(
+              onPressed: () {
+                provider.selectChallenger(player.id);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Als Herausforderer', style: TextStyle(fontSize: 13)),
+            ),
+
+          // Select as opponent button if a challenger is already selected
+          if (player.available &&
+              !player.inChallenge &&
+              !player.blockOpponent &&
+              provider.selectedChallengerId != null &&
+              provider.selectedChallengerId != player.id)
+            TextButton(
+              onPressed: () {
+                provider.selectOpponent(player.id);
+                Navigator.of(context).pop();
+              },
+              child: const Text('Als Gegner', style: TextStyle(fontSize: 13)),
+            ),
+
+          // Cancel button
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Schließen', style: TextStyle(fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toggleAvailability(BuildContext context) {
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    provider.toggleAvailability(player.id);
   }
 
   Color _getPlayerColor() {
@@ -261,15 +332,7 @@ class PlayerTile extends StatelessWidget {
       return Colors.grey.shade300;
     }
 
-    if (isHighlighted) {
-      return Colors.green.shade200;
-    }
-
-    if (isOpponent) {
-      return Colors.red.shade200;
-    }
-
-    return Colors.orange.shade200;
+    return Colors.orange.shade300;
   }
 }
 

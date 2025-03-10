@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
@@ -21,6 +22,14 @@ class AppProvider with ChangeNotifier {
   List<Challenge> _activeChallenges = [];
   bool _isInitialized = false;
 
+  // Selection state
+  int? _selectedChallengerId;
+  int? _selectedOpponentId;
+
+  // Debounce for frequent updates
+  Timer? _debounceTimer;
+  bool _hasPendingUpdates = false;
+
   // Getters
   LoadingStatus get status => _status;
   String? get errorMessage => _errorMessage;
@@ -29,20 +38,123 @@ class AppProvider with ChangeNotifier {
   List<Challenge> get activeChallenges => List.unmodifiable(_activeChallenges);
   bool get isInitialized => _isInitialized;
 
+  // Selection getters
+  int? get selectedChallengerId => _selectedChallengerId;
+  int? get selectedOpponentId => _selectedOpponentId;
+
+  // Cached & memoized filtered player lists for performance
+  late List<Player> _cachedAvailablePlayers;
+  late List<Player> _cachedUnavailablePlayers;
+  late List<Player> _cachedBlockedChallengers;
+  late List<Player> _cachedBlockedOpponents;
+  late List<Player> _cachedInChallengePlayers;
+  late List<Player> _cachedNewPlayers;
+  bool _needsFiltersRefresh = true;
+
   // Filtered player lists
-  List<Player> get availablePlayers => _players.where((p) => p.available && !p.inChallenge).toList();
-  List<Player> get unavailablePlayers => _players.where((p) => !p.available).toList();
-  List<Player> get blockedChallengers => _players.where((p) => p.blockChallenger).toList();
-  List<Player> get blockedOpponents => _players.where((p) => p.blockOpponent).toList();
-  List<Player> get inChallengePlayers => _players.where((p) => p.inChallenge).toList();
-  List<Player> get newPlayers => _players.where((p) => p.isNew).toList();
+  List<Player> get availablePlayers {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedAvailablePlayers;
+  }
+
+  List<Player> get unavailablePlayers {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedUnavailablePlayers;
+  }
+
+  List<Player> get blockedChallengers {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedBlockedChallengers;
+  }
+
+  List<Player> get blockedOpponents {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedBlockedOpponents;
+  }
+
+  List<Player> get inChallengePlayers {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedInChallengePlayers;
+  }
+
+  List<Player> get newPlayers {
+    if (_needsFiltersRefresh) _refreshFilters();
+    return _cachedNewPlayers;
+  }
 
   // Constructor
   AppProvider({required ApiService apiService}) : _apiService = apiService {
+    _initFilterCache();
     _socketService = SocketService(
       onUpdateCallback: () => refreshData(),
     );
     initialize();
+  }
+
+  // Selection methods
+  void selectChallenger(int id) {
+    if (_selectedChallengerId != id) {
+      _selectedChallengerId = id;
+      _selectedOpponentId = null;  // Reset opponent when challenger changes
+      fetchEligibleOpponents(id);
+      notifyListeners();
+    }
+  }
+
+  void selectOpponent(int id) {
+    if (_selectedOpponentId != id) {
+      _selectedOpponentId = id;
+      notifyListeners();
+    }
+  }
+
+  void clearSelections() {
+    if (_selectedChallengerId != null || _selectedOpponentId != null) {
+      _selectedChallengerId = null;
+      _selectedOpponentId = null;
+      _eligibleOpponents = [];
+      notifyListeners();
+    }
+  }
+
+  // Initialize filter caches
+  void _initFilterCache() {
+    _cachedAvailablePlayers = [];
+    _cachedUnavailablePlayers = [];
+    _cachedBlockedChallengers = [];
+    _cachedBlockedOpponents = [];
+    _cachedInChallengePlayers = [];
+    _cachedNewPlayers = [];
+    _needsFiltersRefresh = true;
+  }
+
+  // Refresh filter caches
+  void _refreshFilters() {
+    _cachedAvailablePlayers = _players.where(
+            (p) => p.available && !p.inChallenge
+    ).toList();
+
+    _cachedUnavailablePlayers = _players.where(
+            (p) => !p.available
+    ).toList();
+
+    _cachedBlockedChallengers = _players.where(
+            (p) => p.blockChallenger
+    ).toList();
+
+    _cachedBlockedOpponents = _players.where(
+            (p) => p.blockOpponent
+    ).toList();
+
+    _cachedInChallengePlayers = _players.where(
+            (p) => p.inChallenge
+    ).toList();
+
+    _cachedNewPlayers = _players.where(
+            (p) => p.isNew
+    ).toList();
+
+    _needsFiltersRefresh = false;
   }
 
   // Initialize the provider
@@ -55,13 +167,27 @@ class AppProvider with ChangeNotifier {
     _isInitialized = true;
   }
 
-  // Refresh all data from the API
+  // Refresh all data from the API with debounce
   Future<void> refreshData() async {
-    _logger.i('Refreshing data');
+    // Cancel existing timer if it's still active
+    if (_debounceTimer?.isActive ?? false) {
+      _hasPendingUpdates = true;
+      return;
+    }
 
     // Use a debounce mechanism to avoid multiple rapid refreshes
     if (_status == LoadingStatus.loading) {
-      _logger.i('Already refreshing, skipping this request');
+      _logger.i('Already refreshing, applying debounce');
+      _hasPendingUpdates = true;
+
+      // Set debounce timer to check for pending updates
+      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+        if (_hasPendingUpdates) {
+          _hasPendingUpdates = false;
+          refreshData();
+        }
+      });
+
       return;
     }
 
@@ -70,8 +196,8 @@ class AppProvider with ChangeNotifier {
     try {
       // Load data in parallel for efficiency
       await Future.wait([
-        fetchPlayers(),
-        fetchActiveChallenges(),
+        _fetchPlayers(),
+        _fetchActiveChallenges(),
       ]);
 
       _setSuccess();
@@ -101,12 +227,38 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fetch all players
+  // Fetch all players (internal method)
+  Future<void> _fetchPlayers() async {
+    try {
+      final players = await _apiService.getPlayers();
+      if (!listEquals(_players, players)) {
+        _players = players;
+        _needsFiltersRefresh = true;
+      }
+    } catch (e) {
+      _logger.e('Error fetching players: $e');
+      rethrow;
+    }
+  }
+
+  // Fetch active challenges (internal method)
+  Future<void> _fetchActiveChallenges() async {
+    try {
+      final challenges = await _apiService.getActiveChallenges();
+      if (!listEquals(_activeChallenges, challenges)) {
+        _activeChallenges = challenges;
+      }
+    } catch (e) {
+      _logger.e('Error fetching active challenges: $e');
+      // Don't throw - this is secondary data
+    }
+  }
+
+  // Fetch all players (public method - can be called separately)
   Future<void> fetchPlayers() async {
     try {
       _setLoading();
-      final players = await _apiService.getPlayers();
-      _players = players;
+      await _fetchPlayers();
       _setSuccess();
     } catch (e) {
       _logger.e('Error fetching players: $e');
@@ -114,7 +266,7 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  // Fetch active challenges
+  // Fetch active challenges (public method - can be called separately)
   Future<void> fetchActiveChallenges() async {
     try {
       final challenges = await _apiService.getActiveChallenges();
@@ -144,6 +296,11 @@ class AppProvider with ChangeNotifier {
     try {
       _setLoading();
       final result = await _apiService.createChallenge(challengerId, opponentId);
+
+      // Clear selections after successful challenge
+      _selectedChallengerId = null;
+      _selectedOpponentId = null;
+
       await refreshData();
       _setSuccess();
       return result;
@@ -251,6 +408,7 @@ class AppProvider with ChangeNotifier {
     _logger.i('Disposing AppProvider');
     _socketService.dispose();
     _apiService.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 }
