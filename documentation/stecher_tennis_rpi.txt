@@ -45,6 +45,7 @@ After=network.target
 
 [Service]
 User=stecher
+Group=stecher
 WorkingDirectory=/home/stecher/stecher_tennis
 ExecStart=/bin/bash -c 'source ./bin/activate && gunicorn --worker-class eventlet -w $(nproc) --bind 127.0.0.1:5000 --timeout 120 app:app'
 Restart=always
@@ -52,7 +53,25 @@ RestartSec=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=stecher-tennis
+
+# Environment configuration
 Environment=PYTHONUNBUFFERED=1
+Environment=FLASK_ENV=production
+Environment=SECRET_KEY=your-secure-key-here
+
+# Resource limits (updated directives)
+MemoryMax=2G
+CPUQuota=80%
+LimitNOFILE=65536
+
+# Security enhancements
+PrivateTmp=true
+ProtectHome=false
+ProtectSystem=full
+NoNewPrivileges=true
+
+# Startup configuration
+TimeoutStartSec=60
 
 [Install]
 WantedBy=multi-user.target
@@ -66,12 +85,25 @@ sudo systemctl enable stecher-tennis.service
 
 # Start the service now
 sudo systemctl start stecher-tennis.service
+sudo systemctl restart stecher-tennis
 
 # Check service status
 sudo systemctl status stecher-tennis.service
 
-# View logs if needed
-sudo journalctl -u stecher-tennis.service
+# View live logs (continuous monitoring)
+sudo journalctl -u stecher-tennis.service -f
+
+# See only the most recent entries
+sudo journalctl -u stecher-tennis.service -n 100
+
+# Show only error priority logs
+sudo journalctl -u stecher-tennis.service -p err
+
+# View logs since a specific time
+sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00"
+
+# Show logs between specific times
+sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00" --until="2025-03-11 09:00:00"
 
 
 ##########################################
