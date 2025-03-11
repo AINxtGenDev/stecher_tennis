@@ -31,6 +31,9 @@ python3 app.py --host=0.0.0.0 --port=5000
 source ./bin/activate
 pip install gunicorn eventlet
 
+# In app.py
+socketio = SocketIO(app, async_mode="eventlet")  # Match with gunicorn worker class
+
 ##########################################
 ## Setting Up Automatic Startup
 ##########################################
@@ -43,11 +46,13 @@ After=network.target
 [Service]
 User=stecher
 WorkingDirectory=/home/stecher/stecher_tennis
-ExecStart=/bin/bash -c 'source ./bin/activate && gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:5000 app:app'
+ExecStart=/bin/bash -c 'source ./bin/activate && gunicorn --worker-class eventlet -w $(nproc) --bind 127.0.0.1:5000 --timeout 120 app:app'
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
+SyslogIdentifier=stecher-tennis
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target

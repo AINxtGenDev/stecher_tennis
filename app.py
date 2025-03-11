@@ -13,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
-app.secret_key = "your-secret-key"  # In production, load this from an environment variable
+app.secret_key = (
+    "your-secret-key"  # In production, load this from an environment variable
+)
 
-# Initialize SocketIO
-socketio = SocketIO(app, async_mode="threading")
+#######################################################
+# Initialize SocketIO - use this for development only
+# socketio = SocketIO(app, async_mode="threading")
+
+# Initialize SocketIO - use this for production
+#######################################################
+socketio = SocketIO(app, async_mode="eventlet")
 
 
 def get_current_time():
@@ -31,7 +38,10 @@ def get_current_time():
             # Expected format: "2025-03-13-21-13-23"
             return datetime.strptime(test_date_str, "%Y-%m-%d-%H-%M-%S")
         except Exception as e:
-            logger.exception("Invalid TEST_DATE format: %s. Falling back to system time.", test_date_str)
+            logger.exception(
+                "Invalid TEST_DATE format: %s. Falling back to system time.",
+                test_date_str,
+            )
     return datetime.now()
 
 
@@ -81,7 +91,14 @@ def init_db():
                 for player in data["players"]:
                     db.execute(
                         "INSERT INTO players (id, name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?, ?)",
-                        (player["id"], player["name"], int(player["is_available"]), player["rank"], None, 0),
+                        (
+                            player["id"],
+                            player["name"],
+                            int(player["is_available"]),
+                            player["rank"],
+                            None,
+                            0,
+                        ),
                     )
             db.commit()
             logger.info("Loaded initial players from JSON.")
@@ -189,7 +206,9 @@ def eligible_opponents_for(challenger):
         cur = db.execute(query, parameters)
         eligible = cur.fetchall()
         eligible = [p for p in eligible if p["id"] not in active_ids]
-        logger.info("Eligible opponents for rank %s (<=10): %d", challenger_rank, len(eligible))
+        logger.info(
+            "Eligible opponents for rank %s (<=10): %d", challenger_rank, len(eligible)
+        )
         return eligible
 
     if 11 <= challenger_rank <= 15:
@@ -215,11 +234,14 @@ def eligible_opponents_for(challenger):
         if len(eligible) >= max_count:
             break
     eligible = sorted(eligible, key=lambda p: p["rank"])
-    logger.info("Eligible opponents for rank %s (>=11): %d", challenger_rank, len(eligible))
+    logger.info(
+        "Eligible opponents for rank %s (>=11): %d", challenger_rank, len(eligible)
+    )
     return eligible
 
 
 # --------------- ROUTES ---------------
+
 
 @app.route("/")
 def home():
@@ -279,7 +301,9 @@ def index():
     blocked_challenger_players = get_blocked_challenger_players()
     blocked_opponent_players = get_blocked_opponent_players()
     unavailable_players = get_unavailable_players()
-    logger.info("Rendering index: players=%d, pyramid rows=%d", len(players_list), len(pyramid))
+    logger.info(
+        "Rendering index: players=%d, pyramid rows=%d", len(players_list), len(pyramid)
+    )
     return render_template(
         "index.html",
         pyramid=pyramid,
@@ -318,30 +342,36 @@ def get_players():
         block_opponent = False
         if p["block_challenger_until"]:
             try:
-                block_until = datetime.strptime(p["block_challenger_until"], "%Y-%m-%d %H:%M:%S")
+                block_until = datetime.strptime(
+                    p["block_challenger_until"], "%Y-%m-%d %H:%M:%S"
+                )
                 if current_time < block_until:
                     block_challenger = True
             except Exception:
                 pass
         if p["block_opponent_until"]:
             try:
-                block_until = datetime.strptime(p["block_opponent_until"], "%Y-%m-%d %H:%M:%S")
+                block_until = datetime.strptime(
+                    p["block_opponent_until"], "%Y-%m-%d %H:%M:%S"
+                )
                 if current_time < block_until:
                     block_opponent = True
             except Exception:
                 pass
 
         in_challenge = p["id"] in active_ids
-        players_list.append({
-            "id": p["id"],
-            "name": p["name"],
-            "rank": p["rank"],
-            "available": bool(p["available"]),
-            "unavailable_since": p["unavailable_since"],
-            "block_challenger": block_challenger,
-            "block_opponent": block_opponent,
-            "in_challenge": in_challenge,
-        })
+        players_list.append(
+            {
+                "id": p["id"],
+                "name": p["name"],
+                "rank": p["rank"],
+                "available": bool(p["available"]),
+                "unavailable_since": p["unavailable_since"],
+                "block_challenger": block_challenger,
+                "block_opponent": block_opponent,
+                "in_challenge": in_challenge,
+            }
+        )
     logger.info("get_players returning %d players", len(players_list))
     return jsonify(players_list)
 
@@ -361,13 +391,17 @@ def eligible_opponents():
     opponents = eligible_opponents_for(challenger)
     opponents_list = []
     for opp in opponents:
-        opponents_list.append({
-            "id": opp["id"],
-            "name": opp["name"],
-            "rank": opp["rank"],
-            "available": bool(opp["available"]),
-        })
-    logger.info("Eligible opponents for challenger %s: %d", challenger_id, len(opponents_list))
+        opponents_list.append(
+            {
+                "id": opp["id"],
+                "name": opp["name"],
+                "rank": opp["rank"],
+                "available": bool(opp["available"]),
+            }
+        )
+    logger.info(
+        "Eligible opponents for challenger %s: %d", challenger_id, len(opponents_list)
+    )
     return jsonify(opponents_list)
 
 
@@ -391,15 +425,21 @@ def challenge():
         deadline = timestamp + timedelta(days=10)
         db.execute(
             "INSERT INTO challenges (challenger_id, opponent_id, timestamp, deadline, resolved) VALUES (?, ?, ?, ?, ?)",
-            (challenger_id, opponent_id,
-             timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-             deadline.strftime("%Y-%m-%d %H:%M:%S"), 0),
+            (
+                challenger_id,
+                opponent_id,
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                deadline.strftime("%Y-%m-%d %H:%M:%S"),
+                0,
+            ),
         )
         db.commit()
         socketio.emit("update")
         message = f"Ich, {challenger['name']} (Rang {challenger['rank']}), fordere hiermit {opponent['name']} (Rang {opponent['rank']}) heraus."
         logger.info("Challenge created: %s", message)
-        return jsonify({"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")})
+        return jsonify(
+            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+        )
     except sqlite3.Error:
         logger.exception("Database error during challenge creation.")
         return jsonify({"error": "Internal server error."}), 500
@@ -423,7 +463,9 @@ def toggle_availability():
         if new_availability == 0:
             new_unavailable_since = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
         if new_availability == 1:
-            block_opponent_until = (get_current_time() + timedelta(days=3)).strftime("%Y-%m-%d %H:%M:%S")
+            block_opponent_until = (get_current_time() + timedelta(days=3)).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
         else:
             block_opponent_until = None
 
@@ -433,7 +475,9 @@ def toggle_availability():
         )
         db.commit()
         socketio.emit("update")
-        logger.info("Toggled availability for player %s to %s", player_id, new_availability)
+        logger.info(
+            "Toggled availability for player %s to %s", player_id, new_availability
+        )
         return jsonify({"success": True, "new_availability": new_availability})
     except sqlite3.Error:
         logger.exception("Error toggling availability.")
@@ -450,7 +494,9 @@ def submit_result():
 
     db = get_db()
     try:
-        cur = db.execute("SELECT * FROM challenges WHERE id = ? AND resolved = 0", (challenge_id,))
+        cur = db.execute(
+            "SELECT * FROM challenges WHERE id = ? AND resolved = 0", (challenge_id,)
+        )
         challenge_record = cur.fetchone()
         if not challenge_record:
             flash("Challenge not found or already resolved.", "danger")
@@ -466,42 +512,80 @@ def submit_result():
         block_until = (now + timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
 
         if result == "challenger_wins":
-            cur = db.execute("SELECT * FROM players WHERE id = ?", (challenge_record["challenger_id"],))
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?",
+                (challenge_record["challenger_id"],),
+            )
             challenger = cur.fetchone()
-            cur = db.execute("SELECT * FROM players WHERE id = ?", (challenge_record["opponent_id"],))
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?", (challenge_record["opponent_id"],)
+            )
             opponent = cur.fetchone()
             if challenger and opponent and challenger["rank"] > opponent["rank"]:
                 if challenger["rank"] == 36:
                     new_rank = opponent["rank"]
-                    db.execute("UPDATE players SET rank = ? WHERE id = ?", (new_rank, challenger["id"]))
-                    db.execute("UPDATE players SET rank = ? WHERE id = ?", (new_rank + 1, opponent["id"]))
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank, challenger["id"]),
+                    )
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank + 1, opponent["id"]),
+                    )
                 else:
                     old_challenger_rank = challenger["rank"]
                     new_rank = opponent["rank"]
-                    db.execute("UPDATE players SET rank = rank + 1 WHERE rank >= ? AND rank < ?", (new_rank, old_challenger_rank))
-                    db.execute("UPDATE players SET rank = ? WHERE id = ?", (new_rank, challenger["id"]))
+                    db.execute(
+                        "UPDATE players SET rank = rank + 1 WHERE rank >= ? AND rank < ?",
+                        (new_rank, old_challenger_rank),
+                    )
+                    db.execute(
+                        "UPDATE players SET rank = ? WHERE id = ?",
+                        (new_rank, challenger["id"]),
+                    )
                 flash("Rankings updated: Challenger wins.", "success")
             else:
                 flash("Invalid ranking update.", "warning")
-            db.execute("UPDATE players SET block_opponent_until = ? WHERE id = ?", (block_until, challenge_record["challenger_id"]))
-            db.execute("UPDATE players SET block_challenger_until = ? WHERE id = ?", (block_until, challenge_record["opponent_id"]))
+            db.execute(
+                "UPDATE players SET block_opponent_until = ? WHERE id = ?",
+                (block_until, challenge_record["challenger_id"]),
+            )
+            db.execute(
+                "UPDATE players SET block_challenger_until = ? WHERE id = ?",
+                (block_until, challenge_record["opponent_id"]),
+            )
         elif result == "opponent_wins":
-            cur = db.execute("SELECT * FROM players WHERE id = ?", (challenge_record["challenger_id"],))
+            cur = db.execute(
+                "SELECT * FROM players WHERE id = ?",
+                (challenge_record["challenger_id"],),
+            )
             challenger = cur.fetchone()
             flash("No ranking changes: Challenger lost.", "info")
-            db.execute("UPDATE players SET block_opponent_until = ? WHERE id = ?", (block_until, challenge_record["opponent_id"]))
-            db.execute("UPDATE players SET block_challenger_until = ? WHERE id = ?", (block_until, challenge_record["challenger_id"]))
+            db.execute(
+                "UPDATE players SET block_opponent_until = ? WHERE id = ?",
+                (block_until, challenge_record["opponent_id"]),
+            )
+            db.execute(
+                "UPDATE players SET block_challenger_until = ? WHERE id = ?",
+                (block_until, challenge_record["challenger_id"]),
+            )
         elif result == "not_happened":
             flash("Challenge marked as not happened. No ranking changes.", "info")
-            db.execute("UPDATE players SET block_challenger_until = NULL, block_opponent_until = NULL WHERE id IN (?, ?)",
-                       (challenge_record["challenger_id"], challenge_record["opponent_id"]))
+            db.execute(
+                "UPDATE players SET block_challenger_until = NULL, block_opponent_until = NULL WHERE id IN (?, ?)",
+                (challenge_record["challenger_id"], challenge_record["opponent_id"]),
+            )
         else:
             flash("Unknown result.", "danger")
 
-        cur = db.execute("SELECT id FROM players ORDER BY rank ASC, is_new DESC, rowid ASC")
+        cur = db.execute(
+            "SELECT id FROM players ORDER BY rank ASC, is_new DESC, rowid ASC"
+        )
         new_rank_value = 1
         for row in cur.fetchall():
-            db.execute("UPDATE players SET rank = ? WHERE id = ?", (new_rank_value, row["id"]))
+            db.execute(
+                "UPDATE players SET rank = ? WHERE id = ?", (new_rank_value, row["id"])
+            )
             new_rank_value += 1
 
         db.execute("DELETE FROM players WHERE rank > 36")
@@ -522,7 +606,14 @@ def newplayer_challenge():
         return jsonify({"error": "New player name and opponent must be provided."}), 400
 
     if len(newplayer_name) < 5 or re.search(r"\d", newplayer_name):
-        return jsonify({"error": "New player name must be at least 5 letters and contain no digits."}), 400
+        return (
+            jsonify(
+                {
+                    "error": "New player name must be at least 5 letters and contain no digits."
+                }
+            ),
+            400,
+        )
 
     db = get_db()
     try:
@@ -541,15 +632,21 @@ def newplayer_challenge():
         deadline = timestamp + timedelta(days=10)
         db.execute(
             "INSERT INTO challenges (challenger_id, opponent_id, timestamp, deadline, resolved) VALUES (?, ?, ?, ?, ?)",
-            (newplayer_id, opponent_id,
-             timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-             deadline.strftime("%Y-%m-%d %H:%M:%S"), 0),
+            (
+                newplayer_id,
+                opponent_id,
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                deadline.strftime("%Y-%m-%d %H:%M:%S"),
+                0,
+            ),
         )
         db.commit()
         socketio.emit("update")
         message = f"{newplayer_name} vs {opponent['name']} (Deadline: {deadline.strftime('%Y-%m-%d %H:%M:%S')})"
         logger.info("New player challenge created: %s", message)
-        return jsonify({"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")})
+        return jsonify(
+            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+        )
     except sqlite3.Error:
         db.rollback()
         logger.exception("Database error during new player challenge creation.")
@@ -579,12 +676,20 @@ def update_player():
         if not player:
             return jsonify({"success": False, "message": "Player not found."}), 404
 
-        cur = db.execute("SELECT * FROM players WHERE rank = ? AND id != ?", (new_rank, player_id))
+        cur = db.execute(
+            "SELECT * FROM players WHERE rank = ? AND id != ?", (new_rank, player_id)
+        )
         duplicate = cur.fetchone()
         if duplicate:
-            return jsonify({"success": False, "message": "Duplicate rank not allowed."}), 400
+            return (
+                jsonify({"success": False, "message": "Duplicate rank not allowed."}),
+                400,
+            )
 
-        db.execute("UPDATE players SET name = ?, rank = ? WHERE id = ?", (new_name, new_rank, player_id))
+        db.execute(
+            "UPDATE players SET name = ?, rank = ? WHERE id = ?",
+            (new_name, new_rank, player_id),
+        )
         db.commit()
         socketio.emit("update")
         logger.info("Player %s updated.", player_id)
@@ -610,7 +715,9 @@ def delete_player():
         cur = db.execute("SELECT id FROM players ORDER BY rank ASC, rowid ASC")
         new_rank = 1
         for row in cur.fetchall():
-            db.execute("UPDATE players SET rank = ? WHERE id = ?", (new_rank, row["id"]))
+            db.execute(
+                "UPDATE players SET rank = ? WHERE id = ?", (new_rank, row["id"])
+            )
             new_rank += 1
         db.commit()
         socketio.emit("update")
@@ -636,4 +743,3 @@ if __name__ == "__main__":
     with app.app_context():
         init_db()
     socketio.run(app, debug=True)
-
