@@ -1,11 +1,16 @@
 192.168.1.213
 user: stecher
-psw:  
+psw:
+
+https://192.168.1.213/stecher_start
+https://192.168.1.213/index
+https://192.168.1.213/admin
+https://192.168.1.213/db_settings
 
 ##########################################
 ## ssh & scp
 ##########################################
-ssh stecher@192.168.1.213 -v -o PreferredAuthentications=password -v
+ssh stecher@192.168.1.213 -o PreferredAuthentications=password -v
 
 scp -r -o PreferredAuthentications=password . stecher@192.168.1.213:~/stecher_tennis/
 
