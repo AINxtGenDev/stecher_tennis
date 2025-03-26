@@ -5,8 +5,13 @@ Miniconda
    cd ~/Downloads
    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
+   raspberry
+   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
+   
+   chmod +x Miniconda3-latest-Linux-aarch64.sh
+
 2) Run the installer
-   bash Miniconda3-latest-Linux-x86_64.sh
+   ./Miniconda3-latest-Linux-aarch64.sh
 
 3) Restart your terminal or reload bash profile
    source ~/.bashrc
