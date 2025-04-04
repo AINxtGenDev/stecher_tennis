@@ -85,57 +85,38 @@ class MyApp extends StatelessWidget {
             cardColor: Colors.white,
             errorColor: Colors.red,
           ),
-          textTheme: const TextTheme(
-            // Heading styles
-            headlineMedium: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            // Body text styles
-            bodyLarge: TextStyle(fontSize: 14),
-            bodyMedium: TextStyle(fontSize: 13),
-            bodySmall: TextStyle(fontSize: 11, color: Colors.grey),
-          ),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
             elevation: 2,
-            titleTextStyle: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
           ),
           cardTheme: const CardTheme(
-            elevation: 3,
+            elevation: 4,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8)),
+              borderRadius: BorderRadius.all(Radius.circular(10)),
             ),
-            margin: EdgeInsets.symmetric(vertical: 6),
+            margin: EdgeInsets.symmetric(vertical: 8),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              textStyle: const TextStyle(fontSize: 13),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
           inputDecorationTheme: InputDecorationTheme(
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.grey),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Colors.orange, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            labelStyle: const TextStyle(fontSize: 13),
-            hintStyle: const TextStyle(fontSize: 12),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
         home: const SplashScreen(),
@@ -190,21 +171,21 @@ class _SplashScreenState extends State<SplashScreen> {
             const Text(
               'Tennis Ladder',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: Colors.orange,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             LoadingAnimationWidget.staggeredDotsWave(
               color: Colors.orange,
-              size: 40,
+              size: 50,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
               'Loading data...',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.grey,
               ),
             ),
@@ -253,7 +234,6 @@ class AppConfig {
 
 ===== app_provider.dart =====
 File: /home/nuc8/05_development/02_python/01_stecher_tennis/mobile_stecher_tennis/lib/providers/app_provider.dart
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
@@ -277,14 +257,6 @@ class AppProvider with ChangeNotifier {
   List<Challenge> _activeChallenges = [];
   bool _isInitialized = false;
 
-  // Selection state
-  int? _selectedChallengerId;
-  int? _selectedOpponentId;
-
-  // Debounce for frequent updates
-  Timer? _debounceTimer;
-  bool _hasPendingUpdates = false;
-
   // Getters
   LoadingStatus get status => _status;
   String? get errorMessage => _errorMessage;
@@ -293,123 +265,20 @@ class AppProvider with ChangeNotifier {
   List<Challenge> get activeChallenges => List.unmodifiable(_activeChallenges);
   bool get isInitialized => _isInitialized;
 
-  // Selection getters
-  int? get selectedChallengerId => _selectedChallengerId;
-  int? get selectedOpponentId => _selectedOpponentId;
-
-  // Cached & memoized filtered player lists for performance
-  late List<Player> _cachedAvailablePlayers;
-  late List<Player> _cachedUnavailablePlayers;
-  late List<Player> _cachedBlockedChallengers;
-  late List<Player> _cachedBlockedOpponents;
-  late List<Player> _cachedInChallengePlayers;
-  late List<Player> _cachedNewPlayers;
-  bool _needsFiltersRefresh = true;
-
   // Filtered player lists
-  List<Player> get availablePlayers {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedAvailablePlayers;
-  }
-
-  List<Player> get unavailablePlayers {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedUnavailablePlayers;
-  }
-
-  List<Player> get blockedChallengers {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedBlockedChallengers;
-  }
-
-  List<Player> get blockedOpponents {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedBlockedOpponents;
-  }
-
-  List<Player> get inChallengePlayers {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedInChallengePlayers;
-  }
-
-  List<Player> get newPlayers {
-    if (_needsFiltersRefresh) _refreshFilters();
-    return _cachedNewPlayers;
-  }
+  List<Player> get availablePlayers => _players.where((p) => p.available && !p.inChallenge).toList();
+  List<Player> get unavailablePlayers => _players.where((p) => !p.available).toList();
+  List<Player> get blockedChallengers => _players.where((p) => p.blockChallenger).toList();
+  List<Player> get blockedOpponents => _players.where((p) => p.blockOpponent).toList();
+  List<Player> get inChallengePlayers => _players.where((p) => p.inChallenge).toList();
+  List<Player> get newPlayers => _players.where((p) => p.isNew).toList();
 
   // Constructor
   AppProvider({required ApiService apiService}) : _apiService = apiService {
-    _initFilterCache();
     _socketService = SocketService(
       onUpdateCallback: () => refreshData(),
     );
     initialize();
-  }
-
-  // Selection methods
-  void selectChallenger(int id) {
-    if (_selectedChallengerId != id) {
-      _selectedChallengerId = id;
-      _selectedOpponentId = null;  // Reset opponent when challenger changes
-      fetchEligibleOpponents(id);
-      notifyListeners();
-    }
-  }
-
-  void selectOpponent(int id) {
-    if (_selectedOpponentId != id) {
-      _selectedOpponentId = id;
-      notifyListeners();
-    }
-  }
-
-  void clearSelections() {
-    if (_selectedChallengerId != null || _selectedOpponentId != null) {
-      _selectedChallengerId = null;
-      _selectedOpponentId = null;
-      _eligibleOpponents = [];
-      notifyListeners();
-    }
-  }
-
-  // Initialize filter caches
-  void _initFilterCache() {
-    _cachedAvailablePlayers = [];
-    _cachedUnavailablePlayers = [];
-    _cachedBlockedChallengers = [];
-    _cachedBlockedOpponents = [];
-    _cachedInChallengePlayers = [];
-    _cachedNewPlayers = [];
-    _needsFiltersRefresh = true;
-  }
-
-  // Refresh filter caches
-  void _refreshFilters() {
-    _cachedAvailablePlayers = _players.where(
-            (p) => p.available && !p.inChallenge
-    ).toList();
-
-    _cachedUnavailablePlayers = _players.where(
-            (p) => !p.available
-    ).toList();
-
-    _cachedBlockedChallengers = _players.where(
-            (p) => p.blockChallenger
-    ).toList();
-
-    _cachedBlockedOpponents = _players.where(
-            (p) => p.blockOpponent
-    ).toList();
-
-    _cachedInChallengePlayers = _players.where(
-            (p) => p.inChallenge
-    ).toList();
-
-    _cachedNewPlayers = _players.where(
-            (p) => p.isNew
-    ).toList();
-
-    _needsFiltersRefresh = false;
   }
 
   // Initialize the provider
@@ -422,27 +291,13 @@ class AppProvider with ChangeNotifier {
     _isInitialized = true;
   }
 
-  // Refresh all data from the API with debounce
+  // Refresh all data from the API
   Future<void> refreshData() async {
-    // Cancel existing timer if it's still active
-    if (_debounceTimer?.isActive ?? false) {
-      _hasPendingUpdates = true;
-      return;
-    }
+    _logger.i('Refreshing data');
 
     // Use a debounce mechanism to avoid multiple rapid refreshes
     if (_status == LoadingStatus.loading) {
-      _logger.i('Already refreshing, applying debounce');
-      _hasPendingUpdates = true;
-
-      // Set debounce timer to check for pending updates
-      _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-        if (_hasPendingUpdates) {
-          _hasPendingUpdates = false;
-          refreshData();
-        }
-      });
-
+      _logger.i('Already refreshing, skipping this request');
       return;
     }
 
@@ -451,8 +306,8 @@ class AppProvider with ChangeNotifier {
     try {
       // Load data in parallel for efficiency
       await Future.wait([
-        _fetchPlayers(),
-        _fetchActiveChallenges(),
+        fetchPlayers(),
+        fetchActiveChallenges(),
       ]);
 
       _setSuccess();
@@ -482,38 +337,12 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Fetch all players (internal method)
-  Future<void> _fetchPlayers() async {
-    try {
-      final players = await _apiService.getPlayers();
-      if (!listEquals(_players, players)) {
-        _players = players;
-        _needsFiltersRefresh = true;
-      }
-    } catch (e) {
-      _logger.e('Error fetching players: $e');
-      rethrow;
-    }
-  }
-
-  // Fetch active challenges (internal method)
-  Future<void> _fetchActiveChallenges() async {
-    try {
-      final challenges = await _apiService.getActiveChallenges();
-      if (!listEquals(_activeChallenges, challenges)) {
-        _activeChallenges = challenges;
-      }
-    } catch (e) {
-      _logger.e('Error fetching active challenges: $e');
-      // Don't throw - this is secondary data
-    }
-  }
-
-  // Fetch all players (public method - can be called separately)
+  // Fetch all players
   Future<void> fetchPlayers() async {
     try {
       _setLoading();
-      await _fetchPlayers();
+      final players = await _apiService.getPlayers();
+      _players = players;
       _setSuccess();
     } catch (e) {
       _logger.e('Error fetching players: $e');
@@ -521,7 +350,7 @@ class AppProvider with ChangeNotifier {
     }
   }
 
-  // Fetch active challenges (public method - can be called separately)
+  // Fetch active challenges
   Future<void> fetchActiveChallenges() async {
     try {
       final challenges = await _apiService.getActiveChallenges();
@@ -551,11 +380,6 @@ class AppProvider with ChangeNotifier {
     try {
       _setLoading();
       final result = await _apiService.createChallenge(challengerId, opponentId);
-
-      // Clear selections after successful challenge
-      _selectedChallengerId = null;
-      _selectedOpponentId = null;
-
       await refreshData();
       _setSuccess();
       return result;
@@ -663,7 +487,6 @@ class AppProvider with ChangeNotifier {
     _logger.i('Disposing AppProvider');
     _socketService.dispose();
     _apiService.dispose();
-    _debounceTimer?.cancel();
     super.dispose();
   }
 }
@@ -748,7 +571,6 @@ File: /home/nuc8/05_development/02_python/01_stecher_tennis/mobile_stecher_tenni
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/app_provider.dart';
 import '../widgets/player_pyramid.dart';
@@ -766,8 +588,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isExpanded = true;
-
   @override
   void initState() {
     super.initState();
@@ -793,14 +613,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/db_settings');
             },
-            tooltip: 'Datenbankeinstellungen',
           ),
           IconButton(
             icon: const Icon(Icons.admin_panel_settings),
             onPressed: () {
               Navigator.pushNamed(context, '/admin');
             },
-            tooltip: 'Administrationsbereich',
           ),
         ],
       ),
@@ -813,12 +631,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   LoadingAnimationWidget.staggeredDotsWave(
                     color: Colors.orange,
-                    size: 40,
+                    size: 50,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   const Text(
-                    'Lade Spielerdaten...',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    'Loading player data...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ],
               ),
@@ -833,18 +651,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(
                     Icons.error_outline,
                     color: Colors.red,
-                    size: 50,
+                    size: 60,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Fehler: ${provider.errorMessage}',
-                    style: const TextStyle(color: Colors.red, fontSize: 14),
+                    'Error: ${provider.errorMessage}',
+                    style: const TextStyle(color: Colors.red),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _refreshData,
-                    child: const Text('Erneut versuchen'),
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
@@ -854,61 +672,29 @@ class _HomeScreenState extends State<HomeScreen> {
           return RefreshIndicator(
             onRefresh: _refreshData,
             child: ListView(
-              padding: const EdgeInsets.all(12),
-              children: [
+              padding: const EdgeInsets.all(16),
+              children: const [
                 // Player pyramid visualization
-                const PlayerPyramid(),
+                PlayerPyramid(),
 
                 // Challenge form
-                const ChallengeForm(),
+                ChallengeForm(),
 
                 // Active challenges section
-                const ActiveChallenges(),
+                ActiveChallenges(),
 
-                // Expandable sections - collapsible for better space management
-                ExpansionPanelList(
-                  elevation: 1,
-                  expandedHeaderPadding: EdgeInsets.zero,
-                  expansionCallback: (int index, bool isExpanded) {
-                    setState(() {
-                      _isExpanded = !isExpanded;
-                    });
-                  },
-                  children: [
-                    ExpansionPanel(
-                      headerBuilder: (context, isExpanded) {
-                        return Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Gesperrte & Nicht verfügbare Spieler',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      },
-                      body: const Column(
-                        children: [
-                          // Blocked players section
-                          BlockedPlayers(),
+                // Blocked players section
+                BlockedPlayers(),
 
-                          // Unavailable players section
-                          UnavailablePlayers(),
-                        ],
-                      ),
-                      isExpanded: _isExpanded,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 10),
+                // Unavailable players section
+                UnavailablePlayers(),
 
                 // New player challenge section
-                const NewPlayerChallenge(),
+                NewPlayerChallenge(),
 
                 // Footer with contact information
-                const SizedBox(height: 10),
-                const _FooterWidget(),
+                SizedBox(height: 16),
+                _FooterWidget(),
               ],
             ),
           );
@@ -925,75 +711,60 @@ class _FooterWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Kontaktinformationen',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text('Matthias Stecher', style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 8),
+            const Text('Matthias Stecher'),
             GestureDetector(
               onTap: () {
-                _launchEmail('matthias.stecher@hpe.com');
+                // Launch email app
+                // You'll need to implement url_launcher functionality here
               },
               child: const Text(
                 'matthias.stecher@hpe.com',
                 style: TextStyle(
-                  fontSize: 12,
                   color: Colors.blue,
                   decoration: TextDecoration.underline,
                 ),
               ),
             ),
-            const Text('Mobile: 0664 105 25 56', style: TextStyle(fontSize: 12)),
-            const SizedBox(height: 10),
-            Text(
+            const Text('Mobile: 0664 105 25 56'),
+            const SizedBox(height: 16),
+            const Text(
               'Rechtliche Informationen',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontSize: 13,
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             const Text(
               '© 2025 Matthias Stecher. Der Inhalt dieser App ist urheberrechtlich geschützt.',
-              style: TextStyle(fontSize: 10),
+              style: TextStyle(fontSize: 12),
             ),
             const Text(
               'Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.',
-              style: TextStyle(fontSize: 10),
+              style: TextStyle(fontSize: 12),
             ),
-            const SizedBox(height: 6),
-            const Center(
-              child: Text(
-                'Version: 1.0.0 • März 2025',
-                style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic),
-              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Version: 1.0.0 • März 2025',
+              style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _launchEmail(String emailAddress) async {
-    final Uri emailLaunchUri = Uri(
-      scheme: 'mailto',
-      path: emailAddress,
-    );
-
-    try {
-      await launchUrl(emailLaunchUri);
-    } catch (e) {
-      // Handle error - could not launch email app
-      debugPrint('Could not launch email: $e');
-    }
   }
 }
 
@@ -1916,61 +1687,45 @@ class ChallengeForm extends StatefulWidget {
 }
 
 class _ChallengeFormState extends State<ChallengeForm> {
+  int? _selectedChallengerId;
+  int? _selectedOpponentId;
   bool _isLoading = false;
   String? _errorMessage;
   String? _successMessage;
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context);
-    final selectedChallengerId = provider.selectedChallengerId;
-    final selectedOpponentId = provider.selectedOpponentId;
-
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Herausforderung erstellen',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 12),
-            _buildChallengerDropdown(provider),
-            const SizedBox(height: 8),
-            _buildOpponentDropdown(provider),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: (selectedChallengerId != null && selectedOpponentId != null && !_isLoading)
-                    ? () => _submitChallenge(provider)
-                    : null,
-                child: _isLoading
-                    ? const SizedBox(
-                  height: 18,
-                  width: 18,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                    : const Text('Herausfordern'),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 16),
+            _buildChallengerDropdown(),
+            const SizedBox(height: 12),
+            _buildOpponentDropdown(),
+            const SizedBox(height: 16),
+            _buildSubmitButton(),
             if (_errorMessage != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 _errorMessage!,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+                style: const TextStyle(color: Colors.red),
               ),
             ],
             if (_successMessage != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               Text(
                 _successMessage!,
-                style: const TextStyle(color: Colors.green, fontSize: 12),
+                style: const TextStyle(color: Colors.green),
               ),
             ],
           ],
@@ -1979,43 +1734,42 @@ class _ChallengeFormState extends State<ChallengeForm> {
     );
   }
 
-  Widget _buildChallengerDropdown(AppProvider provider) {
+  Widget _buildChallengerDropdown() {
+    final provider = Provider.of<AppProvider>(context);
     final availablePlayers = provider.availablePlayers;
-    final selectedChallengerId = provider.selectedChallengerId;
 
     return DropdownButtonFormField<int>(
       decoration: const InputDecoration(
         labelText: 'Herausforderer',
         border: OutlineInputBorder(),
       ),
-      value: selectedChallengerId,
-      hint: const Text('Wählen Sie einen Herausforderer...', style: TextStyle(fontSize: 12)),
+      value: _selectedChallengerId,
+      hint: const Text('Wählen Sie einen Herausforderer...'),
       isExpanded: true,
       items: availablePlayers.map((player) {
         return DropdownMenuItem<int>(
           value: player.id,
-          child: Text(
-              '${player.name} (Rang ${player.rank})',
-              style: const TextStyle(fontSize: 12)
-          ),
+          child: Text('${player.name} (Rang ${player.rank})'),
         );
       }).toList(),
       onChanged: (int? value) {
+        setState(() {
+          _selectedChallengerId = value;
+          _selectedOpponentId = null; // Reset opponent when challenger changes
+          _errorMessage = null;
+          _successMessage = null;
+        });
+
         if (value != null) {
-          provider.selectChallenger(value);
-          setState(() {
-            _errorMessage = null;
-            _successMessage = null;
-          });
+          provider.fetchEligibleOpponents(value);
         }
       },
     );
   }
 
-  Widget _buildOpponentDropdown(AppProvider provider) {
+  Widget _buildOpponentDropdown() {
+    final provider = Provider.of<AppProvider>(context);
     final eligibleOpponents = provider.eligibleOpponents;
-    final selectedChallengerId = provider.selectedChallengerId;
-    final selectedOpponentId = provider.selectedOpponentId;
     final isLoading = provider.status == LoadingStatus.loading;
 
     return DropdownButtonFormField<int>(
@@ -2023,46 +1777,55 @@ class _ChallengeFormState extends State<ChallengeForm> {
         labelText: 'Gegner',
         border: OutlineInputBorder(),
       ),
-      value: selectedOpponentId,
+      value: _selectedOpponentId,
       hint: Text(
-        selectedChallengerId == null
+        _selectedChallengerId == null
             ? 'Wählen Sie zuerst einen Herausforderer...'
             : isLoading
             ? 'Lade mögliche Gegner...'
             : eligibleOpponents.isEmpty
             ? 'Keine geeigneten Gegner verfügbar'
             : 'Wählen Sie einen Gegner...',
-        style: const TextStyle(fontSize: 12),
       ),
       isExpanded: true,
       items: eligibleOpponents.map((player) {
         return DropdownMenuItem<int>(
           value: player.id,
-          child: Text(
-            '${player.name} (Rang ${player.rank})',
-            style: const TextStyle(fontSize: 12),
-          ),
+          child: Text('${player.name} (Rang ${player.rank})'),
         );
       }).toList(),
-      onChanged: selectedChallengerId == null || isLoading || eligibleOpponents.isEmpty
+      onChanged: _selectedChallengerId == null || isLoading || eligibleOpponents.isEmpty
           ? null
           : (int? value) {
-        if (value != null) {
-          provider.selectOpponent(value);
-          setState(() {
-            _errorMessage = null;
-            _successMessage = null;
-          });
-        }
+        setState(() {
+          _selectedOpponentId = value;
+          _errorMessage = null;
+          _successMessage = null;
+        });
       },
     );
   }
 
-  Future<void> _submitChallenge(AppProvider provider) async {
-    final selectedChallengerId = provider.selectedChallengerId;
-    final selectedOpponentId = provider.selectedOpponentId;
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: (_selectedChallengerId != null && _selectedOpponentId != null && !_isLoading)
+            ? _submitChallenge
+            : null,
+        child: _isLoading
+            ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(color: Colors.white),
+        )
+            : const Text('Herausfordern'),
+      ),
+    );
+  }
 
-    if (selectedChallengerId == null || selectedOpponentId == null) {
+  Future<void> _submitChallenge() async {
+    if (_selectedChallengerId == null || _selectedOpponentId == null) {
       return;
     }
 
@@ -2073,14 +1836,18 @@ class _ChallengeFormState extends State<ChallengeForm> {
     });
 
     try {
-      final challenger = provider.findPlayerById(selectedChallengerId);
-      final opponent = provider.findPlayerById(selectedOpponentId);
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      final challengerId = _selectedChallengerId!;
+      final opponentId = _selectedOpponentId!;
+
+      final challenger = provider.findPlayerById(challengerId);
+      final opponent = provider.findPlayerById(opponentId);
 
       if (challenger == null || opponent == null) {
         throw Exception('Spieler nicht gefunden');
       }
 
-      final result = await provider.createChallenge(selectedChallengerId, selectedOpponentId);
+      final result = await provider.createChallenge(challengerId, opponentId);
 
       if (result.containsKey('error')) {
         setState(() {
@@ -2092,6 +1859,8 @@ class _ChallengeFormState extends State<ChallengeForm> {
 
       setState(() {
         _successMessage = 'Ich, ${challenger.name} (Rang ${challenger.rank}), fordere hiermit ${opponent.name} (Rang ${opponent.rank}) heraus.';
+        _selectedChallengerId = null;
+        _selectedOpponentId = null;
         _isLoading = false;
       });
 
@@ -2572,18 +2341,21 @@ class PlayerPyramid extends StatelessWidget {
       builder: (context, provider, child) {
         return Card(
           child: Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Spieler-Pyramide',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _buildLegend(),
-                const SizedBox(height: 12),
-                _buildPyramid(context, provider),
+                const SizedBox(height: 16),
+                _buildPyramid(provider.players),
               ],
             ),
           ),
@@ -2594,11 +2366,11 @@ class PlayerPyramid extends StatelessWidget {
 
   Widget _buildLegend() {
     return Wrap(
-      spacing: 12,
-      runSpacing: 6,
+      spacing: 16,
+      runSpacing: 8,
       children: [
         _legendItem(
-          color: Colors.orange.shade300,
+          color: Colors.orange,
           label: 'Verfügbar',
         ),
         _legendItem(
@@ -2611,7 +2383,7 @@ class PlayerPyramid extends StatelessWidget {
         ),
         _legendItem(
           color: Colors.amber.shade200,
-          label: 'In Challenge',
+          label: 'In Herausforderung',
         ),
         _legendItem(
           color: Colors.grey.shade300,
@@ -2635,28 +2407,28 @@ class PlayerPyramid extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 16,
+          height: 16,
           decoration: BoxDecoration(
             color: color,
             border: Border.all(color: borderColor ?? color.darker()),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
-        const SizedBox(width: 3),
+        const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 11),
+          style: const TextStyle(fontSize: 12),
         ),
       ],
     );
   }
 
-  Widget _buildPyramid(BuildContext context, AppProvider provider) {
+  Widget _buildPyramid(List<Player> players) {
     // Define the pyramid structure (players per row)
     const List<int> pyramidRows = [1, 2, 3, 4, 5, 6, 7, 8];
 
-    final sortedPlayers = List<Player>.from(provider.players);
+    final sortedPlayers = List<Player>.from(players);
     sortedPlayers.sort((a, b) => a.rank.compareTo(b.rank));
 
     List<Widget> rows = [];
@@ -2667,16 +2439,10 @@ class PlayerPyramid extends StatelessWidget {
 
       for (int i = 0; i < rowSize; i++) {
         if (playerIndex < sortedPlayers.length) {
-          final player = sortedPlayers[playerIndex];
-          final isHighlighted = player.id == provider.selectedChallengerId;
-          final isOpponent = player.id == provider.selectedOpponentId;
-
           rowPlayers.add(
             Expanded(
               child: PlayerTile(
-                player: player,
-                isHighlighted: isHighlighted,
-                isOpponent: isOpponent,
+                player: sortedPlayers[playerIndex],
               ),
             ),
           );
@@ -2686,17 +2452,11 @@ class PlayerPyramid extends StatelessWidget {
           rowPlayers.add(
             const Expanded(
               child: SizedBox(
-                height: 70,
+                height: 80,
                 child: Card(
                   color: Colors.grey,
                   child: Center(
-                    child: Text(
-                      'Fehlt',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                      ),
-                    ),
+                    child: Text('Spieler fehlt', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ),
@@ -2711,7 +2471,7 @@ class PlayerPyramid extends StatelessWidget {
           children: rowPlayers,
         ),
       );
-      rows.add(const SizedBox(height: 6));
+      rows.add(const SizedBox(height: 8));
     }
 
     return Column(children: rows);
@@ -2734,44 +2494,42 @@ class PlayerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Show player details on tap
-        _showPlayerDetails(context);
+        // Show player details or selection for challenge
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${player.name} (Rang ${player.rank}) ausgewählt'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
       },
       child: Container(
-        height: 70,
-        margin: const EdgeInsets.all(3),
+        height: 80,
+        margin: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: _getPlayerColor(),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(26),  // Using withAlpha instead of withOpacity
-              spreadRadius: 0.5,
-              blurRadius: 2,
-              offset: const Offset(0, 1),
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 2),
             ),
           ],
-          // Add a colored border for selected players
-          border: isHighlighted || isOpponent
-              ? Border.all(
-            color: isHighlighted ? Colors.green : Colors.red,
-            width: 2,
-          )
-              : null,
         ),
         child: Stack(
           children: [
             // Player information
             Center(
               child: Padding(
-                padding: const EdgeInsets.all(3.0),
+                padding: const EdgeInsets.all(4.0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'Rang ${player.rank}',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -2779,7 +2537,7 @@ class PlayerTile extends StatelessWidget {
                       player.name,
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 ),
@@ -2788,16 +2546,17 @@ class PlayerTile extends StatelessWidget {
 
             // Availability toggle button
             Positioned(
-              top: 3,
-              right: 3,
+              top: 4,
+              right: 4,
               child: GestureDetector(
                 onTap: () {
                   // Toggle player availability
-                  _toggleAvailability(context);
+                  final provider = Provider.of<AppProvider>(context, listen: false);
+                  provider.toggleAvailability(player.id);
                 },
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  width: 12,
+                  height: 12,
                   decoration: BoxDecoration(
                     color: player.available ? Colors.white : Colors.grey.shade300,
                     border: Border.all(
@@ -2812,67 +2571,6 @@ class PlayerTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _showPlayerDetails(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(player.name, style: const TextStyle(fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Rang: ${player.rank}', style: const TextStyle(fontSize: 14)),
-            Text('Status: ${player.available ? 'Verfügbar' : 'Nicht verfügbar'}',
-                style: const TextStyle(fontSize: 14)),
-            if (player.inChallenge)
-              const Text('In aktiver Herausforderung',
-                  style: TextStyle(fontSize: 14, color: Colors.orange)),
-          ],
-        ),
-        actions: [
-          // Select as challenger button
-          if (player.available && !player.inChallenge && !player.blockChallenger)
-            TextButton(
-              onPressed: () {
-                provider.selectChallenger(player.id);
-                Navigator.of(context).pop();
-              },
-              child: const Text('Als Herausforderer', style: TextStyle(fontSize: 13)),
-            ),
-
-          // Select as opponent button if a challenger is already selected
-          if (player.available &&
-              !player.inChallenge &&
-              !player.blockOpponent &&
-              provider.selectedChallengerId != null &&
-              provider.selectedChallengerId != player.id)
-            TextButton(
-              onPressed: () {
-                provider.selectOpponent(player.id);
-                Navigator.of(context).pop();
-              },
-              child: const Text('Als Gegner', style: TextStyle(fontSize: 13)),
-            ),
-
-          // Cancel button
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Schließen', style: TextStyle(fontSize: 13)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _toggleAvailability(BuildContext context) {
-    final provider = Provider.of<AppProvider>(context, listen: false);
-    provider.toggleAvailability(player.id);
   }
 
   Color _getPlayerColor() {
@@ -2891,7 +2589,15 @@ class PlayerTile extends StatelessWidget {
       return Colors.grey.shade300;
     }
 
-    return Colors.orange.shade300;
+    if (isHighlighted) {
+      return Colors.green.shade200;
+    }
+
+    if (isOpponent) {
+      return Colors.red.shade200;
+    }
+
+    return Colors.orange.shade200;
   }
 }
 
