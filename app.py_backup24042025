@@ -733,9 +733,6 @@ def delete_player():
 def db_settings():
     return render_template("db_settings.html")
 
-@app.route("/initial_players")
-def initial_players():
-    return render_template("initial_players.html")
 
 @socketio.on("connect")
 def handle_connect():
