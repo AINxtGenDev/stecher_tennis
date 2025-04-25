@@ -118,7 +118,8 @@ def get_current_time():
     return datetime.now()
 
 1) export TEST_DATE=2025-03-13-21-13-23
-2) source ./bin/activate
+2) conda activate stecher_tennis
+   (source ./bin/activate)
 3) python3 app.py --host=0.0.0.0 --port=5000
 
 #######################################################################
