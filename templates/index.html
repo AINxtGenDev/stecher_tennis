@@ -307,10 +307,26 @@
       padding: 5px 0;
       border-bottom: 1px dotted #ddd;
       margin-bottom: 5px;
-      gap: 15px; /* MODIFIED: Add gap */
+      gap: 10px; /* MODIFIED: Reduced gap */
     }
     .challenge-names {
-       /* No specific style needed now */
+       flex-grow: 1; /* Allow names to take more space */
+    }
+    /* NEW: Styling for the date selector container */
+    .challenge-date-selector {
+        display: flex;
+        align-items: center;
+        gap: 5px; /* Space between dropdown and selected date text */
+        flex-shrink: 0; /* Prevent shrinking */
+    }
+    .scheduled-date-dropdown {
+        min-width: 130px; /* Adjusted width */
+        padding: 0.25rem 0.5rem; /* Smaller padding for form-select-sm */
+        font-size: 0.8rem; /* Smaller font */
+    }
+    .scheduled-date-dropdown.has-selection { /* Style when a date is selected */
+        background-color: #ffe8cc; /* Light orange */
+        border-color: #ffc078;
     }
     .challenge-deadline {
       /* margin-left: auto; REMOVED */
@@ -318,6 +334,11 @@
       font-size: 0.8rem;
       color: #555;
       flex-shrink: 0; /* Prevent shrinking */
+    }
+    .selected-scheduled-date {
+        font-size: 0.8rem;
+        color: #333;
+        font-weight: bold;
     }
 
     /* Styling for active challenge names */
@@ -554,6 +575,20 @@
        .completed-result {
            min-width: 100px; /* Adjust min-width */
        }
+       /* NEW: Responsive for date selector */
+       .challenge-date-selector {
+           flex-direction: column; /* Stack dropdown and text on small screens */
+           align-items: flex-start; /* Align to start */
+           gap: 3px;
+       }
+       .scheduled-date-dropdown {
+           min-width: 100%; /* Full width dropdown */
+       }
+       .selected-scheduled-date {
+           margin-left: 0 !important; /* Remove left margin when stacked */
+           font-size: 0.75rem;
+       }
+
 
        /* New Player Section */
        .newplayer-challenge h4 {
@@ -840,13 +875,25 @@
           {% if active_challenges %}
             {% for challenge in active_challenges %}
               <div class="challenge-entry"
+                   data-challenge-id="{{ challenge.id }}"
                    data-challenger-id="{{ challenge['challenger_id'] }}"
-                   data-opponent-id="{{ challenge['opponent_id'] }}">
+                   data-opponent-id="{{ challenge['opponent_id'] }}"
+                   data-deadline="{{ challenge.deadline.strftime('%Y-%m-%dT%H:%M:%S') if challenge.deadline else '' }}"
+                   data-scheduled-date="{{ challenge.scheduled_play_date.strftime('%Y-%m-%d') if challenge.scheduled_play_date else '' }}">
                 <span class="challenge-names">
                     <span class="challenger-name-color">{{ challenge['challenger_name'] }}</span>
                     gegen
                     <span class="opponent-name-color">{{ challenge['opponent_name'] }}</span>
                 </span>
+                {# NEW: Dropdown and selected date display #}
+                <div class="challenge-date-selector">
+                    <select class="form-select form-select-sm scheduled-date-dropdown">
+                        {# Options will be populated by JS #}
+                    </select>
+                    <span class="selected-scheduled-date ms-1">
+                        {# Populated by JS, or initially by Jinja if needed, but JS will handle it #}
+                    </span>
+                </div>
                 <span class="challenge-deadline">Frist: {{ challenge['deadline'].strftime('%Y-%m-%d %H:%M') if challenge.deadline else 'N/A' }}</span> {# Format deadline #}
               </div>
             {% endfor %}
@@ -1277,6 +1324,47 @@
               // Update the pyramid visuals based on the latest cached data
               updatePyramidFromCache();
 
+              // --- Populate Date Dropdowns for Active Challenges ---
+              if (doc.getElementById("active-challenges-list")) { // Check if the list exists in fetched data
+                  $('#active-challenges-list .challenge-entry').each(function() {
+                      const $entry = $(this);
+                      const deadlineStr = $entry.data('deadline');
+                      const scheduledDateStr = $entry.data('scheduled-date');
+                      const $dropdown = $entry.find('.scheduled-date-dropdown');
+                      const $displaySpan = $entry.find('.selected-scheduled-date');
+
+                      $dropdown.empty(); // Clear old options
+                      $dropdown.append('<option value="">Datum wählen...</option>');
+
+                      if (deadlineStr) {
+                          const deadlineDate = new Date(deadlineStr);
+                          let currentDateLoop = new Date(); // Use a new variable for the loop
+                          currentDateLoop.setHours(0, 0, 0, 0); // Normalize to start of day
+
+                          while (currentDateLoop <= deadlineDate) {
+                              const dateValue = currentDateLoop.toISOString().split('T')[0]; // YYYY-MM-DD
+                              const optionText = dateValue; // Or format as DD.MM.YYYY
+                              const $option = $('<option></option>').val(dateValue).text(optionText);
+
+                              if (scheduledDateStr && scheduledDateStr === dateValue) {
+                                  $option.prop('selected', true);
+                              }
+                              $dropdown.append($option);
+                              currentDateLoop.setDate(currentDateLoop.getDate() + 1);
+                          }
+                      }
+
+                      if (scheduledDateStr) {
+                          $displaySpan.text(scheduledDateStr);
+                          $dropdown.addClass('has-selection');
+                      } else {
+                          $displaySpan.text('');
+                          $dropdown.removeClass('has-selection');
+                      }
+                  });
+              }
+              // --- End Populate Date Dropdowns ---
+
               // Apply temporary selections (green/red highlights from dropdowns)
               applyTemporarySelections();
 
@@ -1346,7 +1434,13 @@
       socket.on("update", function (data) {
         console.log("Socket.IO 'update' event received", data);
         // Hide any connection warnings/errors on successful update
-        // $('#challengeResult.alert-warning, #challengeResult.alert-danger').fadeOut();
+        // $('#challengeResult.alert-warning, #challengeResult.alert-danger').fadeOut(); // Example
+
+        // If the update is specific to a scheduled date, update that specific entry's display
+        if (data && data.challenge_id && 'scheduled_date' in data) {
+            const $entry = $(`.challenge-entry[data-challenge-id="${data.challenge_id}"]`);
+            // The full pollData will also run and refresh it, but this could be faster for targeted UI update
+        }
         pollData();
       });
 
@@ -1523,6 +1617,45 @@
       });
 
 
+      // --- Event listener for scheduled date dropdown change ---
+      $(document).on("change", ".scheduled-date-dropdown", function () {
+          const $dropdown = $(this);
+          const challengeId = $dropdown.closest('.challenge-entry').data('challenge-id');
+          const selectedDate = $dropdown.val();
+          const $displaySpan = $dropdown.siblings('.selected-scheduled-date');
+
+          // Disable dropdown during request
+          $dropdown.prop('disabled', true);
+
+          $.ajax({
+              url: "/update_scheduled_date",
+              type: "POST",
+              data: {
+                  challenge_id: challengeId,
+                  selected_date: selectedDate
+              },
+              success: function(response) {
+                  if (response.success) {
+                      $displaySpan.text(selectedDate || ''); // Update display
+                      if (selectedDate) {
+                          $dropdown.addClass('has-selection');
+                      } else {
+                          $dropdown.removeClass('has-selection');
+                      }
+                      // Optionally show a small success message, or rely on SocketIO update
+                      console.log("Scheduled date updated successfully for challenge " + challengeId);
+                  } else {
+                      alert("Fehler: " + response.message);
+                      // Revert dropdown if needed, or pollData will fix it
+                  }
+              },
+              error: function() {
+                  alert("Netzwerkfehler beim Aktualisieren des Spieldatums.");
+              },
+              complete: function() { $dropdown.prop('disabled', false); } // Re-enable dropdown
+          });
+      });
+
       // --- New Player Challenge Logic ---
       const $newPlayerInput = $("#newplayer");
       const $newPlayerOpponentSelect = $("#newplayer-opponent");
@@ -1689,7 +1822,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 1.81G  •  6. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 1.82G  •  6. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     

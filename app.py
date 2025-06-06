@@ -4,7 +4,7 @@ import os
 import sqlite3
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date  # Added date
 from flask import Flask, g, request, jsonify, render_template, redirect, url_for, flash
 from flask_socketio import SocketIO, emit  # Ensure Flask-SocketIO is installed
 
@@ -191,6 +191,28 @@ def get_active_challenges():
                     challenge["deadline"] = None  # Handle parsing error
             elif not isinstance(challenge.get("deadline"), datetime):
                 challenge["deadline"] = None  # Handle unexpected type
+
+            # Ensure scheduled_play_date is a date object
+            # sqlite3.PARSE_DECLTYPES should handle DATE columns correctly if they are stored as YYYY-MM-DD strings
+            # and convert them to datetime.date objects.
+            # This check is for robustness if it comes as a string or different type.
+            scheduled_play_date_val = challenge.get("scheduled_play_date")
+            if isinstance(scheduled_play_date_val, str):
+                try:
+                    challenge["scheduled_play_date"] = datetime.strptime(
+                        scheduled_play_date_val, "%Y-%m-%d"
+                    ).date()
+                except (ValueError, TypeError):
+                    challenge["scheduled_play_date"] = None  # Handle parsing error
+            elif (
+                not isinstance(scheduled_play_date_val, date)
+                and scheduled_play_date_val is not None
+            ):
+                # If it's not a date object and not None, set to None to avoid issues
+                logger.warning(
+                    f"Unexpected type for scheduled_play_date: {type(scheduled_play_date_val)}. Setting to None."
+                )
+                challenge["scheduled_play_date"] = None
 
             # Ensure timestamp is datetime object (less critical for display, but good practice)
             if isinstance(challenge.get("timestamp"), str):
@@ -696,7 +718,7 @@ def index():
             "index.html",
             pyramid=pyramid_data,
             players=players_list,  # Contains formatted dates
-            active_challenges=active_challenges_data,  # Contains datetime objects
+            active_challenges=active_challenges_data,  # Contains datetime objects and date objects
             completed_challenges=completed_challenges_data,  # Contains datetime objects
             blocked_challenger_players=blocked_challenger_players_data,  # Now includes formatted dates
             blocked_opponent_players=blocked_opponent_players_data,  # Now includes formatted dates
@@ -1699,6 +1721,118 @@ def newplayer_challenge():
             f"Unexpected error during new player challenge: {e}. newplayer_name='{newplayer_name}', opponent_id='{opponent_id_str}'"
         )
         return jsonify({"error": f"Ein unerwarteter Fehler ist aufgetreten: {e}"}), 500
+
+
+# --- NEW: Route to update scheduled play date ---
+@app.route("/update_scheduled_date", methods=["POST"])
+def update_scheduled_date():
+    challenge_id_str = request.form.get("challenge_id")
+    selected_date_str = request.form.get(
+        "selected_date"
+    )  # This will be YYYY-MM-DD or empty
+
+    if not challenge_id_str:  # selected_date_str can be empty if user deselects
+        return jsonify({"success": False, "message": "Fehlende Challenge-ID."}), 400
+
+    try:
+        challenge_id = int(challenge_id_str)
+        selected_dt_obj = None
+        if selected_date_str:  # Only parse if a date string is provided
+            selected_dt_obj = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"success": False, "message": "Ungültige Parameter."}), 400
+
+    db = get_db()
+    try:
+        # Fetch challenge to validate deadline if a date is selected
+        if selected_dt_obj:
+            cur = db.execute(
+                "SELECT deadline FROM challenges WHERE id = ? AND resolved = 0",
+                (challenge_id,),
+            )
+            challenge_record = cur.fetchone()
+
+            if not challenge_record:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Herausforderung nicht gefunden oder bereits abgeschlossen.",
+                        }
+                    ),
+                    404,
+                )
+
+            # Ensure deadline is a datetime object before accessing .date()
+            deadline_dt = challenge_record["deadline"]
+            if not isinstance(
+                deadline_dt, datetime
+            ):  # Should be datetime due to PARSE_DECLTYPES
+                # Attempt to parse if it's a string representation
+                try:
+                    deadline_dt = datetime.strptime(
+                        str(deadline_dt).split(" ")[0], "%Y-%m-%d"
+                    )
+                except ValueError:
+                    logger.error(
+                        f"Could not parse deadline '{deadline_dt}' for challenge {challenge_id} as datetime."
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "success": False,
+                                "message": "Interner Fehler: Ungültiges Fristformat.",
+                            }
+                        ),
+                        500,
+                    )
+
+            deadline_date = deadline_dt.date()
+            today = get_current_time().date()
+
+            if not (today <= selected_dt_obj <= deadline_date):
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": f"Datum muss zwischen {today.strftime('%Y-%m-%d')} und {deadline_date.strftime('%Y-%m-%d')} liegen.",
+                        }
+                    ),
+                    400,
+                )
+
+        db.execute(
+            "UPDATE challenges SET scheduled_play_date = ? WHERE id = ?",
+            (selected_dt_obj, challenge_id),  # Pass date object or None
+        )
+        db.commit()
+        socketio.emit(
+            "update",
+            {
+                "message": "Spieldatum aktualisiert",
+                "challenge_id": challenge_id,
+                "scheduled_date": selected_date_str if selected_dt_obj else None,
+            },
+        )
+        logger.info(
+            f"Spieldatum für Herausforderung {challenge_id} auf {selected_date_str if selected_dt_obj else 'None'} gesetzt."
+        )
+        return jsonify(
+            {"success": True, "message": "Spieldatum erfolgreich aktualisiert."}
+        )
+
+    except sqlite3.Error as e:
+        db.rollback()
+        logger.exception(
+            f"Datenbankfehler beim Aktualisieren des Spieldatums für Herausforderung {challenge_id}: {e}"
+        )
+        return jsonify({"success": False, "message": "Datenbankfehler."}), 500
+    except Exception as e:
+        db.rollback()
+        logger.exception(
+            f"Unerwarteter Fehler beim Aktualisieren des Spieldatums für Herausforderung {challenge_id}: {e}"
+        )
+        return jsonify({"success": False, "message": "Unerwarteter Fehler."}), 500
 
 
 # --- Admin Player Management Routes (for db_settings.html) ---
