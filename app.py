@@ -1858,13 +1858,13 @@ def update_player():
                 )
 
         with db:  # Use transaction
-            # Update name, rank, and CLEAR block statuses on manual update
+            # Update only name and rank, keep existing block statuses
             db.execute(
-                "UPDATE players SET name = ?, rank = ?, block_challenger_until = NULL, block_opponent_until = NULL WHERE id = ?",
+                "UPDATE players SET name = ?, rank = ? WHERE id = ?",
                 (new_name, new_rank, player_id),
             )
             logger.info(
-                f"Admin updated player {player_id}. Name: {new_name}, Rank attempt: {new_rank}. Cleared blocks."
+                f"Admin updated player {player_id}. Name: {new_name}, Rank attempt: {new_rank}. Preserved blocks."
             )
 
             # Re-rank ALL players to ensure consistency and enforce 36 player limit
