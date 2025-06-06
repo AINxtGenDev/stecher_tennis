@@ -3,10 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Spielerdatenbank-Einstellungen - Admin</title> <!-- Changed Title -->
-  <!-- Load Socket.IO client library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
-  <!-- Load jQuery -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
     /* Global Styles */
     body {
@@ -59,7 +55,8 @@
       width: 100%;
       border-collapse: collapse;
       background: #fff;
-      /* Removed box-shadow and margin-bottom as it's now inside a container */
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
     }
     th, td {
       padding: 10px;
@@ -111,15 +108,6 @@
     button.save-btn:hover { background-color: #388E3C; }
     button.cancel-btn { background-color: #757575; color: white; } /* Grey cancel button */
     button.cancel-btn:hover { background-color: #616161; }
-    /* NEW: Reset DB Button Style */
-    button.reset-db-btn {
-        background-color: #dc3545; /* Red background */
-        color: #ffffff; /* White text */
-    }
-    button.reset-db-btn:hover {
-        background-color: #c82333; /* Darker red on hover */
-    }
-
 
     /* Radio Button Styling */
     .block-status-radios label {
@@ -148,61 +136,6 @@
     td input[type="number"] {
         width: 70px; /* Smaller width for rank input in edit mode */
     }
-
-    /* NEW: Reset DB Section Styling */
-    .reset-db-section {
-        margin-bottom: 20px;
-        background: #fff;
-        padding: 15px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* --- NEW: Collapsible Section Styles --- */
-    .collapsible-section {
-      margin-bottom: 20px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      overflow: hidden; /* Important for smooth collapse */
-    }
-    .collapsible-header {
-      background-color: #f0f0f0;
-      border-bottom: 1px solid #ccc;
-      cursor: pointer;
-      padding: 10px 15px;
-      display: flex; /* Use flexbox */
-      align-items: center; /* Vertically align items */
-      justify-content: space-between; /* Push title left, controls right */
-      transition: background-color 0.3s;
-    }
-    .collapsible-header:hover {
-      background-color: #e8e8e8;
-    }
-    .collapsible-header h2 {
-      margin: 0; /* Remove default margin */
-      font-size: 1.5rem; /* Adjust size */
-    }
-    .collapsible-header .arrow {
-      display: inline-block;
-      transition: transform 0.3s;
-      font-size: 1.2em; /* Make arrow slightly bigger */
-      margin-left: 10px; /* Space before arrow */
-    }
-    .collapsible-header.collapsed .arrow {
-      transform: rotate(-90deg);
-    }
-    .collapsible-content {
-      padding: 15px;
-      display: none; /* Initially hidden */
-    }
-    .collapsible-content.show {
-      display: block; /* Show when expanded */
-    }
-    /* --- END: Collapsible Section Styles --- */
-
   </style>
 </head>
 <body>
@@ -222,41 +155,26 @@
       <button type="submit">Spieler hinzufügen</button>
     </form>
 
-    <!-- NEW: Reset Database Section -->
-    <div class="reset-db-section">
-        <h2>Datenbank zurücksetzen</h2>
-        <button id="resetDbButton" class="reset-db-btn">Reset DB</button>
-    </div>
-
-    <!-- Players List Table (Now Collapsible) -->
-    <div class="collapsible-section">
-        <div class="collapsible-header collapsed" id="playerListHeader"> <!-- Start collapsed -->
-            <h2>Spielerliste</h2>
-            <span class="arrow">▼</span>
-        </div>
-        <div class="collapsible-content" id="playerListContent">
-            <table id="playersTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Rang</th>
-                  <th>Block Status</th> <!-- New Column -->
-                  <th>Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Table rows will be inserted dynamically -->
-              </tbody>
-            </table>
-        </div>
-    </div>
-
+    <!-- Players List Table -->
+    <h2>Spielerliste</h2>
+    <table id="playersTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Rang</th>
+          <th>Block Status</th> <!-- New Column -->
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table rows will be inserted dynamically -->
+      </tbody>
+    </table>
   </div>
 
   <script>
     let playersData = []; // Cache for player data
-    let socket; // Declare socket variable globally
 
     // Utility: show notification messages
     function showNotification(message, type) {
@@ -588,111 +506,10 @@
         }
     });
 
-    // --- NEW: Handle Reset Database Button Click ---
-    document.getElementById('resetDbButton').addEventListener('click', function() {
-        // Confirmation dialog
-        const confirmationText = "!!! ACHTUNG !!! - RESET of database - Bist DU dir wirklich sicher?";
-        if (confirm(confirmationText)) {
-            // Disable button during request
-            this.disabled = true;
-            this.textContent = "Zurücksetzen...";
-
-            fetch('/reset_database', { method: 'POST' })
-                .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
-                .then(result => {
-                    if (result.ok) {
-                        showNotification(result.body.message || "Datenbank erfolgreich zurückgesetzt.", "success");
-                        // loadPlayers(); // Reload is handled by Socket.IO event now
-                    } else {
-                        showNotification(result.body.message || `Fehler ${result.status}: Datenbank konnte nicht zurückgesetzt werden.`, "error");
-                    }
-                })
-                .catch(error => {
-                    showNotification("Netzwerkfehler beim Zurücksetzen der Datenbank.", "error");
-                    console.error("Reset DB network error:", error);
-                })
-                .finally(() => {
-                    // Re-enable button
-                    this.disabled = false;
-                    this.textContent = "Reset DB";
-                });
-        } else {
-            // User cancelled
-            showNotification("Datenbank-Reset abgebrochen.", "info");
-        }
-    });
-
-    // --- NEW: Initialize Socket.IO and Listen for Reset Event ---
-    function initializeSocketIO() {
-        socket = io({
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-        });
-
-        socket.on("connect", function() {
-            console.log("Socket.IO connected on db_settings:", socket.id);
-        });
-
-        socket.on("disconnect", function(reason) {
-            console.log("Socket.IO disconnected on db_settings:", reason);
-        });
-
-        socket.on("connect_error", (err) => {
-            console.error("Socket.IO connection error on db_settings:", err.message);
-        });
-
-        // Listen for the database reset event
-        socket.on("database_reset", function(data) {
-            console.log("Received 'database_reset' event:", data);
-            showNotification("Datenbank wurde zurückgesetzt. Lade Spielerliste neu...", "info");
-            loadPlayers(); // Reload the player list on this page
-        });
-
-         // Listen for general updates (e.g., player added/deleted on another client)
-         socket.on("update", function(data) {
-            console.log("Received 'update' event on db_settings:", data);
-            // Optionally add a small delay to avoid race conditions if update is immediate
-            setTimeout(loadPlayers, 200);
-         });
-    }
-
-    // --- NEW: Collapsible Player List Logic ---
-    function initializeCollapsible() {
-        const header = document.getElementById('playerListHeader');
-        const content = document.getElementById('playerListContent');
-        const arrow = header.querySelector('.arrow');
-
-        header.addEventListener('click', function() {
-            const isCollapsed = header.classList.contains('collapsed');
-            if (isCollapsed) {
-                // Expand
-                header.classList.remove('collapsed');
-                arrow.style.transform = 'rotate(0deg)';
-                $(content).slideDown(300); // Use jQuery slideDown for smooth animation
-            } else {
-                // Collapse
-                header.classList.add('collapsed');
-                arrow.style.transform = 'rotate(-90deg)';
-                $(content).slideUp(300); // Use jQuery slideUp
-            }
-        });
-
-        // Ensure initial state matches class (start collapsed)
-        if (header.classList.contains('collapsed')) {
-            content.style.display = 'none';
-            arrow.style.transform = 'rotate(-90deg)';
-        } else {
-             content.style.display = 'block';
-             arrow.style.transform = 'rotate(0deg)';
-        }
-    }
-
 
     // Initial Load and Form Binding
     document.addEventListener("DOMContentLoaded", () => {
       loadPlayers(); // Load players when the page is ready
-      initializeSocketIO(); // Connect to Socket.IO
-      initializeCollapsible(); // Setup the collapsible player list
 
       // Bind the add player form submission
       document.getElementById("addPlayerForm").addEventListener("submit", e => {

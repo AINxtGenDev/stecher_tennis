@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tennis-Rangliste 2025 - Matthias Stecher</title>
+  <title>Tennis-Rangliste 2025 - Leicht modern 3D</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
@@ -102,12 +102,12 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       color: #000; /* Ensure text is visible on orange */
     }
-    /* Blocked Loser (Grey) - Blocked as Challenger - CHANGED FROM ORANGE TO GREY */
+    /* Blocked Loser (Orange) - Blocked as Challenger */
     .ranking-list .player.blocked-loser {
-      background: linear-gradient(145deg, #e6e6e6, #cccccc);
-      border: 2px solid #6c757d;
-      box-shadow: 0 4px 8px rgba(108, 117, 125, 0.3);
-      color: #333; /* Ensure text is visible on grey */
+      background: linear-gradient(145deg, #ffa500, #ff8c00); /* Same as available */
+      border: 2px solid #ff8c00;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Standard shadow */
+      color: #000; /* Ensure text is visible on orange */
     }
 
     /* Diagonal line overlay for blocked players (both winner and loser) */
@@ -204,13 +204,13 @@
       background: linear-gradient(145deg, #ffe6e6, #ffcccc);
       border-color: #dc3545;
     }
-    .legend-item.blocked .legend-color { /* Winner - Orange */
+    .legend-item.blocked .legend-color { /* Winner - CHANGED FROM GREY TO ORANGE */
       background: linear-gradient(145deg, #ffa500, #ff8c00);
       border-color: #ff8c00;
     }
-     .legend-item.blocked-loser .legend-color { /* Loser - CHANGED FROM ORANGE TO GREY */
-      background: linear-gradient(145deg, #e6e6e6, #cccccc);
-      border-color: #6c757d;
+     .legend-item.blocked-loser .legend-color { /* Loser */
+      background: linear-gradient(145deg, #ffa500, #ff8c00); /* Orange */
+      border-color: #ff8c00;
     }
     .legend-item.unavailable .legend-color {
       background: #ffffff;
@@ -654,86 +654,6 @@
       }
     }
     */
-    
-    /* Animation overlay styles */
-    .animation-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease;
-    }
-
-    .animation-overlay.active {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .animation-text {
-      font-family: 'Roboto', sans-serif;
-      font-size: 3rem;
-      font-weight: bold;
-      color: #fff;
-      text-align: center;
-      animation: textAnimation 2s ease-in-out;
-      text-shadow: 0 0 10px rgba(255, 165, 0, 0.8), 0 0 20px rgba(255, 165, 0, 0.5);
-    }
-
-    @keyframes textAnimation {
-      0% {
-        transform: scale(0.5);
-        opacity: 0;
-      }
-      20% {
-        transform: scale(1.2);
-        opacity: 1;
-      }
-      40% {
-        transform: scale(0.9);
-      }
-      60% {
-        transform: scale(1.1);
-      }
-      80% {
-        transform: scale(0.98);
-      }
-      100% {
-        transform: scale(1);
-      }
-    }
-
-    .tennis-ball {
-      position: absolute;
-      width: 30px;
-      height: 30px;
-      background: radial-gradient(circle at 10px 10px, #e6ff00 0%, #c8d600 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(230, 255, 0, 0.6);
-      animation: flyBall 1.5s ease-out;
-      opacity: 0;
-    }
-
-    @keyframes flyBall {
-      0% {
-        transform: translate(0, 0) scale(0.2);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      100% {
-        transform: translate(var(--tx), var(--ty)) scale(1);
-        opacity: 0;
-      }
-    }
   </style>
 </head>
 <body>
@@ -962,14 +882,14 @@
                 {% set result_class = "" %}
                 {% if challenge['result'] == 'challenger_wins' %}
                   {% set result_class = "result-challenger-wins" %}
-                  {% set result_text = challenge['challenger_name'] + " gewann: " %}
+                  {% set result_text = challenge['challenger_name'] + " gewann" %}
                   {% if challenge['score_details'] %}
                     {% set result_text = result_text + " " + challenge['score_details'] %}
                     {# --- {% set result_text = result_text + " (" + challenge['score_details'] + ")" %} --- #}
                   {% endif %}
                 {% elif challenge['result'] == 'opponent_wins' %}
                   {% set result_class = "result-opponent-wins" %}
-                  {% set result_text = challenge['opponent_name'] + " gewann: " %}
+                  {% set result_text = challenge['opponent_name'] + " gewann" %}
                   {% if challenge['score_details'] %}
                     {% set result_text = result_text + " " + challenge['score_details'] %}
                     {# --- {% set result_text = result_text + " (" + challenge['score_details'] + ")" %} --- #}
@@ -1014,11 +934,6 @@
         <div id="newplayer-result" class="alert" style="display: none;"></div>
       </div>
     </div>
-  </div>
-
-  <!-- Animation overlay div -->
-  <div class="animation-overlay" id="animationOverlay">
-    <div class="animation-text">... viel Spass beim Herausfordern!</div>
   </div>
 
   <!-- Load Socket.IO client -->
@@ -1440,14 +1355,17 @@
         opponentSelect.html('<option value="">Wählen Sie einen Gegner...</option>').prop("disabled", true).val(""); // Clear and disable opponent select
         $("#challengeButton").prop("disabled", true);
 
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
-        applyTemporarySelections();
+        // Remove previous temp highlights before applying new ones
+        if(previousChallengerId) $(`#player-${previousChallengerId}`).removeClass('challenger');
+        $('.player.opponent').removeClass('opponent');   // Remove temp red opponent highlight
+
+        applyTemporarySelections(); // Apply new temp highlights (only challenger for now)
 
         if (challengerId) {
           // Fetch eligible opponents
           $.post("/eligible_opponents", { challenger_id: challengerId })
             .done(function (data) {
+                // $(opponentSelect).addClass("opponent-select"); // Already has class
                 if (data && data.length > 0) {
                     data.forEach((o) => {
                       const opt = document.createElement("option");
@@ -1477,9 +1395,9 @@
         const previousOpponentId = tempOpponentId;
         tempOpponentId = opponentId; // Store temporary selection
 
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
-        applyTemporarySelections();
+        // Remove previous temp opponent highlight before applying new one
+        if(previousOpponentId) $(`#player-${previousOpponentId}`).removeClass('opponent');
+        applyTemporarySelections(); // Apply all temp highlights (challenger + new opponent)
 
         $("#challengeButton").prop("disabled", !(tempChallengerId && tempOpponentId));
       });
@@ -1556,9 +1474,9 @@
         const previousOpponentId = tempNewPlayerOpponentId;
         tempNewPlayerOpponentId = opponentId; // Store temp selection
 
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
-        applyTemporarySelections();
+        // Remove previous temp opponent highlights before applying new one
+        if(previousOpponentId) $(`#player-${previousOpponentId}`).removeClass('opponent');
+        applyTemporarySelections(); // Apply all temp highlights
 
         validateNewPlayerChallenge(); // Re-validate button state
       });
@@ -1607,94 +1525,35 @@
 
       // --- End New Player Challenge Logic ---
 
-      // Duck logo click animation
-      const duckLogo = document.querySelector('img[src="/static/a1_duck_11.png"]');
-      if (duckLogo) {
-        // Add ID and cursor pointer to the logo
-        duckLogo.id = 'duckLogo';
-        duckLogo.style.cursor = 'pointer';
-        
-        duckLogo.addEventListener('click', function() {
-          const overlay = document.getElementById('animationOverlay');
-          
-          // Show the overlay
-          overlay.classList.add('active');
-          
-          // Create tennis balls flying from the center
-          const centerX = window.innerWidth / 2;
-          const centerY = window.innerHeight / 2;
-          
-          for (let i = 0; i < 12; i++) {
-            const ball = document.createElement('div');
-            ball.className = 'tennis-ball';
-            
-            // Random angles for the balls to fly
-            const angle = (i / 12) * 2 * Math.PI;
-            const distance = Math.min(window.innerWidth, window.innerHeight) * 0.4;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance;
-            
-            ball.style.setProperty('--tx', `${tx}px`);
-            ball.style.setProperty('--ty', `${ty}px`);
-            ball.style.left = `${centerX}px`;
-            ball.style.top = `${centerY}px`;
-            
-            overlay.appendChild(ball);
-            
-            // Remove balls after animation
-            setTimeout(() => {
-              if (ball.parentNode) {
-                ball.parentNode.removeChild(ball);
-              }
-            }, 1500);
-          }
-          
-          // Hide the overlay after 2.5 seconds
-          setTimeout(function() {
-            overlay.classList.remove('active');
-            
-            // Remove any remaining tennis balls
-            const balls = overlay.querySelectorAll('.tennis-ball');
-            balls.forEach(ball => {
-              if (ball.parentNode) {
-                ball.parentNode.removeChild(ball);
-              }
-            });
-          }, 2500);
-        });
-      }
-
     }); // End document ready
   </script>
 
   <!-- Footer Section -->
-<footer>
-  <div class="container" style="position: relative;">
-    <div class="row">
-      <div class="col-md-6 mb-3 mb-md-0">
-        <h5>Kontaktinformationen</h5>
-        <p>
-          Matthias Stecher<br />
-          <a href="mailto:matthias.stecher@hpe.com">matthias.stecher@hpe.com</a><br />
-          Mobile: 0664 105 25 56
-        </p>
+  <footer>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <h5>Kontaktinformationen</h5>
+          <p>
+            Matthias Stecher<br />
+            <a href="mailto:matthias.stecher@hpe.com">matthias.stecher@hpe.com</a><br />
+            Mobile: 0664 105 25 56
+          </p>
+        </div>
+        <div class="col-md-6">
+          <h5>Rechtliche Informationen</h5>
+          <p>
+            © 2025 Matthias Stecher. Der Inhalt dieser Webseite ist urheberrechtlich geschützt.<br />
+            Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.
+          </p>
+        </div>
       </div>
-      <div class="col-md-6">
-        <h5>Rechtliche Informationen</h5>
-        <p>
-          © 2025 Matthias Stecher. Der Inhalt dieser Webseite ist urheberrechtlich geschützt.<br />
-          Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.
-        </p>
+      <div class="row">
+        <div class="col-12 text-center mt-3">
+          <small>Version: 1.73G  •  30. April 2025</small> <!-- Version Bump -->
+        </div>
       </div>
     </div>
-    <div class="row">
-      <div class="col-12 text-center mt-3">
-        <small>Version: 1.81G  •  6. Juni 2025</small> <!-- Version Bump -->
-      </div>
-    </div>
-    
-    <!-- Logo positioned in the lower right corner with 15px padding, scaled to 1/19 of original size -->
-    <img id="duckLogo" src="/static/a1_duck_11.png" alt="Duck Logo" width="46" height="46" style="position: absolute; bottom: 15px; right: 15px; cursor: pointer;" />
-  </div>
-</footer></body>
+  </footer>
+</body>
 </html>

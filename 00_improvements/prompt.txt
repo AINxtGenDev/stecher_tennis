@@ -1,0 +1,28 @@
+The Tennis Ranking List web application is used to manage tennis players and organize challenges between them.
+In addition to displaying the current ranking list, the application offers functions for dynamically updating
+the ranking positions and for managing player blocking and availability.
+
+Backend: Python with the Flask framework
+Real-time communication: Flask-SocketIO
+Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
+Database: SQLite
+JSON data for initializing the players (initial_players.json)
+
+Please always ask questions if something is unclear.
+
+
+Bei der Herausforderungs-Logik muss ncoch folgende sehrwichtige Anpassung durchgeführt werden,
+everything else must not be changed.
+
+If players are in a challenge, they may not be asked to move up.
+Examples:
+Row 7 (e.g. rank 25) may normally challenge 24, 23, 22, 21, 20 and 19 (max. 6 places upwards). If, for example, rank 19 and rank 23
+are currently in a challenge, a valid challenge may only be allowed between ranks 24, 22, 21, and 20, it may not be challenged further upwards.
+
+Row 8 (e.g. rank 33) may normally challenge 32, 31, 30, 29, 28, 27, and 26 (max. 7 places upwards). If, for example, rank 26 and rank 31
+are currently in a challenge and rank 28 is not available, challenges between the following ranks may be allowed.
+Ranks 32, 30, 29, 27 and 25
+
+Please check the entire player logic again very carefully.
+
+

@@ -1,0 +1,104 @@
+def eligible_opponents_for(challenger):
+    db = get_db()
+    challenger_rank = challenger["rank"]
+    now_dt = get_current_time()  # Get current datetime object
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")  # String version for DB queries
+    active_ids = get_active_challenge_ids()
+
+    # --- NEW RULE: Players from rank 11 onwards cannot challenge upwards if they are blocked as a challenger ---
+    if challenger_rank >= 11:
+        is_challenger_blocked = False
+        if challenger["block_challenger_until"]:
+            try:
+                block_dt = challenger["block_challenger_until"]
+                # Ensure block_dt is a datetime object for comparison
+                if isinstance(block_dt, str):
+                    # Handle potential fractional seconds from Python's strftime
+                    block_dt_str = block_dt.split(".")[0]
+                    block_dt = datetime.strptime(block_dt_str, "%Y-%m-%d %H:%M:%S")
+                
+                if isinstance(block_dt, datetime) and now_dt < block_dt:
+                    is_challenger_blocked = True
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.warning(
+                    f"Could not parse block_challenger_until for eligibility check (challenger {challenger['id']}, value: '{challenger['block_challenger_until']}'): {e}"
+                )
+        
+        if is_challenger_blocked:
+            logger.info(
+                f"Challenger {challenger['name']} (Rank {challenger_rank}) is blocked from challenging upwards until {challenger['block_challenger_until']}. No eligible opponents."
+            )
+            return [] # Return empty list if challenger (rank 11+) is blocked from initiating challenges
+    # --- END NEW RULE ---
+
+    # Rule: Top 10 can challenge anyone above them
+    # This group is not affected by the new "rank 11+ and blocked" rule for upward challenges.
+    # General block status (if they can challenge at all) is handled by the /challenge route and dropdown population.
+    if challenger_rank <= 10:
+        query = (
+            "SELECT * FROM players WHERE rank < ? AND available = 1 "
+            "AND id != ? "  # Cannot challenge self
+            "AND (block_opponent_until IS NULL OR block_opponent_until <= ?) ORDER BY rank ASC"
+        )
+        parameters = (challenger_rank, challenger["id"], now_str)
+        cur = db.execute(query, parameters)
+        eligible = cur.fetchall()
+        # Filter out players already in an active challenge
+        eligible = [p for p in eligible if p["id"] not in active_ids]
+        # logger.info("Eligible opponents for rank %s (<=10): %d", challenger_rank, len(eligible))
+        return eligible
+
+    # Rule: Ranks 11-36 challenge based on rank difference bands
+    # This section is now implicitly guarded: if challenger_rank >= 11 and they were blocked,
+    # the function would have returned [] already.
+    if 11 <= challenger_rank <= 15:
+        max_rank_diff = 4  # Can challenge up to 4 ranks higher
+    elif 16 <= challenger_rank <= 21:
+        max_rank_diff = 5  # Can challenge up to 5 ranks higher
+    elif 22 <= challenger_rank <= 28:
+        max_rank_diff = 6  # Can challenge up to 6 ranks higher
+    elif 29 <= challenger_rank <= 36:
+        max_rank_diff = 7  # Can challenge up to 7 ranks higher
+    else:  # Should not happen if rank is always >= 1
+        max_rank_diff = 0
+
+    # Original min rank to challenge
+    original_min_eligible_rank = max(1, challenger_rank - max_rank_diff)
+
+    # Count unavailable players in the normal range
+    query_unavailable_count = (
+        "SELECT COUNT(*) as unavailable_count FROM players "
+        "WHERE rank >= ? AND rank < ? AND available = 0"
+    )
+    cur = db.execute(
+        query_unavailable_count, (original_min_eligible_rank, challenger_rank)
+    )
+    unavailable_count = cur.fetchone()["unavailable_count"]
+
+    # Adjust min rank to include additional players to compensate for unavailable ones
+    # But never go below rank 1
+    adjusted_min_eligible_rank = max(1, original_min_eligible_rank - unavailable_count)
+
+    # Query eligible opponents with adjusted range
+    query = (
+        "SELECT * FROM players WHERE rank >= ? AND rank < ? AND available = 1 "
+        "AND id != ? "  # Cannot challenge self
+        "AND (block_opponent_until IS NULL OR block_opponent_until <= ?) ORDER BY rank ASC"
+    )
+    parameters = (
+        adjusted_min_eligible_rank,
+        challenger_rank,
+        challenger["id"],
+        now_str,
+    )
+    cur = db.execute(query, parameters)
+    eligible = cur.fetchall()
+
+    # Filter out players already in an active challenge
+    eligible = [p for p in eligible if p["id"] not in active_ids]
+
+    # logger.info(
+    #     "Eligible opponents for rank %s (>=11): %d (Adjusted range %d-%d, Unavailable: %d)",
+    #     challenger_rank, len(eligible), adjusted_min_eligible_rank, challenger_rank - 1, unavailable_count
+    # )
+    return eligible

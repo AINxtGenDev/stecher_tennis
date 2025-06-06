@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehler</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f8d7da; color: #721c24; }
+        .container { max-width: 600px; margin: 50px auto; padding: 20px; background-color: #f5c6cb; border: 1px solid #f1b0b7; border-radius: 5px; }
+        h1 { color: #721c24; }
+        a { color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ein Fehler ist aufgetreten</h1>
+        <p>{{ error_message or 'Ein unerwarteter Fehler ist aufgetreten.' }}</p>
+        <p><a href="{{ url_for('index') }}">Zurück zur Startseite</a></p>
+    </div>
+</body>
+</html>

@@ -47,16 +47,30 @@ Sperrfristen
 Der Sieger darf sofort neue Herausforderungen aussprechen, darf aber 7 Tage lang nicht von anderen herausgefordert werden.
 Der Verlierer darf sofort herausgefordert werden, kann selbst jedoch erst nach 7 Tagen wieder neue Herausforderungen aussprechen.
 
-Sonderfall 1 für nicht verfügbare Spieler (ab Rang 11)
-Ist ein Spieler in den Rängen 11–36, der eigentlich gefordert werden könnte, in einer Datenbank als „nicht verfügbar“ markiert, so darf der Herausfordernde für diesen nicht verfügbaren Rang jeweils einen zusätzlichen Rang weiter oben in die Liste der möglichen Forderungen aufnehmen.
+Sonderfall 1: gültig ab Rang 11 bis Rang 36: Ist ein Spieler in den Rängen 11–36, der eigentlich gefordert werden könnte,
+in einer Datenbank als „nicht verfügbar“ markiert, so darf der Herausfordernde für diesen nicht verfügbaren Rang jeweils
+einen zusätzlichen Rang weiter oben in die Liste der möglichen Forderungen aufnehmen.
 
 Beispiele:
-
 Reihe 5 (z. B. Rang 15) darf normalerweise die Ränge 14, 13, 12 und 11 fordern (max. 4 Plätze nach oben).
-Falls Rang 11 als „nicht verfügbar“ markiert ist, wird Rang 11 aus der Liste entfernt. Gleichzeitig darf zusätzlich Rang 10 aufgenommen werden, also genau einen Platz höher als eigentlich erlaubt.
+Falls Rang 11 als „nicht verfügbar“ markiert ist, wird Rang 11 aus der Liste möglicher Forderungen entfernt, gleichzeitig darf jetzt aber
+zusätzlich Rang 10 aufgenommen werden, also genau einen Platz höher als eigentlich erlaubt. (jedoch nicht mehr als 4 Plätzze nach oben)
+
 Reihe 6 (z. B. Rang 19) darf normalerweise die Ränge 18, 17, 16, 15 und 14 fordern (max. 5 Plätze nach oben).
-Falls Rang 14 als „nicht verfügbar“ markiert ist, wird Rang 14 aus der Liste entfernt. Gleichzeitig darf zusätzlich Rang 13 aufgenommen werden.
-Praktisch bedeutet das: Für jeden nicht verfügbaren Spieler innerhalb der normalen Forderungsspanne kann ein zusätzlicher Rang oberhalb dieser Spanne forderbar werden.
+Falls Rang 14 als „nicht verfügbar“ markiert ist, wird Rang 14 aus der Liste möglicher Forderungen entfernt, gleichzeitig darf jetzt aber
+zusätzlich Rang 13 aufgenommen werden. (jedoch nicht mehr als 5 Plätzze nach oben)
+
+Praktisch bedeutet das: Für jeden nicht verfügbaren Spieler innerhalb der normalen Forderungsspanne kann ein zusätzlicher Rang oberhalb
+dieser Spanne forderbar werden.
+
+Befinden sich Spieler in einer Herausforderung so darf man nicht weiter nach oben fordern.
+Beispiele:
+Reihe 7 (z. B. Rang 25)	darf normalerweise 24, 23, 22, 21, 20, und 19 fordern (max. 6 Plätze nach oben). Falls sich z.B: Rang 19 und Rang 23 gerade in einer Herausforderung befindet darf daher nur zwischen den Rängen 24, 22, 21, und 20 eine gültige Herausforderung zugelassen werden, es darf nicht weiter nach oben gefordert werden.
+
+Reihe 8 (z. B. Rang 33)	darf normalerweise 32, 31, 30, 29, 28, 27, und 26 fordern (max. 7 Plätze nach oben). Falls sich z.B: Rang 26 und Rang 31 gerade in einer Herausforderung befindet und Rang 28 nicht verfügbar ist dürfen Herausforderungen zwischen folgenden Rängen zugelassen werden. Ränge 32, 30, 29, 27 und 25
+
+Reihe 6 (z. B. Rang 18)	darf normalerweise 17, 16, 15, 14 und 13 fordern (max. 5 Plätze nach oben). Falls sich z.B: Rang 17, Rang 16, Rang 15, Rang 14 und Rang 13 gerade in einer Herausforderung befinden ist kein Gegner für eine Herausforderung verfügbar, es darf nicht weiter nach oben gefordert werden.
+
 
 #####
 Ist ein Spieler als nicht verfügbar markiert und wird danach wieder als verfügbardargestellt,
@@ -66,10 +80,78 @@ Da Spieler "10" aber "umgedreht" ist dürfte er ebenso Spieler "9" einfordern.
 Wenn sich dieser Spieler wieder "Zurückgedreht" meldet, darf er 3 Tage lang gefordert werden,
 selbst aber diese 3 Tage nicht fordern.
 #####
-
 Sonderfall 2: Neuer Spieler
 Ein Spieler, der bisher nicht in der Rangliste (1–36) geführt wird, darf bis Rang 11 fordern.
 Gewinnt der neue Spieler die Forderung, übernimmt er diesen Rang; der bisherige Inhaber des Rangs rückt einen Platz nach hinten. Verliert der neue Spieler, so nimmt er den letzten Platz in der Rangliste (also Rang 36) ein.
+#####
+#####
 
+Ausstehende Herausforderungen admin.html:
+
+Der Administrator wählt den Sieger aus der Dropdownliste aus und muss das korrekte Endergebnis eintragen
+dafür sind folgende Vorschriften unbedingt zu berücksichtigen. Es dürfen nur korrekte Eingaben zugelassen
+und in der Datenbank abgespeichert werden. Das Endergebnis muss innerhalb index.html unter Durchgeführte Herausforderungen
+dargestellt werden.
+
+best of three bedeutet dass ein Match aus maximal drei Sätzen besteht, und der Spieler, der zuerst zwei Sätze gewinnt, gewinnt das Match
+Ein Spieler muss zwei von drei Sätzen gewinnen, um das Match zu gewinnen.
+Falls nach zwei Sätzen jeder Spieler einen Satz gewonnen hat, entscheidet der dritte Satz über den Sieger.
+
+Tie-Break:
+Ein Tie-Break bedeutet, dass ein Satz nicht endlos weitergespielt wird. Stattdessen wird ein kurzes Entscheidungsspiel – der Tie-Break – gespielt,
+um den Satzsieger zu bestimmen.
+Wird bei einem Satz ein Stand von 6:6 erreicht, folgt ein Tie-Break.
+Im Tie-Break gewinnt, wer zuerst 7 Punkte hat und mindestens 2 Punkte Vorsprung (z.B. 7:5, 8:6, 12:10).
+Wer den Tie-Break gewinnt, gewinnt den Satz mit 7:6
+
+Beispiele 1 für Tiebreak:
+Satz: 7:6
+Tiebreak: 7:5
+Schreibweise: 7:6 (7:5)
+
+Beispiele 2 für Tiebreak:
+Satz: 6:7
+Tiebreak: 6:8
+Schreibweise: 6:7 (6:8)
+
+Beispiele 3 für Tiebreak:
+Satz: 7:6
+Tiebreak: 12:10
+Schreibweise: 7:6 (12:10)
+
+
+
+z.B Th. Hofer gegen R. Haschke
+Challenger: Th. Hofer
+Opponent: R. Haschke
+
+Beispiele für korrekte Endergebnisse Challanger gewinnt:
+Satz 1: 6:0
+Satz 2: 6:3
+
+Satz 1: 3:6
+Satz 2: 7:6 (12:10)
+Satz 3: 7:5
+
+Satz 1: 6:4
+Satz 2: 3:6
+Satz 3: 6:2
+
+Beispiele für korrekte Endergebnisse Opponent gewinnt:
+
+Satz 1: 6:4
+Satz 2: 3:6
+Satz 3: 3:6
+
+Satz 1: 1:6
+Satz 2: 6:7 (6:8)
+Satz 3: 0:6
+
+Satz 1: 7:6 (7:5)
+Satz 2: 6:7 (8:10)
+Satz 3: 5:7
+
+#####
+#####
 
 

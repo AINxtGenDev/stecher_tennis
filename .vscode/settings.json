@@ -1,0 +1,6 @@
+{
+    // disable Copilot inline completions:
+    "github.copilot.enable": {
+        "*": false  // turn off completions in all languages
+    }
+}

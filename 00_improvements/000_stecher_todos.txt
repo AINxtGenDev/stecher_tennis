@@ -1,0 +1,58 @@
+
+https://stechertennis.duckdns.org:10443/index
+
+
+
+
+wie besprochen übersende ich dir gerne die Änderungen für die Forderungstabelle.
+
+Bei den Beispielen die ich bei den einzelnen Punkten erwähne, gehe ich immer von eine Tabelle ohne sperren oder Forderungen aus.
+
+Nachdem eine Forderung gespielt wurde, soll der Spieler der gewonnen hat „grau“ gekennzeichnet sein und der Spieler der verloren hat „orange“ (vorher auch „grau“) gekennzeichnet sein.
+Die Logik passt, aber die Farbe bitte ändern.
+
+ 
+Sobald sich ein Spieler von „nicht Verfügbar“ auf „Verfügbar“ ändert, soll er bitte auch in „orange“ gekennzeichnet sein. Aktuell wird er auch „grau“.
+Die Logik passt, aber die Farbe bitte ändern.
+  
+
+Bei dem Feld „Aktive Herausforderungen“ bitte bei jeder Forderung einen Freitext einfügen in dem das Datum und die Uhrzeit eingefügt werden kann wann gespielt wird.
+ 
+
+Unter dem Punkt „Aktive Herausforderungen“ bitte eine Feld namens „Vergangene Herausforderungen“ erstellen, in dem die vergangenen Herausforderungen dargestellt werden und das Ergebnis zu sehen ist.
+ 
+
+Folgende Logik bitte korrigieren, ein Spieler darf per Definition eine gewisse Anzahl an Spieler fordern. Sobald ein Spieler nicht verfügbar (weiss) ist, darf er um diese Anzahl weiter nach vorne fordern. Aktuell ist es so, dass er auch weiter nach vorne fordern darf wenn die Spieler in seiner Range in einer Forderung sind.
+Beispiel:
+
+Ausgangslage: Spieler 23, Spieler 24, Spieler 25, Speiler 26 sind in einer Forderung; Spieler 27 ist nicht Verfügbar.
+
+Spieler 28 kann immer 6 Spieler fordern, da Einer dieser 6 Spielern nicht Verfügbar ist, darf er um Einen weiter nach vorne fordern, sprich bis zum Spieler 21.
+
+Er kann also nur Spieler 21 und Spieler 22 fordern, da die Spieler 23-26 in Forderungen sind. Aktuell ist es so, dass er, da die Spieler in Forderungen, sind noch weiter nach vorne fordern darf und das soll nicht sein.
+
+ 
+
+Auf der „admin“ Seite bitte ein Freifeld einfügen in dem das Ergebnis eintragbar ist. Da die Logik zu den Ergebnissen sehr kompliziert ist ist dieses Freifeld einfacher.
+Allerdings ist es wichtig dass man sieht beim eintragen wer an Erster und wer an Zweiter Stelle steht.
+
+Beispiel: Stecher vs. Plessl, du gewinnst, dann schreibt man es wie folgt:
+
+0:6, 0:6
+
+Stecher gewinnt:
+
+6:0, 6:0
+
+Sprich es ist immer wichtig, dass das Ergebnis so steht wie die Namen eingegeben werden.
+
+Da es auf zwei gewonnen Sätze geht ist es auch möglich dass ein Ergebnis aus drei Sätzen besteht, aber auch 6:0, 0:6, 17:15 ist möglich.
+
+ 
+
+Bei „db_settings“ bitte ein zusätzliches Feld einfügen mit „Sperre aufheben“
+ 
+
+Vielen Dank und bei Fragen rufe mich gerne an.
+
+

@@ -1,7 +1,14 @@
--- schema.sql (updated with blocking period columns and new-player flag)
-CREATE TABLE IF NOT EXISTS players (
+-- schema.sql (updated with scheduled_play_date)
+-- die DROP TABLE IF EXISTS-Anweisungen sind jetzt in Ordnung
+-- da das Skript nur ausgeführt wird wenn die Tabellen tatsächlich nicht existieren.
+-- Wenn sie existieren, schlagen die DROP-Befehle fehl oder tun nichts
+DROP TABLE IF EXISTS players;
+DROP TABLE IF EXISTS challenges;
+DROP VIEW IF EXISTS completed_challenges_view;
+
+CREATE TABLE players (
     id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     available INTEGER NOT NULL DEFAULT 1,
     rank INTEGER NOT NULL,
     unavailable_since DATETIME,
@@ -10,7 +17,7 @@ CREATE TABLE IF NOT EXISTS players (
     is_new INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS challenges (
+CREATE TABLE challenges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     challenger_id INTEGER NOT NULL,
     opponent_id INTEGER NOT NULL,
@@ -19,6 +26,31 @@ CREATE TABLE IF NOT EXISTS challenges (
     resolved_at DATETIME,
     resolved INTEGER NOT NULL DEFAULT 0,
     result TEXT,  -- 'challenger_wins', 'opponent_wins', or 'not_happened'
-    FOREIGN KEY (challenger_id) REFERENCES players(id),
-    FOREIGN KEY (opponent_id) REFERENCES players(id)
+    score_details TEXT,
+    scheduled_play_date DATE, -- NEW: Date for when the match is scheduled to be played
+    FOREIGN KEY (challenger_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (opponent_id) REFERENCES players(id) ON DELETE CASCADE
 );
+
+CREATE VIEW completed_challenges_view AS
+SELECT
+    c.id,
+    c.challenger_id,
+    c.opponent_id,
+    p1.name as challenger_name,
+    p2.name as opponent_name,
+    c.timestamp,
+    c.deadline,
+    c.resolved_at,
+    c.result,
+    c.score_details,
+    c.scheduled_play_date -- NEW: Scheduled play date in the view
+FROM challenges c
+JOIN players p1 ON c.challenger_id = p1.id
+JOIN players p2 ON c.opponent_id = p2.id
+WHERE c.resolved = 1
+ORDER BY c.resolved_at DESC;
+
+CREATE INDEX IF NOT EXISTS idx_players_rank ON players(rank);
+CREATE INDEX IF NOT EXISTS idx_challenges_resolved ON challenges(resolved);
+CREATE INDEX IF NOT EXISTS idx_challenges_deadline ON challenges(deadline);
