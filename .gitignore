@@ -8,3 +8,4 @@ mobile_stecher_tennis/*
 
 # Other exclusions
 documentation/02_app_description.txt
+.aider*
