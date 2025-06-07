@@ -26,11 +26,10 @@ Please insert a drop-down list between the names and the deadline in index.html 
 
 everything else must not be changed.
 
-provide a patch file like this example:
---- a/color_changes.py
-+++ b/color_changes.py
-@@ -123,7 +123,9 @@ def repaint_button():
--    old_line
-+    replacement_line
+Google-AI-Studio
+Gemini API: AIzaSyB9ZbdkAde1UAtnQqOf4TWmI9QZ8Sph9lc
 
-on behalf this patch file i want to use git to sync it with my repository
+/home/nuc8/miniconda3/envs/stecher_tennis/bin/python
+
+Es dürfen nur gültige Datum von heute bis spätestens dem Datum das mit Frist: angezeigt wird in der Drop-downliste erscheinen
+

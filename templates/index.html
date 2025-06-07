@@ -885,14 +885,12 @@
                     gegen
                     <span class="opponent-name-color">{{ challenge['opponent_name'] }}</span>
                 </span>
-                {# NEW: Dropdown and selected date display #}
+                {# MODIFIED: Dropdown and selected date display #}
                 <div class="challenge-date-selector">
                     <select class="form-select form-select-sm scheduled-date-dropdown">
                         {# Options will be populated by JS #}
                     </select>
-                    <span class="selected-scheduled-date ms-1">
-                        {# Populated by JS, or initially by Jinja if needed, but JS will handle it #}
-                    </span>
+                    {# The span that showed the date next to the dropdown has been removed. #}
                 </div>
                 <span class="challenge-deadline">Frist: {{ challenge['deadline'].strftime('%Y-%m-%d %H:%M') if challenge.deadline else 'N/A' }}</span> {# Format deadline #}
               </div>
@@ -1331,8 +1329,7 @@
                       const deadlineStr = $entry.data('deadline');
                       const scheduledDateStr = $entry.data('scheduled-date');
                       const $dropdown = $entry.find('.scheduled-date-dropdown');
-                      const $displaySpan = $entry.find('.selected-scheduled-date');
-
+                      
                       $dropdown.empty(); // Clear old options
                       $dropdown.append('<option value="">Datum wählen...</option>');
 
@@ -1355,10 +1352,8 @@
                       }
 
                       if (scheduledDateStr) {
-                          $displaySpan.text(scheduledDateStr);
                           $dropdown.addClass('has-selection');
                       } else {
-                          $displaySpan.text('');
                           $dropdown.removeClass('has-selection');
                       }
                   });
@@ -1622,8 +1617,7 @@
           const $dropdown = $(this);
           const challengeId = $dropdown.closest('.challenge-entry').data('challenge-id');
           const selectedDate = $dropdown.val();
-          const $displaySpan = $dropdown.siblings('.selected-scheduled-date');
-
+          
           // Disable dropdown during request
           $dropdown.prop('disabled', true);
 
@@ -1636,7 +1630,6 @@
               },
               success: function(response) {
                   if (response.success) {
-                      $displaySpan.text(selectedDate || ''); // Update display
                       if (selectedDate) {
                           $dropdown.addClass('has-selection');
                       } else {
@@ -1822,7 +1815,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 1.82G  •  6. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 1.83G  •  7. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     
