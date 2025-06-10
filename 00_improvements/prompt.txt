@@ -8,36 +8,30 @@ Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
 Database: SQLite
 JSON data for initializing the players (initial_players.json)
 
-Please always ask questions if something is unclear.
+I have found an logic error within admin.html and its important to fix it:
 
-I have found another error which needs to be fixed:
-Within index.html Aktive Herausforderungen the drop-down list not correct datas are displayed
-valid dates for this example are:
-2025-06-07 --> the current date (now) must always be displayed as the first date
-2025-06-08
-2025-06-09
-2025-06-10
-2025-06-11
-2025-06-12
-2025-06-13
-2025-06-14
-2025-06-15
-2025-06-16
-2025-06-17 --> the date with the deadline must be displayed as the last date: 2025-06-17
-i.e. every date from the current date to the deadline date is valid.
+Pending challenges admin.html:
 
-here is another example in which the dates are not displayed correctly
-valid dates for this example are:
-2025-06-07 --> the current date (now) must always be displayed as the first date
-2025-06-08
-2025-06-09
-2025-06-10
-2025-06-11
-2025-06-12
-2025-06-13
-2025-06-14
-2025-06-15
-2025-06-16--> the date with the deadline must be displayed as the last date: 2025-06-16
-i.e. every date from the current date to the deadline date is valid.
-No date in the past may be displayed!
+The administrator selects the winner from the drop-down list and must enter the correct final result.
+Only correct entries may be allowed and saved in the database. The final result must be displayed in index.html
+under Challenges completed.
 
+best of three means that a match consists of a maximum of three sets, and the player who wins two sets first
+wins the match. A player must win two out of three sets to win the match. If after two sets each player has won one set,
+the third set decides the winner.
+
+If the opponent wins, the following examples are correct:
+
+Examples of correct final results Opponent wins:
+Example 1:
+Set 1: 3:6
+Set 2: 3:6
+
+Example 2:
+Set 1: 1:6
+Set 2: 6:7(6:8)
+
+Example 3:
+Set 1: 4:6
+Set 2: 6:3
+Set 3: 0:6

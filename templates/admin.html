@@ -733,91 +733,81 @@
        * @returns {boolean|string} - True if valid, or an error message string if invalid.
        */
       function validateMatchResult($form) {
-          const selectedWinner = $form.find('.result-select').val(); // challenger_wins, opponent_wins, not_happened
-          const specialResult = $form.find('.special-result-select').val(); // Aufgabe, Disqualifikation
+          const selectedWinner = $form.find('.result-select').val();
+          const specialResult = $form.find('.special-result-select').val();
           const s1 = $form.find('input[name="set1_score"]').val().trim();
           const s2 = $form.find('input[name="set2_score"]').val().trim();
           const s3 = $form.find('input[name="set3_score"]').val().trim();
 
-          // 1. Handle "Nicht stattgefunden" - Always valid if selected
+          // 1. Handle "Nicht stattgefunden"
           if (selectedWinner === 'not_happened') {
               return true;
           }
 
-          // 2. Handle Special Results (Aufgabe/Disqualifikation)
+          // 2. Handle Special Results
           if (specialResult) {
               if (selectedWinner === 'challenger_wins' || selectedWinner === 'opponent_wins') {
-                  return true; // Valid if a winner is selected
+                  return true;
               } else {
                   return "Bitte wählen Sie einen Sieger für das Ergebnis '" + specialResult + "'.";
               }
           }
 
-          // 3. Standard Score Validation (requires a winner selected)
+          // 3. Standard Score Validation
           if (!selectedWinner || selectedWinner === 'not_happened') {
               return "Bitte wählen Sie einen Sieger oder 'Nicht stattgefunden'.";
           }
 
-          // Need at least Set 1 and Set 2 scores
           if (!s1 || !s2) {
               return "Bitte geben Sie das Ergebnis für Satz 1 und Satz 2 ein.";
           }
 
           let challengerSetsWon = 0;
           let opponentSetsWon = 0;
-          const scores = [s1, s2, s3];
-          let errorMessage = null; // Store first error found
 
-          // First, process all set scores
-          for (let i = 0; i < scores.length; i++) {
-              const scoreStr = scores[i];
-              if (!scoreStr) {
-                  // Allow empty 3rd set if match already decided
-                  if (i === 2) {
-                      continue;
-                  }
-                  // If set 1 or 2 is empty, it's an error (caught earlier)
-                  // If set 3 is empty and match not decided, it's an error
-                  if (i === 2 && challengerSetsWon < 2 && opponentSetsWon < 2) {
-                      errorMessage = errorMessage || `Satz ${i + 1} Ergebnis fehlt, obwohl das Match noch nicht entschieden ist.`;
-                  }
-                  continue; // Skip empty scores otherwise
-              }
-
-              const setResult = parseSetScore(scoreStr);
-              if (setResult === null) {
-                  return `Ungültiges Format oder Ergebnis für Satz ${i + 1}: "${scoreStr}".`; // Return immediately on format error
-              }
-
-              if (setResult.challengerWins) {
-                  challengerSetsWon++;
-              } else {
-                  opponentSetsWon++;
-              }
+          // Parse Set 1
+          const setResult1 = parseSetScore(s1);
+          if (setResult1 === null) {
+              return `Ungültiges Format oder Ergebnis für Satz 1: "${s1}".`;
           }
+          if (setResult1.challengerWins) challengerSetsWon++; else opponentSetsWon++;
 
-          // After processing all sets, check if third set was needed
-          if (s3 && (challengerSetsWon === 2 && opponentSetsWon === 0) || (opponentSetsWon === 2 && challengerSetsWon === 0)) {
-              return `Das Match hätte bereits nach Satz 2 beendet sein müssen (Stand: ${challengerSetsWon}:${opponentSetsWon}).`;
+          // Parse Set 2
+          const setResult2 = parseSetScore(s2);
+          if (setResult2 === null) {
+              return `Ungültiges Format oder Ergebnis für Satz 2: "${s2}".`;
           }
+          if (setResult2.challengerWins) challengerSetsWon++; else opponentSetsWon++;
 
-          // If third set is empty but needed
-          if (!s3 && challengerSetsWon === 1 && opponentSetsWon === 1) {
-              return `Satz 3 Ergebnis fehlt, obwohl das Match noch nicht entschieden ist (Stand: 1:1).`;
-          }
-          
-          if (errorMessage) {
-              return errorMessage; // Return the first logical error found
+          // Check after 2 sets
+          if (challengerSetsWon === 2 || opponentSetsWon === 2) {
+              if (s3) {
+                  return `Das Match war bereits nach 2 Sätzen entschieden. Satz 3 darf nicht eingegeben werden.`;
+              }
+          } else { // Score is 1-1
+              if (!s3) {
+                  return `Das Match ist nach 2 Sätzen unentschieden (1:1). Satz 3 muss eingegeben werden.`;
+              }
+              const setResult3 = parseSetScore(s3);
+              if (setResult3 === null) {
+                  return `Ungültiges Format oder Ergebnis für Satz 3: "${s3}".`;
+              }
+              if (setResult3.challengerWins) challengerSetsWon++; else opponentSetsWon++;
           }
 
           // Determine overall winner from scores
           let calculatedWinner = null;
-          if (challengerSetsWon === 2 && opponentSetsWon <= 1) {
+          if (challengerSetsWon > opponentSetsWon) {
               calculatedWinner = 'challenger_wins';
-          } else if (opponentSetsWon === 2 && challengerSetsWon <= 1) {
+          } else if (opponentSetsWon > challengerSetsWon) {
               calculatedWinner = 'opponent_wins';
           } else {
-              // Should not happen if previous checks are correct, unless only 1 set was played etc.
+              // This case should only be reachable if the logic above fails, e.g. 1-1 without a third set.
+              return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`;
+          }
+          
+          // Final check on total sets won
+          if (challengerSetsWon < 2 && opponentSetsWon < 2) {
               return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`;
           }
 
@@ -827,7 +817,6 @@
               return `Der ausgewählte Sieger (${selectedWinnerName}) stimmt nicht mit dem Ergebnis der Sätze (${challengerSetsWon}:${opponentSetsWon}) überein.`;
           }
 
-          // All checks passed
           return true;
       }
 
