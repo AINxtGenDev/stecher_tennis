@@ -167,14 +167,15 @@ def create_pyramid(players):
 
 def get_active_challenges():
     db = get_db()
-    now = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
+    now_dt = get_current_time()  # Get datetime object
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
     try:
         cur = db.execute(
             "SELECT c.*, p1.name as challenger_name, p2.name as opponent_name FROM challenges c "
             "JOIN players p1 ON c.challenger_id = p1.id "
             "JOIN players p2 ON c.opponent_id = p2.id "
             "WHERE c.resolved = 0 AND c.deadline > ?",
-            (now,),
+            (now_str,),
         )
         challenges_raw = cur.fetchall()
         challenges_processed = []
@@ -225,6 +226,16 @@ def get_active_challenges():
                     challenge["timestamp"] = None
             elif not isinstance(challenge.get("timestamp"), datetime):
                 challenge["timestamp"] = None
+
+            # NEW: Generate valid play dates for the dropdown
+            challenge["valid_play_dates"] = []
+            deadline_dt_obj = challenge.get("deadline")
+            if isinstance(deadline_dt_obj, datetime):
+                current_loop_date = now_dt.date()
+                deadline_date = deadline_dt_obj.date()
+                while current_loop_date <= deadline_date:
+                    challenge["valid_play_dates"].append(current_loop_date.isoformat())
+                    current_loop_date += timedelta(days=1)
 
             challenges_processed.append(challenge)
 
@@ -596,6 +607,7 @@ def index():
         db = get_db()
         now_dt = get_current_time()  # Get current datetime object
         now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")  # String version for DB queries
+        today_str = now_dt.date().isoformat()  # Get YYYY-MM-DD string
 
         cur = db.execute(
             """
@@ -723,6 +735,7 @@ def index():
             blocked_challenger_players=blocked_challenger_players_data,  # Now includes formatted dates
             blocked_opponent_players=blocked_opponent_players_data,  # Now includes formatted dates
             unavailable_players=unavailable_players_data,  # Now includes formatted dates
+            today_date=today_str,  # Pass the server's current date
         )
     except sqlite3.Error as db_err:
         logger.exception("Database error on /index route.")

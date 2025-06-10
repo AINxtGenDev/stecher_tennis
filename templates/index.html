@@ -771,7 +771,7 @@
     }
   </style>
 </head>
-<body>
+<body data-today-date="{{ today_date }}">
   <!-- The 'three-d' class was removed from the container to prevent rotation -->
   <div class="container">
     <h2 class="text-center mb-4">Tennis-Rangliste 2025</h2>
@@ -879,7 +879,8 @@
                    data-challenger-id="{{ challenge['challenger_id'] }}"
                    data-opponent-id="{{ challenge['opponent_id'] }}"
                    data-deadline="{{ challenge.deadline.strftime('%Y-%m-%dT%H:%M:%S') if challenge.deadline else '' }}"
-                   data-scheduled-date="{{ challenge.scheduled_play_date.strftime('%Y-%m-%d') if challenge.scheduled_play_date else '' }}">
+                   data-scheduled-date="{{ challenge.scheduled_play_date.strftime('%Y-%m-%d') if challenge.scheduled_play_date else '' }}"
+                   data-valid-play-dates='{{ challenge.valid_play_dates|tojson|safe }}'>
                 <span class="challenge-names">
                     <span class="challenger-name-color">{{ challenge['challenger_name'] }}</span>
                     gegen
@@ -1322,35 +1323,47 @@
               // Update the pyramid visuals based on the latest cached data
               updatePyramidFromCache();
 
+              // Get the server's current date from the fetched document's body
+              const serverTodayStr = doc.body.getAttribute('data-today-date');
+
               // --- Populate Date Dropdowns for Active Challenges ---
               if (doc.getElementById("active-challenges-list")) { // Check if the list exists in fetched data
                   $('#active-challenges-list .challenge-entry').each(function() {
                       const $entry = $(this);
-                      const deadlineStr = $entry.data('deadline');
+                      // Read the pre-calculated valid dates from the data attribute using .attr() for reliability.
+                      const validPlayDatesAttr = $entry.attr('data-valid-play-dates');
                       const scheduledDateStr = $entry.data('scheduled-date');
                       const $dropdown = $entry.find('.scheduled-date-dropdown');
+                      let validPlayDates = [];
+
+                      // Ensure validPlayDatesAttr is a string and looks like a JSON array before parsing.
+                      if (typeof validPlayDatesAttr === 'string' && validPlayDatesAttr.startsWith('[')) {
+                          try {
+                              validPlayDates = JSON.parse(validPlayDatesAttr);
+                          } catch (e) {
+                              console.error("Failed to parse valid-play-dates JSON:", validPlayDatesAttr, e);
+                              validPlayDates = []; // Reset to empty on error
+                          }
+                      }
                       
                       $dropdown.empty(); // Clear old options
                       $dropdown.append('<option value="">Datum wählen...</option>');
 
-                      if (deadlineStr) {
-                          const deadlineDate = new Date(deadlineStr);
-                          let currentDateLoop = new Date(); // Use a new variable for the loop
-                          currentDateLoop.setHours(0, 0, 0, 0); // Normalize to start of day
-
-                          while (currentDateLoop <= deadlineDate) {
-                              const dateValue = currentDateLoop.toISOString().split('T')[0]; // YYYY-MM-DD
-                              const optionText = dateValue; // Or format as DD.MM.YYYY
+                      // If parsing was successful and we have an array of dates, populate the dropdown.
+                      if (Array.isArray(validPlayDates) && validPlayDates.length > 0) {
+                          validPlayDates.forEach(dateValue => {
+                              const optionText = dateValue; // Format is YYYY-MM-DD
                               const $option = $('<option></option>').val(dateValue).text(optionText);
 
+                              // If this date is the currently scheduled one, select it.
                               if (scheduledDateStr && scheduledDateStr === dateValue) {
                                   $option.prop('selected', true);
                               }
                               $dropdown.append($option);
-                              currentDateLoop.setDate(currentDateLoop.getDate() + 1);
-                          }
+                          });
                       }
 
+                      // Add a visual indicator if a date has been selected.
                       if (scheduledDateStr) {
                           $dropdown.addClass('has-selection');
                       } else {
@@ -1815,7 +1828,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 1.83G  •  7. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 1.84G  •  6. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     

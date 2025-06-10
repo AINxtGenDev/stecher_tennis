@@ -136,3 +136,15 @@ to check how many byte the directory including subdirectories has
 du -sh .
 #######################################################################
 
+#######################################################################
+aider-composer
+#######################################################################
+https://github.com/lee88688/aider-composer
+cd /home/werner/development/stecher_tennis
+conda activate stecher_tennis
+pip install aider-chat flask
+code .
+Extension aider-composer
+
+
+

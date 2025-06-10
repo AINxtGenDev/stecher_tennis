@@ -10,26 +10,34 @@ JSON data for initializing the players (initial_players.json)
 
 Please always ask questions if something is unclear.
 
-The Tennis Ranking List web application is used to manage tennis players and organize challenges between them.
-In addition to displaying the current ranking list, the application offers functions for dynamically updating
-the ranking positions and for managing player blocking and availability.
+I have found another error which needs to be fixed:
+Within index.html Aktive Herausforderungen the drop-down list not correct datas are displayed
+valid dates for this example are:
+2025-06-07 --> the current date (now) must always be displayed as the first date
+2025-06-08
+2025-06-09
+2025-06-10
+2025-06-11
+2025-06-12
+2025-06-13
+2025-06-14
+2025-06-15
+2025-06-16
+2025-06-17 --> the date with the deadline must be displayed as the last date: 2025-06-17
+i.e. every date from the current date to the deadline date is valid.
 
-Backend: Python with the Flask framework
-Real-time communication: Flask-SocketIO
-Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
-Database: SQLite
-JSON data for initializing the players (initial_players.json)
-
-Please always ask questions if something is unclear.
-
-Please insert a drop-down list between the names and the deadline in index.html under “Aktive Herausforderungen”. In the drop-down list, all possible dates from now until the displayed deadline must be displayed, for example 2025-06-16 (without time), after a date has been selected, it must be displayed and saved in the database.
-
-everything else must not be changed.
-
-Google-AI-Studio
-Gemini API: AIzaSyB9ZbdkAde1UAtnQqOf4TWmI9QZ8Sph9lc
-
-/home/nuc8/miniconda3/envs/stecher_tennis/bin/python
-
-Es dürfen nur gültige Datum von heute bis spätestens dem Datum das mit Frist: angezeigt wird in der Drop-downliste erscheinen
+here is another example in which the dates are not displayed correctly
+valid dates for this example are:
+2025-06-07 --> the current date (now) must always be displayed as the first date
+2025-06-08
+2025-06-09
+2025-06-10
+2025-06-11
+2025-06-12
+2025-06-13
+2025-06-14
+2025-06-15
+2025-06-16--> the date with the deadline must be displayed as the last date: 2025-06-16
+i.e. every date from the current date to the deadline date is valid.
+No date in the past may be displayed!
 
