@@ -1428,10 +1428,26 @@ def submit_result():
                 (block_until, challenger_id),
             )
             if challenger["is_new"] == 1:  # New player lost
+                # New player loses. They will take the last spot (36).
+                # The player who was at rank 36 is pushed out.
+                # We achieve this by deleting the player at rank 36 before the final re-ranking.
+                # The new player (currently at rank 37) will then be re-ranked to 36.
+                deleted_count = db.execute(
+                    "DELETE FROM players WHERE rank = 36"
+                ).rowcount
+                logger.info(
+                    f"New player lost, removed player at rank 36 (count: {deleted_count}) to make space."
+                )
+
                 db.execute(
                     "UPDATE players SET is_new = 0 WHERE id = ?", (challenger_id,)
                 )
-            flash(f"Keine Rangänderung: {opponent['name']} gewinnt.", "info")
+                flash(
+                    f"{opponent['name']} gewinnt. {challenger['name']} wird auf Rang 36 platziert.",
+                    "info",
+                )
+            else:
+                flash(f"Keine Rangänderung: {opponent['name']} gewinnt.", "info")
 
         elif result == "not_happened":
             # No blocks applied if game didn't happen
