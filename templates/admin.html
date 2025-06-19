@@ -517,11 +517,6 @@
       // Timeout duration in milliseconds (2 minutes)
       const resetTimeoutDuration = 120 * 1000;
 
-      // --- Function to clear localStorage colors (not directly related to button state) ---
-      function clearResolvedChallengeColors(challengeId, challengerId, opponentId) {
-        // ... (implementation remains the same)
-      }
-
       // --- Function to update the list of challenges from the server ---
       function updateChallenges() {
         // Clear existing reset timers before updating content
@@ -555,7 +550,7 @@
                 }
             });
 
-          } catch (error) { console.error("Error updating challenges:", error); } // English comment
+          } catch (error) { console.error("Error updating challenges:", error); }
         });
       }
 
@@ -974,24 +969,27 @@
           console.log("Connected to server via Socket.IO");
           updateChallenges(); // Fetch initial/updated challenges on connect
       });
-      socket.on("update", function(data) {
-          console.log("Received 'update' event from server", data);
-          updateChallenges(); // Refresh challenge list when server sends update
+
+      // MODIFIED: Listen for 'data_update' to know when any data has changed.
+      socket.on("data_update", function(payload) {
+          console.log("Received 'data_update' event from server", payload);
+          // The admin page just needs to know an update happened.
+          // It re-fetches its own content to stay in sync.
+          updateChallenges();
       });
+
       socket.on("connect_error", function(error) {
           console.error("Socket.IO connection error:", error);
       });
       socket.on("disconnect", function(reason) {
           console.log("Disconnected from server:", reason);
       });
-      // --- NEW: Listen for Database Reset ---
+      
       socket.on("database_reset", function(data) {
           console.log("Received 'database_reset' event on admin page:", data);
-          // Optionally show a message before updating
           alert("Die Datenbank wurde zurückgesetzt. Die Liste der Herausforderungen wird aktualisiert.");
           updateChallenges(); // Refresh the list of challenges
       });
-      // --- END NEW ---
 
       // --- Form submission handler using event delegation ---
       $challengesContainer.on("submit", ".result-form", function(e) {
@@ -999,42 +997,32 @@
         const $form = $(this);
         const $container = $form.closest(".challenge-container");
         const $button = $form.find('.submit-button');
-        const $scoreDisplay = $form.find('.score-display-section'); // Get score display area
+        const $scoreDisplay = $form.find('.score-display-section');
 
-        // --- NEW: Perform Validation ---
+        // --- Perform Validation ---
         const validationResult = validateMatchResult($form);
         if (validationResult !== true) {
-            // Validation failed, show error message
-            $scoreDisplay.text(validationResult).addClass('score-error'); // Show error in score display
-            // Ensure button is enabled to allow correction (it might be disabled by handleInputChange)
+            $scoreDisplay.text(validationResult).addClass('score-error');
             $button.prop('disabled', false);
             console.warn("Validation failed:", validationResult);
             return; // Stop submission
         }
-        // --- END NEW ---
-
-        // --- Proceed with submission if validation passed ---
+        // --- End Validation ---
 
         // Clear the inactivity reset timer for this form
         const timerId = $form.data(formTimeoutKey);
         if (timerId) {
             clearTimeout(timerId);
             $form.removeData(formTimeoutKey);
-            console.log(`Cleared reset timer ${timerId} on form submit.`);
         }
 
         // Visually indicate submission and prevent double-clicks
         $container.css('opacity', '0.7');
-        $button.prop('disabled', true).text('Sende...'); // German text
-        $scoreDisplay.removeClass('score-error'); // Clear previous errors
+        $button.prop('disabled', true).text('Sende...');
+        $scoreDisplay.removeClass('score-error');
 
-        // Use setTimeout to ensure any pending blur events (like score confirmation) complete
-        // before we serialize the form and submit. (Keep this pattern)
         setTimeout(() => {
-            // Re-check button state *inside* the timeout (optional, as validation passed)
-            // if ($button.prop('disabled')) { ... }
-
-            const formData = $form.serialize(); // Get data *after* potential blur changes
+            const formData = $form.serialize();
             const challengeId = $container.data("challenge-id");
             const challengerId = $container.data("challenger-id");
             const opponentId = $container.data("opponent-id");
@@ -1042,23 +1030,19 @@
             // AJAX POST request to the server
             $.post("/submit_result", formData)
               .done(function(response) {
-                console.log("Submit successful (client-side). Waiting for server update/redirect.");
-                // Server should trigger socket.io 'update' which calls updateChallenges()
+                console.log("Submit successful (client-side). Server will trigger update via Socket.IO.");
+                // The server now handles the redirect, and the socket event will trigger updateChallenges()
               })
               .fail(function(xhr, status, error) {
-                console.error("Error submitting result:", error, xhr.responseText); // English comment
-                // Restore UI on failure
-                $container.css({'opacity': '1', 'background-color': '#ffe6e6'}); // Indicate error visually
-                setTimeout(function() { $container.css('background-color', 'var(--container-bg)'); }, 2000); // Reset background
-                // Re-enable button ONLY on failure
-                $button.prop('disabled', false).text('Ergebnis absenden'); // German text
-                // Display server error if possible
+                console.error("Error submitting result:", error, xhr.responseText);
+                $container.css({'opacity': '1', 'background-color': '#ffe6e6'});
+                setTimeout(function() { $container.css('background-color', 'var(--container-bg)'); }, 2000);
+                $button.prop('disabled', false).text('Ergebnis absenden');
                  const errorMsg = xhr.responseJSON?.message || xhr.responseText || "Fehler bei der Übermittlung.";
                  $scoreDisplay.text(errorMsg).addClass('score-error');
-                // Re-run input handler which will also restart timer if applicable
                 handleInputChange({ target: $form.find('.result-select')[0] });
               });
-        }, 50); // Small delay
+        }, 50);
 
     });
     // --- END Form submission handler ---
@@ -1073,15 +1057,11 @@
           const $form = $(this);
           const $resultSelect = $form.find('.result-select');
           if ($resultSelect.length) {
-              // Trigger the handler using the result select element to set initial state
               handleInputChange({ target: $resultSelect[0] });
           } else {
               console.warn("Could not find .result-select to initialize state for a form on page load.");
           }
       });
-
-      // Fallback polling mechanism (currently commented out, Socket.IO is preferred)
-      // setInterval(updateChallenges, 120000); // Update every 2 minutes as a backup
     });
   </script>
 </body>

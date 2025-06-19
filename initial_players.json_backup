@@ -35,7 +35,15 @@
     { "id": 32, "name": "M. Kudilek",       "is_available": true,  "rank": 33 },
     { "id": 33, "name": "F. Petric",        "is_available": true,  "rank": 34 },
     { "id": 34, "name": "St. Nitschmann",   "is_available": true,  "rank": 35 },
-    { "id": 35, "name": "M. Mularz",        "is_available": true, "rank": 36 }
+	  { "id": 35, "name": "M. Mularz",        "is_available": true,  "rank": 36 },
+    { "id": 36, "name": "N. N.",            "is_available": false,  "rank": 37 },
+    { "id": 37, "name": "N. N.",            "is_available": false,  "rank": 38 },
+    { "id": 38, "name": "N. N.",            "is_available": false,  "rank": 39 },
+    { "id": 39, "name": "N. N.",            "is_available": false,  "rank": 40 },
+    { "id": 40, "name": "N. N.",            "is_available": false,  "rank": 41 },
+    { "id": 41, "name": "N. N.",            "is_available": false,  "rank": 42 },
+    { "id": 42, "name": "N. N.",            "is_available": false,  "rank": 43 },
+    { "id": 43, "name": "N. N.",            "is_available": false,  "rank": 44 },
+    { "id": 44, "name": "N. N.",            "is_available": false, "rank": 45 }
   ]
 }
-

@@ -1,705 +1,484 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Spielerdatenbank-Einstellungen - Admin</title> <!-- Changed Title -->
-  <!-- Load Socket.IO client library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
-  <!-- Load jQuery -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <style>
-    /* Global Styles */
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spieler- und Datenbankverwaltung</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+    /* Global Styles from admin.html with additions for db_settings */
+    :root {
+      --primary-color: #f8e473; /* Lemon Yellow */
+      --primary-dark: #e6d661; /* Darker yellow for hover */
+      --bg-color: #f2f2f2;
+      --container-bg: #fff;
+      --text-color: #333;
+      --border-color: #ccc;
+      --shadow-color: rgba(0, 0, 0, 0.2);
+      --highlight-shadow: rgba(248, 228, 115, 0.4);
+      --challenger-color: #28a745; /* Green */
+      --opponent-color: #dc3545; /* Red */
+      --neutral-color: #6c757d; /* Grey */
+      --error-color: #dc3545; /* Red for errors/special results */
+    }
+
     body {
+      background-color: var(--bg-color);
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 20px;
-      background-color: #f2f2f2;
-      color: #333;
+      color: var(--text-color);
     }
-    .container {
-      max-width: 1100px; /* Increased width for new column */
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    h1 {
-      font-size: 2.5rem;
-      background-color: #f8e473; /* Keep theme color */
-      color: #000;
-      padding: 20px;
-      text-align: center;
-      border-bottom: 3px solid #ccc;
-      margin-bottom: 20px;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
-    }
-    h2 {
-      font-size: 1.8rem;
-      margin: 20px 0 15px;
-      color: #000;
-    }
-    /* Notification */
-    #notification {
-      margin-bottom: 15px;
-      padding: 10px 15px;
-      border-radius: 4px;
-      display: none;
-      font-size: 1.1rem;
-      background: #fff;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    #notification.success { border-left: 5px solid #4CAF50; color: #4CAF50; } /* Green for success */
-    #notification.error   { border-left: 5px solid #f44336; color: #f44336; } /* Red for error */
-    #notification.info    { border-left: 5px solid #2196F3; color: #2196F3; } /* Blue for info */
 
-    /* Table Styling */
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      background-color: var(--primary-color);
+      padding: 20px;
+      border-bottom: 3px solid var(--border-color);
+      box-shadow: 0 10px 25px var(--shadow-color);
+      border-radius: 10px;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 3rem;
+      margin: 0;
+      color: #000;
+      text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .challenge-container {
+      background-color: var(--container-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 15px 25px var(--shadow-color);
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .challenge-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 40px var(--shadow-color);
+    }
+    
+    .challenge-container h2 {
+        margin: -20px -20px 20px -20px;
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 1.8rem;
+        color: var(--text-color);
+    }
+
+    /* Table Styles */
+    .table-responsive {
+        overflow-x: auto;
+        margin-top: 1.5rem;
+    }
     table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-      /* Removed box-shadow and margin-bottom as it's now inside a container */
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        box-shadow: 0 2px 5px var(--shadow-color);
     }
     th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-      vertical-align: middle; /* Align content vertically */
-    }
-    th { background-color: #f7f7f7; font-weight: bold; }
-    tr:hover {
-      background-color: #f1f1f1; /* Subtle hover effect */
-    }
-    /* Form Styling */
-    form {
-      margin-bottom: 20px;
-      background: #fff;
-      padding: 15px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    form label { margin-right: 5px; font-size: 1rem; display: inline-block; min-width: 50px; }
-    form input[type="text"], form input[type="number"] {
-        margin-right: 10px;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 1rem;
-        width: 150px; /* Adjust width as needed */
-    }
-    form input[type="number"] {
-        width: 80px; /* Smaller width for rank */
-    }
-    button {
-      padding: 8px 15px;
-      margin-right: 5px;
-      cursor: pointer;
-      border: none;
-      border-radius: 4px;
-      background-color: #f8e473; /* Theme color */
-      color: #000;
-      font-size: 1rem;
-      transition: background-color 0.3s ease;
-      vertical-align: middle; /* Align buttons */
-    }
-    button:hover { background-color: #e6d661; }
-    button.delete-btn { background-color: #f44336; color: white; } /* Red delete button */
-    button.delete-btn:hover { background-color: #d32f2f; }
-    button.save-btn { background-color: #4CAF50; color: white; } /* Green save button */
-    button.save-btn:hover { background-color: #388E3C; }
-    button.cancel-btn { background-color: #757575; color: white; } /* Grey cancel button */
-    button.cancel-btn:hover { background-color: #616161; }
-    /* NEW: Reset DB Button Style */
-    button.reset-db-btn {
-        background-color: #dc3545; /* Red background */
-        color: #ffffff; /* White text */
-    }
-    button.reset-db-btn:hover {
-        background-color: #c82333; /* Darker red on hover */
-    }
-
-
-    /* Radio Button Styling */
-    .block-status-radios label {
-        margin-right: 10px; /* Space between radio labels */
-        font-size: 0.9rem;
-        cursor: pointer;
-        display: inline-flex; /* Align radio and text */
-        align-items: center;
-    }
-    .block-status-radios input[type="radio"] {
-        margin-right: 4px; /* Space between radio and its label text */
-        cursor: pointer;
+        padding: 12px 15px;
+        border: 1px solid var(--border-color);
+        text-align: left;
         vertical-align: middle;
     }
-    /* Style for the cell containing radios */
-    td.block-status-cell {
-        white-space: nowrap; /* Prevent radios from wrapping */
+    th {
+        background-color: #f2f2f2;
+        font-weight: bold;
     }
-    /* Style for edit mode inputs */
-    td input[type="text"], td input[type="number"] {
-        padding: 6px;
-        font-size: 0.95rem;
-        width: 95%; /* Fill cell width */
+    tbody tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    tbody tr:hover {
+        background-color: #f1f1f1;
+    }
+    
+    /* Form & Input Styles */
+    input[type="text"], input[type="number"], select {
+        font-size: 1rem;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background-color: #f7f7f7;
+        color: var(--text-color);
+        outline: none;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        width: 100%;
         box-sizing: border-box;
     }
-    td input[type="number"] {
-        width: 70px; /* Smaller width for rank input in edit mode */
+    input:focus, select:focus {
+        border-color: var(--primary-dark);
+        box-shadow: 0 0 0 2px var(--highlight-shadow);
+    }
+    
+    /* Button Styles */
+    .btn {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px var(--shadow-color);
+        font-weight: bold;
+        text-align: center;
+    }
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px var(--shadow-color);
+    }
+    .btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px var(--shadow-color);
+    }
+    .btn:disabled {
+        background-color: #e0e0e0;
+        color: #999;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
     }
 
-    /* NEW: Reset DB Section Styling */
-    .reset-db-section {
-        margin-bottom: 20px;
-        background: #fff;
-        padding: 15px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    .btn-primary { background-color: var(--primary-color); color: #000; }
+    .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
+    
+    /* Specific button styles for the table actions */
+    .action-buttons .btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        margin-right: 5px;
+    }
+    .btn-danger { background-color: var(--error-color); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background-color: #a71d2a; }
+    .btn-success { background-color: var(--challenger-color); color: #fff; }
+    .btn-success:hover:not(:disabled) { background-color: #218838; }
+    .btn-secondary { background-color: var(--neutral-color); color: #fff; }
+    .btn-secondary:hover:not(:disabled) { background-color: #5a6268; }
+
+    /* Danger Zone Section Styling */
+    .danger-zone {
+        background-color: var(--error-color);
+        color: white;
+        border-color: #a71d2a;
+    }
+    .danger-zone h2 {
+        color: white;
+        border-bottom-color: rgba(255, 255, 255, 0.5);
+    }
+    .danger-zone p, .danger-zone strong {
+        color: white;
+    }
+    .danger-zone .btn-danger {
+        background-color: #fff;
+        color: var(--error-color);
+        border: 1px solid var(--error-color);
+    }
+    .danger-zone .btn-danger:hover {
+        background-color: #f2f2f2;
+        color: #a71d2a;
     }
 
-    /* --- NEW: Collapsible Section Styles --- */
-    .collapsible-section {
-      margin-bottom: 20px;
-      background: #fff;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      overflow: hidden; /* Important for smooth collapse */
+    /* Alert Box */
+    .alert {
+        display: none;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        color: #fff;
+        font-size: 1.1rem;
     }
-    .collapsible-header {
-      background-color: #f0f0f0;
-      border-bottom: 1px solid #ccc;
-      cursor: pointer;
-      padding: 10px 15px;
-      display: flex; /* Use flexbox */
-      align-items: center; /* Vertically align items */
-      justify-content: space-between; /* Push title left, controls right */
-      transition: background-color 0.3s;
-    }
-    .collapsible-header:hover {
-      background-color: #e8e8e8;
-    }
-    .collapsible-header h2 {
-      margin: 0; /* Remove default margin */
-      font-size: 1.5rem; /* Adjust size */
-    }
-    .collapsible-header .arrow {
-      display: inline-block;
-      transition: transform 0.3s;
-      font-size: 1.2em; /* Make arrow slightly bigger */
-      margin-left: 10px; /* Space before arrow */
-    }
-    .collapsible-header.collapsed .arrow {
-      transform: rotate(-90deg);
-    }
-    .collapsible-content {
-      padding: 15px;
-      display: none; /* Initially hidden */
-    }
-    .collapsible-content.show {
-      display: block; /* Show when expanded */
-    }
-    /* --- END: Collapsible Section Styles --- */
+    .alert-success { background-color: var(--challenger-color); }
+    .alert-danger { background-color: var(--error-color); }
+    .alert-warning { background-color: #f8e473; color: #000; }
 
-  </style>
+    /* Helper classes from original file logic */
+    .d-none { display: none !important; }
+    .form-control.inline-edit, .form-select.inline-edit {
+        display: inline-block;
+        width: auto;
+        vertical-align: middle;
+    }
+    .player-name-static, .player-rank-static {
+        padding: 0.375rem 0.75rem;
+        display: inline-block;
+    }
+
+    /* Responsive Styles */
+    @media (max-width: 768px) {
+        body { padding: 10px; }
+        header { padding: 15px; margin-bottom: 20px; }
+        header h1 { font-size: 2rem; }
+        .challenge-container { padding: 15px; }
+        .challenge-container h2 { font-size: 1.5rem; margin: -15px -15px 15px -15px; padding: 10px 15px;}
+    }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Spielerdatenbank-Einstellungen</h1>
+    <header>
+        <h1>Spieler- und Datenbankverwaltung</h1>
+    </header>
 
-    <!-- Notification Area -->
-    <div id="notification"></div>
+    <main>
+        <div id="global-alert" class="alert" role="alert"></div>
 
-    <!-- Add New Player Form -->
-    <h2>Neuen Spieler hinzufügen</h2>
-    <form id="addPlayerForm">
-      <label for="newPlayerName">Name:</label>
-      <input type="text" id="newPlayerName" name="newPlayerName" required minlength="3">
-      <label for="newPlayerRank">Rang:</label>
-      <input type="number" id="newPlayerRank" name="newPlayerRank" required min="1" max="36">
-      <button type="submit">Spieler hinzufügen</button>
-    </form>
-
-    <!-- NEW: Reset Database Section -->
-    <div class="reset-db-section">
-        <h2>Datenbank zurücksetzen</h2>
-        <button id="resetDbButton" class="reset-db-btn">Reset DB</button>
-    </div>
-
-    <!-- Players List Table (Now Collapsible) -->
-    <div class="collapsible-section">
-        <div class="collapsible-header collapsed" id="playerListHeader"> <!-- Start collapsed -->
-            <h2>Spielerliste</h2>
-            <span class="arrow">▼</span>
+        <div class="challenge-container">
+            <h2>Spielerliste verwalten</h2>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Rang</th>
+                            <th>Block-Status</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-table-body">
+                        </tbody>
+                </table>
+            </div>
         </div>
-        <div class="collapsible-content" id="playerListContent">
-            <table id="playersTable">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Rang</th>
-                  <th>Block Status</th> <!-- New Column -->
-                  <th>Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- Table rows will be inserted dynamically -->
-              </tbody>
-            </table>
+
+        <div class="challenge-container danger-zone">
+            <h2>Gefahrenzone</h2>
+            <p><strong>Achtung:</strong> Diese Aktion löscht die gesamte Datenbank (alle Spieler, Herausforderungen, Ergebnisse) und setzt sie auf den ursprünglichen Zustand zurück. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <button id="reset-db-btn" class="btn btn-danger">Datenbank zurücksetzen</button>
         </div>
-    </div>
+    </main>
 
-  </div>
+<script>
+$(document).ready(function() {
+    const socket = io();
 
-  <script>
-    let playersData = []; // Cache for player data
-    let socket; // Declare socket variable globally
-
-    // Utility: show notification messages
-    function showNotification(message, type) {
-      const notif = document.getElementById("notification");
-      notif.textContent = message;
-      notif.className = type; // 'success', 'error', 'info'
-      notif.style.display = "block";
-      // Automatically hide after 5 seconds
-      setTimeout(() => {
-        notif.style.display = "none";
-      }, 5000);
+    // --- UTILITY FUNCTIONS ---
+    function showAlert(message, type = 'success') {
+        const $alert = $('#global-alert');
+        $alert.removeClass('alert-success alert-danger alert-warning').addClass(`alert-${type}`);
+        $alert.html(message).fadeIn();
+        setTimeout(() => $alert.fadeOut(), 5000);
     }
 
-    // Fetch and display players from the server
+    // --- DATA LOADING AND RENDERING ---
     function loadPlayers() {
-      fetch('/get_players')
-        .then(response => {
-          if (!response.ok) {
-              // Try to get error message from response body
-              return response.json().then(err => {
-                  throw new Error(err.error || "Datenbankverbindungsfehler.");
-              }).catch(() => { // Fallback if response is not JSON
-                  throw new Error("Datenbankverbindungsfehler.");
-              });
-          }
-          return response.json();
-        })
-        .then(data => {
-          playersData = data; // Update cache
-          populateTable(data);
-        })
-        .catch(error => {
-          showNotification(error.message, "error");
-          console.error("Error loading players:", error);
+        $.get('/get_players', function(players) {
+            const $tbody = $('#players-table-body');
+            $tbody.empty();
+            if (players && players.length > 0) {
+                players.forEach(player => {
+                    let blockStatus = 'none';
+                    if (player.block_challenger) {
+                        blockStatus = 'challenger';
+                    } else if (player.block_opponent) {
+                        blockStatus = 'opponent';
+                    }
+
+                    const rowHtml = `
+                        <tr data-player-id="${player.id}">
+                            <td>${player.id}</td>
+                            <td>
+                                <span class="player-name-static">${player.name}</span>
+                                <input type="text" class="form-control inline-edit d-none" value="${player.name}">
+                            </td>
+                            <td>
+                                <span class="player-rank-static">${player.rank}</span>
+                                <input type="number" class="form-control inline-edit d-none" value="${player.rank}" min="1" max="45">
+                            </td>
+                            <td>
+                                <select class="form-select block-status-select" data-player-id="${player.id}">
+                                    <option value="none" ${blockStatus === 'none' ? 'selected' : ''}>Kein Block</option>
+                                    <option value="challenger" ${blockStatus === 'challenger' ? 'selected' : ''}>Gesperrt (Herausf.)</option>
+                                    <option value="opponent" ${blockStatus === 'opponent' ? 'selected' : ''}>Gesperrt (Gegner)</option>
+                                </select>
+                            </td>
+                            <td class="action-buttons">
+                                <button class="btn btn-secondary edit-player-btn">Bearbeiten</button>
+                                <button class="btn btn-success save-player-btn d-none">Speichern</button>
+                                <button class="btn btn-secondary cancel-edit-btn d-none">Abbrechen</button>
+                                <button class="btn btn-danger delete-player-btn">Löschen</button>
+                            </td>
+                        </tr>
+                    `;
+                    $tbody.append(rowHtml);
+                });
+            } else {
+                $tbody.append('<tr><td colspan="5" style="text-align: center;">Keine Spieler gefunden.</td></tr>');
+            }
+        }).fail(function() {
+            showAlert('Fehler beim Laden der Spielerliste.', 'danger');
         });
     }
 
-    // Populate the players table
-    function populateTable(players) {
-      const tbody = document.querySelector("#playersTable tbody");
-      tbody.innerHTML = ""; // Clear existing rows
-      players.forEach(player => {
-        const tr = document.createElement("tr");
-        tr.dataset.playerId = player.id; // Use dataset for player ID
+    // --- EVENT HANDLERS ---
 
-        // ID Cell
-        const tdId = document.createElement("td");
-        tdId.textContent = player.id;
-        tr.appendChild(tdId);
+    // Edit Player
+    $('#players-table-body').on('click', '.edit-player-btn', function() {
+        const $row = $(this).closest('tr');
+        $row.find('.player-name-static, .player-rank-static').addClass('d-none');
+        $row.find('.inline-edit').removeClass('d-none');
+        $row.find('.edit-player-btn, .delete-player-btn').addClass('d-none');
+        $row.find('.save-player-btn, .cancel-edit-btn').removeClass('d-none');
+    });
 
-        // Name Cell
-        const tdName = document.createElement("td");
-        tdName.textContent = player.name;
-        tdName.className = "player-name";
-        tr.appendChild(tdName);
+    // Cancel Edit
+    $('#players-table-body').on('click', '.cancel-edit-btn', function() {
+        const $row = $(this).closest('tr');
+        $row.find('.player-name-static, .player-rank-static').removeClass('d-none');
+        $row.find('.inline-edit').addClass('d-none');
+        $row.find('.edit-player-btn, .delete-player-btn').removeClass('d-none');
+        $row.find('.save-player-btn, .cancel-edit-btn').addClass('d-none');
+        // Reset input values to original static values
+        $row.find('input.inline-edit[type="text"]').val($row.find('.player-name-static').text());
+        $row.find('input.inline-edit[type="number"]').val($row.find('.player-rank-static').text());
+    });
 
-        // Rank Cell
-        const tdRank = document.createElement("td");
-        tdRank.textContent = player.rank;
-        tdRank.className = "player-rank";
-        tr.appendChild(tdRank);
+    // Save Player
+    $('#players-table-body').on('click', '.save-player-btn', function() {
+        const $row = $(this).closest('tr');
+        const playerId = $row.data('player-id');
+        const newName = $row.find('input.inline-edit[type="text"]').val();
+        const newRank = $row.find('input.inline-edit[type="number"]').val();
 
-        // Block Status Cell (New)
-        const tdBlockStatus = document.createElement("td");
-        tdBlockStatus.className = "block-status-cell";
-        const radioGroupName = `block_status_${player.id}`;
-
-        // Determine current status
-        let currentStatus = 'none';
-        if (player.block_opponent) { // Opponent block takes precedence for display if both somehow exist
-            currentStatus = 'opponent';
-        } else if (player.block_challenger) {
-            currentStatus = 'challenger';
-        }
-
-        tdBlockStatus.innerHTML = `
-          <div class="block-status-radios">
-            <label>
-              <input type="radio" name="${radioGroupName}" value="none" ${currentStatus === 'none' ? 'checked' : ''} data-player-id="${player.id}">
-              Kein
-            </label>
-            <label>
-              <input type="radio" name="${radioGroupName}" value="challenger" ${currentStatus === 'challenger' ? 'checked' : ''} data-player-id="${player.id}">
-              Herausforderer
-            </label>
-            <label>
-              <input type="radio" name="${radioGroupName}" value="opponent" ${currentStatus === 'opponent' ? 'checked' : ''} data-player-id="${player.id}">
-              Gegner
-            </label>
-          </div>
-        `;
-        tr.appendChild(tdBlockStatus);
-
-        // Actions Cell
-        const tdActions = document.createElement("td");
-        const editButton = document.createElement("button");
-        editButton.textContent = "Bearbeiten";
-        editButton.onclick = () => editPlayer(tr, player); // Pass row and player data
-        tdActions.appendChild(editButton);
-
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Löschen";
-        deleteButton.className = "delete-btn"; // Add class for styling
-        deleteButton.onclick = () => deletePlayer(player.id, player.name); // Pass ID and name for confirmation
-        tdActions.appendChild(deleteButton);
-
-        tr.appendChild(tdActions);
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Enable edit mode for a player row
-    function editPlayer(row, player) {
-      // Store original data in case of cancel
-      row.dataset.originalName = player.name;
-      row.dataset.originalRank = player.rank;
-
-      // Clear existing cells except ID and Block Status
-      const nameCell = row.querySelector('.player-name');
-      const rankCell = row.querySelector('.player-rank');
-      const actionsCell = row.cells[4]; // Assuming Actions is the 5th cell (index 4)
-
-      nameCell.innerHTML = `<input type="text" value="${player.name}" required minlength="3">`;
-      rankCell.innerHTML = `<input type="number" value="${player.rank}" required min="1" max="36">`;
-
-      // Change buttons to Save/Cancel
-      actionsCell.innerHTML = ""; // Clear existing buttons
-
-      const saveButton = document.createElement("button");
-      saveButton.textContent = "Speichern";
-      saveButton.className = "save-btn";
-      saveButton.onclick = () => {
-          const nameInput = nameCell.querySelector('input');
-          const rankInput = rankCell.querySelector('input');
-          updatePlayer(player.id, nameInput.value.trim(), rankInput.value);
-      };
-      actionsCell.appendChild(saveButton);
-
-      const cancelButton = document.createElement("button");
-      cancelButton.textContent = "Abbrechen";
-      cancelButton.className = "cancel-btn";
-      cancelButton.onclick = () => cancelEdit(row); // Pass row to revert
-      actionsCell.appendChild(cancelButton);
-
-      // Disable block status radios during edit
-      row.querySelectorAll('.block-status-radios input[type="radio"]').forEach(radio => radio.disabled = true);
-    }
-
-    // Cancel editing a player row
-    function cancelEdit(row) {
-        // Revert cells to original text content
-        const nameCell = row.querySelector('.player-name');
-        const rankCell = row.querySelector('.player-rank');
-        nameCell.textContent = row.dataset.originalName;
-        rankCell.textContent = row.dataset.originalRank;
-
-        // Re-enable block status radios
-        row.querySelectorAll('.block-status-radios input[type="radio"]').forEach(radio => radio.disabled = false);
-
-        // Restore original Edit/Delete buttons (requires fetching player data again or storing it)
-        // Easiest is to just reload the players list
-        loadPlayers();
-    }
-
-
-    // Update player details (Name/Rank)
-    function updatePlayer(playerId, newName, newRankStr) {
-      const newRank = parseInt(newRankStr); // Convert rank string to number
-
-      // --- Client-side Validation ---
-      if (!newName || newName.length < 3) {
-        showNotification("Name muss mindestens 3 Zeichen lang sein.", "error");
-        return;
-      }
-      if (isNaN(newRank) || newRank < 1 || newRank > 36) {
-        showNotification("Rang muss eine Zahl zwischen 1 und 36 sein.", "error");
-        return;
-      }
-      // Check for duplicate name (client-side, case-insensitive, excluding self)
-      const existingPlayer = playersData.find(p => p.id !== playerId && p.name.toLowerCase() === newName.toLowerCase());
-      if (existingPlayer) {
-          showNotification(`Name '${newName}' wird bereits verwendet.`, "error");
-          return;
-      }
-      // --- End Validation ---
-
-
-      fetch('/update_player', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: playerId, name: newName, rank: newRank })
-      })
-      .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data }))) // Process response
-      .then(result => {
-        if (result.ok) {
-          showNotification(result.body.message || "Spieler erfolgreich aktualisiert.", "success");
-          loadPlayers(); // Reload to show updated data and ranks
-        } else {
-          // Use error message from backend if available
-          showNotification(result.body.message || `Fehler ${result.status}: Spieler konnte nicht aktualisiert werden.`, "error");
-          // Optionally revert the row if the update failed significantly
-          // const row = document.querySelector(`tr[data-player-id="${playerId}"]`);
-          // if (row) cancelEdit(row);
-        }
-      })
-      .catch(error => {
-        showNotification("Netzwerkfehler beim Aktualisieren des Spielers.", "error");
-        console.error("Update player network error:", error);
-        // Optionally revert the row
-        // const row = document.querySelector(`tr[data-player-id="${playerId}"]`);
-        // if (row) cancelEdit(row);
-      });
-    }
-
-    // Delete a player
-    function deletePlayer(playerId, playerName) {
-      // Confirmation dialog
-      if (!confirm(`Sind Sie sicher, dass Sie den Spieler '${playerName}' (ID: ${playerId}) löschen möchten? Dies kann nicht rückgängig gemacht werden.`)) {
-          return;
-      }
-
-      fetch('/delete_player', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: playerId })
-      })
-      .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
-      .then(result => {
-        if (result.ok) {
-          showNotification(result.body.message || "Spieler erfolgreich gelöscht.", "success");
-          loadPlayers(); // Reload the list
-        } else {
-          showNotification(result.body.message || `Fehler ${result.status}: Spieler konnte nicht gelöscht werden.`, "error");
-        }
-      })
-      .catch(error => {
-        showNotification("Netzwerkfehler beim Löschen des Spielers.", "error");
-        console.error("Delete player network error:", error);
-      });
-    }
-
-    // Add a new player
-    function addPlayer() {
-      const nameField = document.getElementById("newPlayerName");
-      const rankField = document.getElementById("newPlayerRank");
-      const newName = nameField.value.trim();
-      const newRankStr = rankField.value;
-
-      // --- Client-side Validation ---
-      if (!newName || newName.length < 3) {
-        showNotification("Name muss mindestens 3 Zeichen lang sein.", "error");
-        return;
-      }
-      const newRank = parseInt(newRankStr);
-      if (isNaN(newRank) || newRank < 1 || newRank > 36) {
-        showNotification("Rang muss eine Zahl zwischen 1 und 36 sein.", "error");
-        return;
-      }
-      // Check for duplicate name (client-side, case-insensitive)
-      const existingPlayer = playersData.find(p => p.name.toLowerCase() === newName.toLowerCase());
-      if (existingPlayer) {
-          showNotification(`Name '${newName}' wird bereits verwendet.`, "error");
-          return;
-      }
-      // --- End Validation ---
-
-      fetch('/add_player', { // Use the new endpoint
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName, rank: newRank })
-      })
-      .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
-      .then(result => {
-        if (result.ok) {
-          showNotification(result.body.message || "Spieler erfolgreich hinzugefügt.", "success");
-          nameField.value = ""; // Clear form fields
-          rankField.value = "";
-          loadPlayers(); // Reload the list
-        } else {
-          showNotification(result.body.message || `Fehler ${result.status}: Spieler konnte nicht hinzugefügt werden.`, "error");
-        }
-      })
-      .catch(error => {
-        showNotification("Netzwerkfehler beim Hinzufügen des Spielers.", "error");
-        console.error("Add player network error:", error);
-      });
-    }
-
-    // Handle Block Status Change using Event Delegation
-    document.getElementById('playersTable').addEventListener('change', function(event) {
-        if (event.target.type === 'radio' && event.target.name.startsWith('block_status_')) {
-            const playerId = event.target.dataset.playerId;
-            const blockType = event.target.value; // 'none', 'challenger', 'opponent'
-
-            // Disable radios temporarily to prevent rapid clicks
-            const radios = event.target.closest('.block-status-radios').querySelectorAll('input[type="radio"]');
-            radios.forEach(r => r.disabled = true);
-
-            console.log(`Setting block status for player ${playerId} to ${blockType}`);
-
-            fetch('/set_player_block_status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ player_id: playerId, block_type: blockType })
-            })
-            .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
-            .then(result => {
-                if (result.ok) {
-                    showNotification(result.body.message || "Block-Status erfolgreich aktualisiert.", "success");
-                    // No need to reload players here, SocketIO update on index.html handles the visual change there.
-                    // The radio button itself is already visually updated by the browser.
+        $.ajax({
+            url: '/update_player',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: playerId, name: newName, rank: newRank }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message, 'success');
+                    // The socket event will trigger loadPlayers() to refresh the table
                 } else {
-                    showNotification(result.body.message || `Fehler ${result.status}: Block-Status konnte nicht aktualisiert werden.`, "error");
-                    // Revert radio button state on error? More complex, maybe just notify.
-                    // For simplicity, we'll rely on the user seeing the error and potentially trying again.
-                    // Or call loadPlayers() to ensure UI consistency after error.
-                    loadPlayers();
+                    showAlert(response.message, 'danger');
                 }
-            })
-            .catch(error => {
-                showNotification("Netzwerkfehler beim Setzen des Block-Status.", "error");
-                console.error("Set block status network error:", error);
-                loadPlayers(); // Reload on network error too
-            })
-            .finally(() => {
-                // Re-enable radios after request completes
-                 radios.forEach(r => r.disabled = false);
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                showAlert(errorMsg, 'danger');
+            }
+        });
+    });
+
+    // Delete Player
+    $('#players-table-body').on('click', '.delete-player-btn', function() {
+        const $row = $(this).closest('tr');
+        const playerId = $row.data('player-id');
+        const playerName = $row.find('.player-name-static').text();
+
+        if (confirm(`Sind Sie sicher, dass Sie den Spieler "${playerName}" löschen möchten? Alle zugehörigen Herausforderungen werden ebenfalls gelöscht.`)) {
+            $.ajax({
+                url: '/delete_player',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ id: playerId }),
+                success: function(response) {
+                    if (response.success) {
+                        showAlert(response.message, 'success');
+                        // The socket event will trigger loadPlayers()
+                    } else {
+                        showAlert(response.message, 'danger');
+                    }
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                    showAlert(errorMsg, 'danger');
+                }
             });
         }
     });
 
-    // --- NEW: Handle Reset Database Button Click ---
-    document.getElementById('resetDbButton').addEventListener('click', function() {
-        // Confirmation dialog
-        const confirmationText = "!!! ACHTUNG !!! - RESET of database - Bist DU dir wirklich sicher?";
-        if (confirm(confirmationText)) {
-            // Disable button during request
-            this.disabled = true;
-            this.textContent = "Zurücksetzen...";
+    // Change Block Status
+    $('#players-table-body').on('change', '.block-status-select', function() {
+        const playerId = $(this).data('player-id');
+        const blockType = $(this).val();
 
-            fetch('/reset_database', { method: 'POST' })
-                .then(res => res.json().then(data => ({ ok: res.ok, status: res.status, body: data })))
-                .then(result => {
-                    if (result.ok) {
-                        showNotification(result.body.message || "Datenbank erfolgreich zurückgesetzt.", "success");
-                        // loadPlayers(); // Reload is handled by Socket.IO event now
-                    } else {
-                        showNotification(result.body.message || `Fehler ${result.status}: Datenbank konnte nicht zurückgesetzt werden.`, "error");
-                    }
-                })
-                .catch(error => {
-                    showNotification("Netzwerkfehler beim Zurücksetzen der Datenbank.", "error");
-                    console.error("Reset DB network error:", error);
-                })
-                .finally(() => {
-                    // Re-enable button
-                    this.disabled = false;
-                    this.textContent = "Reset DB";
-                });
-        } else {
-            // User cancelled
-            showNotification("Datenbank-Reset abgebrochen.", "info");
-        }
-    });
-
-    // --- NEW: Initialize Socket.IO and Listen for Reset Event ---
-    function initializeSocketIO() {
-        socket = io({
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-        });
-
-        socket.on("connect", function() {
-            console.log("Socket.IO connected on db_settings:", socket.id);
-        });
-
-        socket.on("disconnect", function(reason) {
-            console.log("Socket.IO disconnected on db_settings:", reason);
-        });
-
-        socket.on("connect_error", (err) => {
-            console.error("Socket.IO connection error on db_settings:", err.message);
-        });
-
-        // Listen for the database reset event
-        socket.on("database_reset", function(data) {
-            console.log("Received 'database_reset' event:", data);
-            showNotification("Datenbank wurde zurückgesetzt. Lade Spielerliste neu...", "info");
-            loadPlayers(); // Reload the player list on this page
-        });
-
-         // Listen for general updates (e.g., player added/deleted on another client)
-         socket.on("update", function(data) {
-            console.log("Received 'update' event on db_settings:", data);
-            // Optionally add a small delay to avoid race conditions if update is immediate
-            setTimeout(loadPlayers, 200);
-         });
-    }
-
-    // --- NEW: Collapsible Player List Logic ---
-    function initializeCollapsible() {
-        const header = document.getElementById('playerListHeader');
-        const content = document.getElementById('playerListContent');
-        const arrow = header.querySelector('.arrow');
-
-        header.addEventListener('click', function() {
-            const isCollapsed = header.classList.contains('collapsed');
-            if (isCollapsed) {
-                // Expand
-                header.classList.remove('collapsed');
-                arrow.style.transform = 'rotate(0deg)';
-                $(content).slideDown(300); // Use jQuery slideDown for smooth animation
-            } else {
-                // Collapse
-                header.classList.add('collapsed');
-                arrow.style.transform = 'rotate(-90deg)';
-                $(content).slideUp(300); // Use jQuery slideUp
+        $.ajax({
+            url: '/set_player_block_status',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ player_id: playerId, block_type: blockType }),
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message, 'success');
+                    // The socket event will trigger updates on index.html
+                } else {
+                    showAlert(response.message, 'danger');
+                }
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                showAlert(errorMsg, 'danger');
+                // Reload players to revert the dropdown on failure
+                loadPlayers();
             }
         });
-
-        // Ensure initial state matches class (start collapsed)
-        if (header.classList.contains('collapsed')) {
-            content.style.display = 'none';
-            arrow.style.transform = 'rotate(-90deg)';
-        } else {
-             content.style.display = 'block';
-             arrow.style.transform = 'rotate(0deg)';
-        }
-    }
-
-
-    // Initial Load and Form Binding
-    document.addEventListener("DOMContentLoaded", () => {
-      loadPlayers(); // Load players when the page is ready
-      initializeSocketIO(); // Connect to Socket.IO
-      initializeCollapsible(); // Setup the collapsible player list
-
-      // Bind the add player form submission
-      document.getElementById("addPlayerForm").addEventListener("submit", e => {
-        e.preventDefault(); // Prevent default form submission
-        addPlayer();
-      });
     });
-  </script>
+
+    // Reset Database
+    $('#reset-db-btn').on('click', function() {
+        const confirmation = prompt("Dies ist eine irreversible Aktion. Um fortzufahren, schreibe ---> RESET <---- in das Feld.");
+        if (confirmation === 'RESET') {
+            $(this).prop('disabled', true).text('Setze zurück...');
+            $.post('/reset_database')
+                .done(function(response) {
+                    showAlert(response.message, 'success');
+                    // The socket event will trigger a reload on all clients, including this one.
+                    // As a fallback, we can also reload here.
+                    setTimeout(() => window.location.reload(), 2000);
+                })
+                .fail(function(xhr) {
+                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                    showAlert(errorMsg, 'danger');
+                    $('#reset-db-btn').prop('disabled', false).text('Datenbank zurücksetzen');
+                });
+        } else {
+            showAlert('Zurücksetzen abgebrochen.', 'warning');
+        }
+    });
+
+    // --- SOCKET.IO LISTENERS ---
+    socket.on('connect', function() {
+        console.log('Connected to server via Socket.IO.');
+        loadPlayers();
+    });
+
+    socket.on('data_update', function(payload) {
+        console.log('Received data_update event. Refreshing player list.', payload.type);
+        // Any change on the main page should trigger a refresh here to keep ranks consistent
+        loadPlayers();
+    });
+    
+    socket.on('player_update', function(payload) {
+        console.log('Received player_update event. Refreshing player list.', payload.action);
+        // A specific player was updated (e.g., availability toggled on main page or block status here)
+        loadPlayers();
+    });
+
+    socket.on('database_reset', function() {
+        showAlert('Datenbank wurde zurückgesetzt. Seite wird neu geladen.', 'warning');
+        setTimeout(() => window.location.reload(), 1500);
+    });
+
+    // Initial load
+    loadPlayers();
+});
+</script>
 </body>
 </html>

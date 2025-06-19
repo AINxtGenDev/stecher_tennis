@@ -4,26 +4,234 @@ import os
 import sqlite3
 import json
 import logging
-from datetime import datetime, timedelta, date  # Added date
+import time
+from datetime import datetime, timedelta, date
 from flask import Flask, g, request, jsonify, render_template, redirect, url_for, flash
-from flask_socketio import SocketIO, emit  # Ensure Flask-SocketIO is installed
+from flask_socketio import (
+    SocketIO,
+    emit,
+    join_room,
+    leave_room,
+)
+from threading import Lock
+
+# --- UPDATED: Simplified JSON Provider/Encoder compatibility ---
+# This single block handles both Flask < 2.2 and Flask 2.2+
+try:
+    # Flask < 2.2
+    from flask.json import JSONEncoder as FlaskJSONEncoder
+    
+    class CustomJSONEncoder(FlaskJSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, datetime):
+                return obj.strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(obj, date):
+                return obj.strftime("%Y-%m-%d")
+            elif hasattr(obj, "__dict__"):
+                return obj.__dict__
+            return super().default(obj)
+    
+    # For socketio kwarg
+    CustomJSONProvider = None
+
+except ImportError:
+    # Flask 2.2+
+    from flask.json.provider import DefaultJSONProvider
+    
+    class CustomJSONProvider(DefaultJSONProvider):
+        def default(self, obj):
+            if isinstance(obj, datetime):
+                return obj.strftime("%Y-%m-%d %H:%M:%S")
+            elif isinstance(obj, date):
+                return obj.strftime("%Y-%m-%d")
+            elif hasattr(obj, "__dict__"):
+                return obj.__dict__
+            return super().default(obj)
+
+    # For socketio kwarg
+    CustomJSONEncoder = None
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
-app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
-app.secret_key = (
-    "your-secret-key"  # In production, load this from an environment variable
-)
 
-#######################################################
-# Initialize SocketIO - use this for development only
-# socketio = SocketIO(app, async_mode="threading")
-# Initialize SocketIO - use this for production
-#######################################################
-socketio = SocketIO(app, async_mode="eventlet")
+app = Flask(__name__)
+
+# --- UPDATED: Production-ready configuration ---
+# Load secret key from environment variable. This is CRITICAL for security.
+# On your Pi, run: export SECRET_KEY='a-very-long-and-random-secret-string'
+app.secret_key = os.environ.get("SECRET_KEY", "default-dev-key-for-testing-only")
+if app.secret_key == "default-dev-key-for-testing-only":
+    logger.warning("SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production.")
+
+app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
+
+# Configure JSON encoding based on Flask version
+if CustomJSONProvider:
+    app.json = CustomJSONProvider(app)
+else:
+    app.json_encoder = CustomJSONEncoder
+
+
+# --- UPDATED: Production-ready SocketIO initialization ---
+# The logger settings reduce log spam in production.
+socketio_kwargs = {
+    "async_mode": "eventlet",
+    "cors_allowed_origins": os.environ.get("CORS_ALLOWED_ORIGINS", "*"), # Use env var for production
+    "ping_timeout": 60,
+    "ping_interval": 25,
+    "logger": True, # Set to False for less verbose production logs
+    "engineio_logger": False, # Definitely False for production
+}
+if CustomJSONEncoder:
+    socketio_kwargs["json"] = CustomJSONEncoder
+
+socketio = SocketIO(app, **socketio_kwargs)
+if socketio_kwargs["cors_allowed_origins"] == "*":
+    logger.warning("SECURITY WARNING: CORS is configured to allow all origins. Lock this down in production.")
+
+
+# Data caching mechanism
+class DataCache:
+    def __init__(self, ttl=10):  # UPDATED: Reduced TTL for more responsive UI
+        self.cache = {}
+        self.ttl = ttl
+        self.lock = Lock()
+
+    def get(self, key):
+        with self.lock:
+            if key in self.cache:
+                data, timestamp = self.cache[key]
+                if time.time() - timestamp < self.ttl:
+                    return data
+                else:
+                    del self.cache[key]
+            return None
+
+    def set(self, key, value):
+        with self.lock:
+            self.cache[key] = (value, time.time())
+
+    def invalidate(self, key=None):
+        with self.lock:
+            if key:
+                self.cache.pop(key, None)
+            else:
+                self.cache.clear()
+
+
+# Global cache instance
+data_cache = DataCache()
+
+
+# --- REMOVED: UpdateBatcher class was here. It added unnecessary complexity. ---
+
+
+# Helper function to serialize player data
+def serialize_player(player_row):
+    """Convert SQLite Row to serializable dict with formatted dates"""
+    player = dict(player_row)
+
+    # Format datetime fields
+    datetime_fields = [
+        "unavailable_since",
+        "block_challenger_until",
+        "block_opponent_until",
+    ]
+    for field in datetime_fields:
+        if player.get(field):
+            if isinstance(player[field], str):
+                try:
+                    dt = datetime.strptime(
+                        player[field].split(".")[0], "%Y-%m-%d %H:%M:%S"
+                    )
+                    player[f"{field}_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
+                    player[field] = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except (ValueError, TypeError):
+                    player[f"{field}_formatted"] = "Invalid"
+                    player[field] = None
+            elif isinstance(player[field], datetime):
+                player[f"{field}_formatted"] = player[field].strftime("%Y-%m-%d %H:%M")
+                player[field] = player[field].strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            # Ensure formatted fields exist even when the value is None
+            player[f"{field}_formatted"] = None
+
+    return player
+
+
+# Helper function to serialize challenge data
+def serialize_challenge(challenge_row):
+    """Convert challenge Row to serializable dict with formatted dates"""
+    challenge = dict(challenge_row)
+
+    # Handle datetime fields
+    if challenge.get("timestamp"):
+        if isinstance(challenge["timestamp"], datetime):
+            challenge["timestamp"] = challenge["timestamp"].strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+        elif isinstance(challenge["timestamp"], str):
+            challenge["timestamp"] = challenge["timestamp"].split(".")[0]
+
+    if challenge.get("deadline"):
+        if isinstance(challenge["deadline"], datetime):
+            challenge["deadline_formatted"] = challenge["deadline"].strftime(
+                "%Y-%m-%d %H:%M"
+            )
+            challenge["deadline"] = challenge["deadline"].strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(challenge["deadline"], str):
+            try:
+                dt = datetime.strptime(
+                    challenge["deadline"].split(".")[0], "%Y-%m-%d %H:%M:%S"
+                )
+                challenge["deadline_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
+                challenge["deadline"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                challenge["deadline_formatted"] = "N/A"
+
+    if challenge.get("resolved_at"):
+        if isinstance(challenge["resolved_at"], datetime):
+            challenge["resolved_at_formatted"] = challenge["resolved_at"].strftime(
+                "%Y-%m-%d %H:%M"
+            )
+            challenge["resolved_at"] = challenge["resolved_at"].strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+        elif isinstance(challenge["resolved_at"], str):
+            try:
+                dt = datetime.strptime(
+                    challenge["resolved_at"].split(".")[0], "%Y-%m-%d %H:%M:%S"
+                )
+                challenge["resolved_at_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
+                challenge["resolved_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                challenge["resolved_at_formatted"] = "N/A"
+
+    # UPDATED: Handle scheduled_play_date as a DATETIME field
+    if challenge.get("scheduled_play_date"):
+        if isinstance(challenge["scheduled_play_date"], datetime):
+            # Split into date and time for easier use on the frontend
+            challenge["scheduled_date"] = challenge["scheduled_play_date"].strftime("%Y-%m-%d")
+            challenge["scheduled_time"] = challenge["scheduled_play_date"].strftime("%H:%M")
+            challenge["scheduled_play_date"] = challenge["scheduled_play_date"].strftime("%Y-%m-%d %H:%M:%S")
+        elif isinstance(challenge["scheduled_play_date"], str):
+            try:
+                dt = datetime.strptime(challenge["scheduled_play_date"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+                challenge["scheduled_date"] = dt.strftime("%Y-%m-%d")
+                challenge["scheduled_time"] = dt.strftime("%H:%M")
+                challenge["scheduled_play_date"] = dt.strftime("%Y-%m-%d %H:%M:%S")
+            except (ValueError, TypeError):
+                challenge["scheduled_date"] = None
+                challenge["scheduled_time"] = None
+    else:
+        challenge["scheduled_date"] = None
+        challenge["scheduled_time"] = None
+
+
+    return challenge
 
 
 def get_current_time():
@@ -52,7 +260,8 @@ def get_db():
                 app.config["DATABASE"], timeout=10, detect_types=sqlite3.PARSE_DECLTYPES
             )
             g.db.row_factory = sqlite3.Row
-            # Enable Foreign Key support
+            # --- UPDATED: Enable WAL mode for better concurrency on Raspberry Pi ---
+            g.db.execute("PRAGMA journal_mode=WAL")
             g.db.execute("PRAGMA foreign_keys = ON")
         except sqlite3.Error as e:
             logger.exception("Database connection failed.")
@@ -152,7 +361,8 @@ def init_db():
 def create_pyramid(players):
     pyramid = []
     start = 0
-    row_sizes = [1, 2, 3, 4, 5, 6, 7, 8]
+    # UPDATED: Added a 9th row for a total of 45 players
+    row_sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     for size in row_sizes:
         row = []
         for i in range(size):
@@ -193,26 +403,16 @@ def get_active_challenges():
             elif not isinstance(challenge.get("deadline"), datetime):
                 challenge["deadline"] = None  # Handle unexpected type
 
-            # Ensure scheduled_play_date is a date object
-            # sqlite3.PARSE_DECLTYPES should handle DATE columns correctly if they are stored as YYYY-MM-DD strings
-            # and convert them to datetime.date objects.
-            # This check is for robustness if it comes as a string or different type.
+            # Ensure scheduled_play_date is a datetime object
             scheduled_play_date_val = challenge.get("scheduled_play_date")
             if isinstance(scheduled_play_date_val, str):
                 try:
                     challenge["scheduled_play_date"] = datetime.strptime(
-                        scheduled_play_date_val, "%Y-%m-%d"
-                    ).date()
+                        scheduled_play_date_val.split(".")[0], "%Y-%m-%d %H:%M:%S"
+                    )
                 except (ValueError, TypeError):
-                    challenge["scheduled_play_date"] = None  # Handle parsing error
-            elif (
-                not isinstance(scheduled_play_date_val, date)
-                and scheduled_play_date_val is not None
-            ):
-                # If it's not a date object and not None, set to None to avoid issues
-                logger.warning(
-                    f"Unexpected type for scheduled_play_date: {type(scheduled_play_date_val)}. Setting to None."
-                )
+                    challenge["scheduled_play_date"] = None
+            elif not isinstance(scheduled_play_date_val, datetime):
                 challenge["scheduled_play_date"] = None
 
             # Ensure timestamp is datetime object (less critical for display, but good practice)
@@ -488,7 +688,7 @@ def eligible_opponents_for(challenger):
         # logger.info("Eligible opponents for rank %s (<=10): %d", challenger_rank, len(eligible))
         return eligible
 
-    # Rule: Ranks 11-36 challenge based on rank difference bands
+    # Rule: Ranks 11-45 challenge based on rank difference bands
     # This section is now implicitly guarded: if challenger_rank >= 11 and they were blocked,
     # the function would have returned [] already.
     if 11 <= challenger_rank <= 15:
@@ -499,6 +699,8 @@ def eligible_opponents_for(challenger):
         max_rank_diff = 6  # Can challenge up to 6 ranks higher
     elif 29 <= challenger_rank <= 36:
         max_rank_diff = 7  # Can challenge up to 7 ranks higher
+    elif 37 <= challenger_rank <= 45: # UPDATED: New rank band
+        max_rank_diff = 8  # Can challenge up to 8 ranks higher
     else:  # Should not happen if rank is always >= 1
         max_rank_diff = 0
 
@@ -550,7 +752,7 @@ def rerank_players(
 ):  # Added allow_temporary_overflow
     """
     Re-assigns ranks 1 to N based on the current order (rank ASC, is_new DESC, id ASC).
-    Deletes players ranked > 36 after re-ranking, unless allow_temporary_overflow is True.
+    Deletes players ranked > 45 after re-ranking, unless allow_temporary_overflow is True.
     Should be called within a transaction.
     """
     try:
@@ -568,31 +770,246 @@ def rerank_players(
             )
             new_rank_value += 1
 
-        # Remove players pushed beyond rank 36 (if any)
+        # Remove players pushed beyond rank 45 (if any)
         final_player_count = new_rank_value - 1
 
-        if not allow_temporary_overflow and final_player_count > 36:
+        if not allow_temporary_overflow and final_player_count > 45:
             logger.warning(
-                f"Re-ranking resulted in {final_player_count} players. Deleting ranks > 36."
+                f"Re-ranking resulted in {final_player_count} players. Deleting ranks > 45."
             )
-            deleted_count = db.execute("DELETE FROM players WHERE rank > 36").rowcount
-            logger.info(f"Deleted {deleted_count} players with rank > 36.")
-        elif allow_temporary_overflow and final_player_count > 36:
+            deleted_count = db.execute("DELETE FROM players WHERE rank > 45").rowcount
+            logger.info(f"Deleted {deleted_count} players with rank > 45.")
+        elif allow_temporary_overflow and final_player_count > 45:
             logger.info(
                 f"Re-ranking resulted in {final_player_count} players. Temporary overflow allowed."
             )
-        # If not allow_temporary_overflow and final_player_count <= 36, no deletion needed.
-        # If allow_temporary_overflow and final_player_count <= 36, no deletion needed.
+        # If not allow_temporary_overflow and final_player_count <= 45, no deletion needed.
+        # If allow_temporary_overflow and final_player_count <= 45, no deletion needed.
 
     except sqlite3.Error as e:
         logger.exception("Error during player re-ranking.")
         raise e  # Re-raise to ensure transaction rollback if called within 'with db:'
 
 
+# Optimized function to get all necessary data for real-time updates
+def get_realtime_data():
+    """Get all data needed for real-time updates in a serializable format"""
+    db = get_db()
+    now_dt = get_current_time()
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        # Get players with challenge status
+        cur = db.execute(
+            """
+            SELECT p.*,
+                CASE
+                  WHEN EXISTS (
+                    SELECT 1 FROM challenges c
+                    WHERE c.resolved = 0
+                      AND c.deadline > ?
+                      AND (c.challenger_id = p.id OR c.opponent_id = p.id)
+                  ) THEN 1 ELSE 0
+                END as in_challenge
+            FROM players p
+            ORDER BY rank ASC
+        """,
+            (now_str,),
+        )
+
+        players_raw = cur.fetchall()
+        players = [serialize_player(p) for p in players_raw]
+
+        # Calculate blocking status
+        for player in players:
+            player["blocked_challenger"] = False
+            player["blocked_opponent"] = False
+
+            if player.get("block_challenger_until"):
+                try:
+                    block_dt = datetime.strptime(
+                        player["block_challenger_until"], "%Y-%m-%d %H:%M:%S"
+                    )
+                    if now_dt < block_dt:
+                        player["blocked_challenger"] = True
+                except (ValueError, TypeError):
+                    pass
+
+            if player.get("block_opponent_until"):
+                try:
+                    block_dt = datetime.strptime(
+                        player["block_opponent_until"], "%Y-%m-%d %H:%M:%S"
+                    )
+                    if now_dt < block_dt:
+                        player["blocked_opponent"] = True
+                except (ValueError, TypeError):
+                    pass
+
+        # Get active challenges
+        active_challenges_raw = get_active_challenges()
+        active_challenges = [serialize_challenge(c) for c in active_challenges_raw]
+
+        # Get completed challenges
+        completed_challenges_raw = get_completed_challenges(limit=50)
+        completed_challenges = [
+            serialize_challenge(c) for c in completed_challenges_raw
+        ]
+
+        # Get blocked/unavailable players
+        blocked_challenger_players = [
+            serialize_player(p) for p in get_blocked_challenger_players()
+        ]
+        blocked_opponent_players = [
+            serialize_player(p) for p in get_blocked_opponent_players()
+        ]
+        unavailable_players = [serialize_player(p) for p in get_unavailable_players()]
+
+        return {
+            "players": players,
+            "active_challenges": active_challenges,
+            "completed_challenges": completed_challenges,
+            "blocked_challenger_players": blocked_challenger_players,
+            "blocked_opponent_players": blocked_opponent_players,
+            "unavailable_players": unavailable_players,
+            "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+
+    except Exception as e:
+        logger.exception("Error getting realtime data")
+        return None
+
+
+def get_realtime_data_cached():
+    """Get real-time data with caching"""
+    cache_key = "realtime_data"
+    cached_data = data_cache.get(cache_key)
+
+    if cached_data:
+        logger.debug("Returning cached realtime data")
+        return cached_data
+
+    # Generate fresh data
+    fresh_data = get_realtime_data()
+    if fresh_data:
+        data_cache.set(cache_key, fresh_data)
+        logger.debug("Generated and cached fresh realtime data")
+
+    return fresh_data
+
+
+# Enhanced SocketIO emit functions
+def emit_to_room(event, data, room="tennis_updates"):
+    """Emit data to a specific room with error handling"""
+    try:
+        socketio.emit(event, data, room=room)
+        logger.debug(f"Emitted {event} to room {room}")
+    except Exception as e:
+        logger.error(f"Failed to emit {event} to room {room}: {e}")
+
+
+def emit_data_update(update_type="general", specific_data=None):
+    """Emit data updates to all connected clients"""
+    try:
+        data = get_realtime_data()
+        if data:
+            socketio.emit(
+                "data_update",
+                {"type": update_type, "data": data, "specific": specific_data},
+            )
+            logger.info(f"Emitted data_update: {update_type}")
+        else:
+            logger.error("Failed to get realtime data for emission")
+    except Exception as e:
+        logger.exception(f"Error emitting data update: {e}")
+
+
+def emit_data_update_optimized(update_type="general", specific_data=None):
+    """Optimized data emission with batching and compression"""
+    try:
+        data = get_realtime_data_cached()
+        if not data:
+            logger.error("No data available for emission")
+            return
+
+        # Emit to room instead of all clients
+        emit_to_room(
+            "data_update",
+            {
+                "type": update_type,
+                "data": data,
+                "specific": specific_data,
+                "timestamp": get_current_time().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+
+    except Exception as e:
+        logger.exception(f"Error in emit_data_update_optimized: {e}")
+
+
+def emit_player_update(player_id, action="updated"):
+    """Emit specific player update"""
+    try:
+        db = get_db()
+        cur = db.execute("SELECT * FROM players WHERE id = ?", (player_id,))
+        player_row = cur.fetchone()
+
+        if player_row:
+            player_data = serialize_player(player_row)
+            emit_to_room("player_update", {"action": action, "player": player_data})
+            logger.info(f"Emitted player_update: {action} for player {player_id}")
+    except Exception as e:
+        logger.exception(f"Error emitting player update: {e}")
+
+
+def emit_challenge_update(challenge_id=None, action="updated"):
+    """Emit specific challenge update"""
+    try:
+        if challenge_id:
+            # Emit specific challenge update
+            emit_to_room(
+                "challenge_update", {"action": action, "challenge_id": challenge_id}
+            )
+
+        # Always emit general data update for challenges
+        emit_data_update_optimized("challenges")
+        logger.info(f"Emitted challenge_update: {action}")
+    except Exception as e:
+        logger.exception(f"Error emitting challenge update: {e}")
+
+
+def safe_emit(event, data, retries=3):
+    """Emit with retry mechanism"""
+    for attempt in range(retries):
+        try:
+            emit_to_room(event, data)
+            return True
+        except Exception as e:
+            logger.warning(f"Emit attempt {attempt + 1} failed: {e}")
+            if attempt == retries - 1:
+                logger.error(f"Failed to emit {event} after {retries} attempts")
+                return False
+            time.sleep(0.1 * (attempt + 1))  # Exponential backoff
+    return False
+
+
 # --------------- ROUTES ---------------
 @app.route("/")
 def home():
     return redirect(url_for("stecher_start"))
+
+
+@app.route("/api/realtime_data")
+def api_realtime_data():
+    """API endpoint to get current state data"""
+    try:
+        data = get_realtime_data_cached()
+        if data:
+            return jsonify({"success": True, "data": data})
+        else:
+            return jsonify({"success": False, "error": "Failed to get data"}), 500
+    except Exception as e:
+        logger.exception("Error in api_realtime_data")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @app.route("/stecher_start")
@@ -892,6 +1309,8 @@ def get_players():
                     "block_opponent": block_opponent,  # Boolean flag for logic
                     "block_challenger_until": block_challenger_until_str,  # Formatted string or None
                     "block_opponent_until": block_opponent_until_str,  # Formatted string or None
+                    "block_challenger_until_fmt": block_challenger_until_str,  # Add formatted version for display
+                    "block_opponent_until_fmt": block_opponent_until_str,  # Add formatted version for display
                     "in_challenge": in_challenge,
                     "is_new": bool(p["is_new"]),
                 }
@@ -1136,7 +1555,7 @@ def challenge():
 
         timestamp = get_current_time()
         deadline = timestamp + timedelta(days=10)
-        db.execute(
+        cursor = db.execute(
             "INSERT INTO challenges (challenger_id, opponent_id, timestamp, deadline, resolved, score_details) VALUES (?, ?, ?, ?, ?, ?)",
             (
                 challenger_id,
@@ -1147,14 +1566,23 @@ def challenge():
                 None,  # Score is null initially
             ),
         )
+        challenge_id = cursor.lastrowid
         db.commit()
-        socketio.emit(
-            "update", {"message": "New challenge created"}
-        )  # Add simple payload
+
+        # Invalidate cache after creating challenge
+        data_cache.invalidate()
+
+        # OPTIMIZED: Emit specific data instead of generic update
+        emit_challenge_update(challenge_id, "created")
+
         message = f"Ich, {challenger['name']} (Rang {challenger['rank']}), fordere hiermit {opponent['name']} (Rang {opponent['rank']}) heraus."
         logger.info("Challenge created: %s vs %s", challenger["name"], opponent["name"])
         return jsonify(
-            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+            {
+                "message": message,
+                "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "challenge_id": challenge_id,
+            }
         )
     except sqlite3.Error as e:
         db.rollback()  # Rollback on error
@@ -1193,61 +1621,45 @@ def toggle_availability():
             )
 
         new_availability = 0 if player["available"] == 1 else 1
-        new_unavailable_since = None
-        block_opponent_until = player[
-            "block_opponent_until"
-        ]  # Keep existing block unless overwritten
-
         now_dt = get_current_time()
+        
+        with db: # Use a transaction
+            if new_availability == 0:  # Becoming unavailable
+                new_unavailable_since = now_dt
+                db.execute(
+                    "UPDATE players SET available = ?, unavailable_since = ? WHERE id = ?",
+                    (new_availability, new_unavailable_since, player_id),
+                )
+                block_challenger_until_fmt = None # No new block
+            else:  # Becoming available
+                # CORRECTED LOGIC: Set a 3-day CHALLENGER block.
+                block_challenger_until = now_dt + timedelta(days=3)
+                db.execute(
+                    "UPDATE players SET available = ?, unavailable_since = NULL, block_challenger_until = ? WHERE id = ?",
+                    (new_availability, block_challenger_until, player_id),
+                )
+                block_challenger_until_fmt = block_challenger_until.strftime("%Y-%m-%d %H:%M")
 
-        if new_availability == 0:  # Becoming unavailable
-            new_unavailable_since = now_dt  # Store datetime object
-            # Keep existing block_opponent_until if set
-        else:  # Becoming available
-            # Set a 3-day block only if they weren't already blocked for longer
-            three_days_later = now_dt + timedelta(days=3)
-            should_set_block = True
-            if player["block_opponent_until"]:
-                try:
-                    current_block_dt = player["block_opponent_until"]
-                    if isinstance(current_block_dt, str):
-                        current_block_dt_str = current_block_dt.split(".")[0]
-                        current_block_dt = datetime.strptime(
-                            current_block_dt_str, "%Y-%m-%d %H:%M:%S"
-                        )
-                    elif not isinstance(current_block_dt, datetime):
-                        raise TypeError("block_opponent_until is not datetime")
+        # Invalidate cache after updating player
+        data_cache.invalidate()
 
-                    if current_block_dt > three_days_later:
-                        should_set_block = False  # Keep the longer existing block
-                except (ValueError, TypeError, AttributeError):
-                    pass  # Ignore invalid date, proceed to set new block
+        # Emit specific player update
+        emit_player_update(player_id, "availability_toggled")
 
-            if should_set_block:
-                block_opponent_until = three_days_later  # Store datetime object
-
-        db.execute(
-            "UPDATE players SET available = ?, unavailable_since = ?, block_opponent_until = ? WHERE id = ?",
-            (new_availability, new_unavailable_since, block_opponent_until, player_id),
-        )
-        db.commit()
-        socketio.emit("update", {"message": "Player availability toggled"})
         logger.info(
             "Toggled availability for player %s (%s) to %s",
             player_id,
             player["name"],
             new_availability,
         )
-        # Return the actual new state for confirmation - format date as plain string without brackets
-        block_opponent_until_fmt = None
-        if block_opponent_until and isinstance(block_opponent_until, datetime):
-            block_opponent_until_fmt = block_opponent_until.strftime("%Y-%m-%d %H:%M")
-
+        
+        # Return the actual new state for confirmation
         return jsonify(
             {
                 "success": True,
                 "new_availability": new_availability,
-                "block_opponent_until": block_opponent_until_fmt,
+                # Return the correct block type based on the action
+                "block_challenger_until": block_challenger_until_fmt,
             }
         )
     except sqlite3.Error as e:
@@ -1379,7 +1791,7 @@ def submit_result():
                 if challenger["is_new"] == 1:
                     new_rank = opponent["rank"]
                     db.execute(
-                        "UPDATE players SET rank = rank + 1 WHERE rank >= ? AND rank <= 36 AND id != ?",  # Shift players down
+                        "UPDATE players SET rank = rank + 1 WHERE rank >= ? AND rank <= 45 AND id != ?",  # Shift players down
                         (
                             new_rank,
                             challenger_id,
@@ -1428,22 +1840,20 @@ def submit_result():
                 (block_until, challenger_id),
             )
             if challenger["is_new"] == 1:  # New player lost
-                # New player loses. They will take the last spot (36).
-                # The player who was at rank 36 is pushed out.
-                # We achieve this by deleting the player at rank 36 before the final re-ranking.
-                # The new player (currently at rank 37) will then be re-ranked to 36.
+                # New player loses. They will take the last spot (45).
+                # The player who was at rank 45 is pushed out.
                 deleted_count = db.execute(
-                    "DELETE FROM players WHERE rank = 36"
+                    "DELETE FROM players WHERE rank = 45"
                 ).rowcount
                 logger.info(
-                    f"New player lost, removed player at rank 36 (count: {deleted_count}) to make space."
+                    f"New player lost, removed player at rank 45 (count: {deleted_count}) to make space."
                 )
 
                 db.execute(
                     "UPDATE players SET is_new = 0 WHERE id = ?", (challenger_id,)
                 )
                 flash(
-                    f"{opponent['name']} gewinnt. {challenger['name']} wird auf Rang 36 platziert.",
+                    f"{opponent['name']} gewinnt. {challenger['name']} wird auf Rang 45 platziert.",
                     "info",
                 )
             else:
@@ -1465,17 +1875,25 @@ def submit_result():
             return redirect(url_for("admin"))
 
         # --- Re-ranking logic (Run only if ranks actually changed or a new player was involved and won) ---
-        # After match resolution, always re-rank and enforce 36 player limit.
+        # After match resolution, always re-rank and enforce 45 player limit.
         with db:  # Use transaction for re-ranking
             rerank_players(
                 db, allow_temporary_overflow=False
-            )  # Enforce 36 player limit
+            )  # Enforce 45 player limit
         # db.commit() was part of the 'with db:' block for rerank_players
 
-        socketio.emit("update", {"message": "Challenge resolved and ranks updated"})
-        socketio.emit(
-            "challenge_resolved", {"challenge_id": challenge_id}
-        )  # Specific event for client-side color clearing
+        # Invalidate cache after resolving challenge
+        data_cache.invalidate()
+
+        # OPTIMIZED: Emit comprehensive update after result submission
+        emit_data_update_optimized(
+            "result_submitted",
+            {
+                "challenge_id": challenge_id,
+                "result": result,
+                "rank_changed": rank_changed,
+            },
+        )
     except sqlite3.Error as e:
         db.rollback()
         logger.exception(f"Database error during challenge result submission: {e}")
@@ -1539,9 +1957,10 @@ def newplayer_challenge():
 
         original_opponent_name = opponent["name"]  # Store for messages
 
-        if not (11 <= opponent["rank"] <= 35):
+        # UPDATED: Opponent rank range for 45 players
+        if not (11 <= opponent["rank"] <= 44):
             return (
-                jsonify({"error": "Gegner muss initial zwischen Rang 11 und 35 sein."}),
+                jsonify({"error": "Gegner muss initial zwischen Rang 11 und 44 sein."}),
                 400,
             )
         if not opponent["available"]:
@@ -1612,8 +2031,7 @@ def newplayer_challenge():
                 f"New player '{newplayer_name}' inserted with temporary ID {newplayer_id} and rank 99."
             )
 
-            # Re-rank players, allowing temporary overflow (e.g., 37 players)
-            # This ensures the new player gets a sequential rank without being immediately deleted.
+            # Re-rank players, allowing temporary overflow (e.g., 46 players)
             rerank_players(db, allow_temporary_overflow=True)
             logger.info(
                 f"Players re-ranked (allowing overflow). New player '{newplayer_name}' (ID: {newplayer_id}) now has a final rank."
@@ -1672,7 +2090,20 @@ def newplayer_challenge():
             ]  # Get new player's actual rank for message
 
         # This part is executed only if the 'with db:' block completed successfully (committed)
-        socketio.emit("update", {"message": "New player added and challenged"})
+
+        # Invalidate cache after adding new player
+        data_cache.invalidate()
+
+        # OPTIMIZED: Emit comprehensive update for new player
+        emit_data_update_optimized(
+            "new_player_added",
+            {
+                "player_id": newplayer_id,
+                "player_name": newplayer_name,
+                "challenge_id": cursor.lastrowid if "cursor" in locals() else None,
+            },
+        )
+
         message = f"{newplayer_name} (Neuer Spieler, Rang {new_player_current_rank}) fordert {opponent_name_for_message} (Rang {opponent_new_rank}) heraus. Frist: {deadline.strftime('%Y-%m-%d %H:%M')}"
         logger.info(
             "New player challenge successfully processed: %s (ID: %s, Rank: %s) vs %s (ID: %s, Rank: %s)",
@@ -1752,29 +2183,29 @@ def newplayer_challenge():
         return jsonify({"error": f"Ein unerwarteter Fehler ist aufgetreten: {e}"}), 500
 
 
-# --- NEW: Route to update scheduled play date ---
+# UPDATED: Route to update scheduled play date and time
 @app.route("/update_scheduled_date", methods=["POST"])
 def update_scheduled_date():
     challenge_id_str = request.form.get("challenge_id")
-    selected_date_str = request.form.get(
-        "selected_date"
-    )  # This will be YYYY-MM-DD or empty
+    selected_date_str = request.form.get("selected_date")
+    selected_time_str = request.form.get("selected_time")
 
-    if not challenge_id_str:  # selected_date_str can be empty if user deselects
+    if not challenge_id_str:
         return jsonify({"success": False, "message": "Fehlende Challenge-ID."}), 400
 
     try:
+        db = get_db() # MOVED: Get DB connection at the start
         challenge_id = int(challenge_id_str)
-        selected_dt_obj = None
-        if selected_date_str:  # Only parse if a date string is provided
-            selected_dt_obj = datetime.strptime(selected_date_str, "%Y-%m-%d").date()
-    except ValueError:
-        return jsonify({"success": False, "message": "Ungültige Parameter."}), 400
+        scheduled_dt_obj = None
 
-    db = get_db()
-    try:
-        # Fetch challenge to validate deadline if a date is selected
-        if selected_dt_obj:
+        # If date is provided, try to build a datetime object
+        if selected_date_str:
+            # Use a default time if none is provided, or use the provided time
+            time_str = selected_time_str if selected_time_str else "00:00"
+            datetime_str = f"{selected_date_str} {time_str}"
+            scheduled_dt_obj = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
+        
+            # Validation against deadline
             cur = db.execute(
                 "SELECT deadline FROM challenges WHERE id = ? AND resolved = 0",
                 (challenge_id,),
@@ -1782,86 +2213,36 @@ def update_scheduled_date():
             challenge_record = cur.fetchone()
 
             if not challenge_record:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "message": "Herausforderung nicht gefunden oder bereits abgeschlossen.",
-                        }
-                    ),
-                    404,
-                )
+                return jsonify({"success": False, "message": "Herausforderung nicht gefunden."}), 404
 
-            # Ensure deadline is a datetime object before accessing .date()
             deadline_dt = challenge_record["deadline"]
-            if not isinstance(
-                deadline_dt, datetime
-            ):  # Should be datetime due to PARSE_DECLTYPES
-                # Attempt to parse if it's a string representation
-                try:
-                    deadline_dt = datetime.strptime(
-                        str(deadline_dt).split(" ")[0], "%Y-%m-%d"
-                    )
-                except ValueError:
-                    logger.error(
-                        f"Could not parse deadline '{deadline_dt}' for challenge {challenge_id} as datetime."
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "success": False,
-                                "message": "Interner Fehler: Ungültiges Fristformat.",
-                            }
-                        ),
-                        500,
-                    )
+            if not isinstance(deadline_dt, datetime):
+                 deadline_dt = datetime.strptime(str(deadline_dt).split(".")[0], "%Y-%m-%d %H:%M:%S")
 
-            deadline_date = deadline_dt.date()
-            today = get_current_time().date()
+            if scheduled_dt_obj > deadline_dt:
+                return jsonify({"success": False, "message": "Spieldatum kann nicht nach der Frist liegen."}), 400
 
-            if not (today <= selected_dt_obj <= deadline_date):
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "message": f"Datum muss zwischen {today.strftime('%Y-%m-%d')} und {deadline_date.strftime('%Y-%m-%d')} liegen.",
-                        }
-                    ),
-                    400,
-                )
-
+        # This part is now inside the main try block
         db.execute(
             "UPDATE challenges SET scheduled_play_date = ? WHERE id = ?",
-            (selected_dt_obj, challenge_id),  # Pass date object or None
+            (scheduled_dt_obj, challenge_id),  # Pass datetime object or None
         )
         db.commit()
-        socketio.emit(
-            "update",
-            {
-                "message": "Spieldatum aktualisiert",
-                "challenge_id": challenge_id,
-                "scheduled_date": selected_date_str if selected_dt_obj else None,
-            },
-        )
-        logger.info(
-            f"Spieldatum für Herausforderung {challenge_id} auf {selected_date_str if selected_dt_obj else 'None'} gesetzt."
-        )
-        return jsonify(
-            {"success": True, "message": "Spieldatum erfolgreich aktualisiert."}
-        )
 
+        data_cache.invalidate()
+        emit_data_update_optimized("scheduled_date_updated", {"challenge_id": challenge_id})
+        
+        logger.info(f"Spieldatum für Herausforderung {challenge_id} auf {scheduled_dt_obj} gesetzt.")
+        return jsonify({"success": True, "message": "Spieldatum erfolgreich aktualisiert."})
+
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Invalid date/time format received: {e}")
+        return jsonify({"success": False, "message": "Ungültiges Datums- oder Zeitformat."}), 400
     except sqlite3.Error as e:
-        db.rollback()
-        logger.exception(
-            f"Datenbankfehler beim Aktualisieren des Spieldatums für Herausforderung {challenge_id}: {e}"
-        )
+        if 'db' in locals() and db.in_transaction:
+            db.rollback()
+        logger.exception(f"DB-Fehler beim Aktualisieren des Spieldatums für Challenge {challenge_id}: {e}")
         return jsonify({"success": False, "message": "Datenbankfehler."}), 500
-    except Exception as e:
-        db.rollback()
-        logger.exception(
-            f"Unerwarteter Fehler beim Aktualisieren des Spieldatums für Herausforderung {challenge_id}: {e}"
-        )
-        return jsonify({"success": False, "message": "Unerwarteter Fehler."}), 500
 
 
 # --- Admin Player Management Routes (for db_settings.html) ---
@@ -1888,9 +2269,10 @@ def add_player():
             ),
             400,
         )
-    if not (1 <= new_rank <= 36):  # Admin can only add within 1-36 initially
+    # UPDATED: Rank validation for 45 players
+    if not (1 <= new_rank <= 45):
         return (
-            jsonify({"success": False, "message": "Rank must be between 1 and 36."}),
+            jsonify({"success": False, "message": "Rank must be between 1 and 45."}),
             400,
         )
 
@@ -1921,11 +2303,13 @@ def add_player():
                 f"Admin added player '{new_name}' with initial rank {new_rank}."
             )
 
-            # Re-rank ALL players to ensure consistency and enforce 36 player limit
+            # Re-rank ALL players to ensure consistency and enforce 45 player limit
             rerank_players(db, allow_temporary_overflow=False)
-            logger.info("Re-ranked players after admin add, enforcing 36 player limit.")
+            logger.info("Re-ranked players after admin add, enforcing 45 player limit.")
 
-        socketio.emit("update", {"message": f"Player {new_name} added"})
+        # Invalidate cache after adding player
+        data_cache.invalidate()
+        emit_data_update_optimized("player_added", {"player_name": new_name})
         return jsonify(
             {
                 "success": True,
@@ -1987,9 +2371,10 @@ def update_player():
 
     if new_name == "":
         return jsonify({"success": False, "message": "Name cannot be empty."}), 400
-    if not (1 <= new_rank <= 36):  # Admin can only update within 1-36
+    # UPDATED: Rank validation for 45 players
+    if not (1 <= new_rank <= 45):
         return (
-            jsonify({"success": False, "message": "Rank must be between 1 and 36."}),
+            jsonify({"success": False, "message": "Rank must be between 1 and 45."}),
             400,
         )
 
@@ -2030,13 +2415,15 @@ def update_player():
                 f"Admin updated player {player_id}. Name: {new_name}, Rank attempt: {new_rank}. Preserved blocks."
             )
 
-            # Re-rank ALL players to ensure consistency and enforce 36 player limit
+            # Re-rank ALL players to ensure consistency and enforce 45 player limit
             rerank_players(db, allow_temporary_overflow=False)
             logger.info(
-                "Re-ranked players after admin update, enforcing 36 player limit."
+                "Re-ranked players after admin update, enforcing 45 player limit."
             )
 
-        socketio.emit("update", {"message": "Player details updated"})
+        # Invalidate cache after updating player
+        data_cache.invalidate()
+        emit_player_update(player_id, "details_updated")
         return jsonify(
             {
                 "success": True,
@@ -2115,13 +2502,15 @@ def delete_player():
                 )
             logger.info(f"Admin deleted player {player_id} ({player_name}).")
 
-            # Re-rank remaining players and enforce 36 player limit
+            # Re-rank remaining players and enforce 45 player limit
             rerank_players(db, allow_temporary_overflow=False)
             logger.info(
-                "Re-ranked players after admin delete, enforcing 36 player limit."
+                "Re-ranked players after admin delete, enforcing 45 player limit."
             )
 
-        socketio.emit("update", {"message": f"Player {player_name} deleted"})
+        # Invalidate cache after deleting player
+        data_cache.invalidate()
+        emit_data_update_optimized("player_deleted", {"player_name": player_name})
         return jsonify(
             {
                 "success": True,
@@ -2200,7 +2589,9 @@ def set_player_block_status():
                 log_msg = f"Admin set player {player_id} ({player_name}) as blocked opponent until {block_until}."
 
         logger.info(log_msg)
-        socketio.emit("update", {"message": f"Block status updated for {player_name}"})
+        # Invalidate cache after updating block status
+        data_cache.invalidate()
+        emit_player_update(player_id, "block_status_updated")
         return jsonify(
             {"success": True, "message": f"Block status for '{player_name}' updated."}
         )
@@ -2273,8 +2664,11 @@ def reset_database():
         # Commit happens automatically with 'with db:' if no exceptions occurred
 
         logger.info("Database reset successful.")
+        # Invalidate cache after database reset
+        data_cache.invalidate()
+
         # Emit Socket.IO event to notify all clients
-        socketio.emit("database_reset", {"message": "Database has been reset."})
+        emit_to_room("database_reset", {"message": "Database has been reset."})
         return jsonify(
             {"success": True, "message": "Datenbank erfolgreich zurückgesetzt."}
         )
@@ -2318,12 +2712,47 @@ def initial_players():
 # --- SocketIO Event Handlers ---
 @socketio.on("connect")
 def handle_connect():
-    logger.info("Socket.IO client connected: %s", request.sid)
+    """Handle client connection with room management"""
+    logger.info(f"Client connected: {request.sid}")
+
+    # Join a general room for tennis updates
+    join_room("tennis_updates")
+
+    # Send initial data to the newly connected client
+    try:
+        data = get_realtime_data_cached()
+        if data:
+            emit("data_update", {"type": "initial_connection", "data": data})
+    except Exception as e:
+        logger.exception(f"Error sending initial data to {request.sid}: {e}")
+
+    # Acknowledge connection
+    emit(
+        "connection_ack",
+        {
+            "status": "connected",
+            "server_time": get_current_time().strftime("%Y-%m-%d %H:%M:%S"),
+        },
+    )
 
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    logger.info("Socket.IO client disconnected: %s", request.sid)
+    """Handle client disconnection"""
+    logger.info(f"Client disconnected: {request.sid}")
+    leave_room("tennis_updates")
+
+
+@socketio.on("request_full_update")
+def handle_request_full_update():
+    """Handle client request for full data update"""
+    emit_data_update_optimized("full_update_requested")
+
+
+@socketio.on("ping")
+def handle_ping():
+    """Handle client ping for connection health check"""
+    emit("pong", {"timestamp": get_current_time().strftime("%Y-%m-%d %H:%M:%S")})
 
 
 # Add error handlers for SocketIO
@@ -2339,4 +2768,9 @@ if __name__ == "__main__":
         init_db()  # This will now only initialize if needed
 
     logger.info("Starting Flask-SocketIO server with eventlet...")
-    socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=True)
+    # UPDATED: Use environment variables for host and port, and disable debug/reloader for production
+    host = os.environ.get("FLASK_HOST", "0.0.0.0")
+    port = int(os.environ.get("FLASK_PORT", 5000))
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ["true", "1"]
+    
+    socketio.run(app, host=host, port=port, debug=debug_mode, use_reloader=debug_mode)

@@ -27,8 +27,32 @@ source ./bin/activate
 ##########################################
 ## for development:
 ##########################################
+Important notes:
+================
+*) Use 0.0.0.0 as the host if you want to access the app from other devices on your network
+
+*) In the browser, always use http://127.0.0.1:5000/index or http://localhost:5000/index
+   when accessing from the same machine
+
+*) From other devices, use the server's actual IP address
+   e.g., http://192.168.1.100:5000/index
+
+The reason for using 0.0.0.0 is that it binds to all available network interfaces,
+making your app accessible both locally and from other devices on your network.
+
+Using 127.0.0.1 would only allow local connections.
+
+# Default (binds to all interfaces on port 5000)
+python3 app.py
+
+# Explicitly specify host and port
 python3 app.py --host=0.0.0.0 --port=5000
 
+# Or use localhost only
+python3 app.py --host=127.0.0.1 --port=5000
+
+# Enable debug mode
+python3 app.py --host=0.0.0.0 --port=5000 --debug
 
 ##########################################
 ## Production-Ready Setup with Gunicorn (Best Practice)

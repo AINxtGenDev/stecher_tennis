@@ -8,30 +8,28 @@ Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
 Database: SQLite
 JSON data for initializing the players (initial_players.json)
 
-I have found an logic error within admin.html and its important to fix it:
+###############################################
+Please focus on the new initial_players.json file when applying your changes.
+When the app starts from a fresh state with this JSON, every one of the 45 players
+must appear in the pyramid on index.html. Any player whose entry contains "is_available": false
+must be rendered in white to indicate unavailability, exactly as shown in the reference image.
 
-Pending challenges admin.html:
+It is extremely important to apply all changes step by step, and to do so very carefully.
+Additionally, please always provide the complete, entire code for each file you modify.
+This is extremely important for our code review process.
+At the end of this process, the tennis ranking app must be fully functional and production-ready.
 
-The administrator selects the winner from the drop-down list and must enter the correct final result.
-Only correct entries may be allowed and saved in the database. The final result must be displayed in index.html
-under Challenges completed.
+###############################################
 
-best of three means that a match consists of a maximum of three sets, and the player who wins two sets first
-wins the match. A player must win two out of three sets to win the match. If after two sets each player has won one set,
-the third set decides the winner.
+Please focus on the new initial_players.json file when applying your changes.
+When the app starts from a fresh state with this JSON, every one of the 45 players
+must appear in the pyramid on index.html. Any player whose entry contains "is_available": false
+must be rendered in white to indicate unavailability, exactly as shown in the reference image.
 
-If the opponent wins, the following examples are correct:
+It is extremely important to apply all changes step by step, and to do so very carefully.
+Additionally, please always provide the complete, entire code for each file you modify.
+This is extremely important for our code review process.
+At the end of this process, the tennis ranking app must be fully functional and production-ready.
 
-Examples of correct final results Opponent wins:
-Example 1:
-Set 1: 3:6
-Set 2: 3:6
 
-Example 2:
-Set 1: 1:6
-Set 2: 6:7(6:8)
 
-Example 3:
-Set 1: 4:6
-Set 2: 6:3
-Set 3: 0:6

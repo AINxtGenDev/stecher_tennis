@@ -1,4 +1,4 @@
--- schema.sql (updated with scheduled_play_date)
+-- schema.sql (updated with scheduled_play_date as DATETIME)
 -- die DROP TABLE IF EXISTS-Anweisungen sind jetzt in Ordnung
 -- da das Skript nur ausgeführt wird wenn die Tabellen tatsächlich nicht existieren.
 -- Wenn sie existieren, schlagen die DROP-Befehle fehl oder tun nichts
@@ -27,7 +27,7 @@ CREATE TABLE challenges (
     resolved INTEGER NOT NULL DEFAULT 0,
     result TEXT,  -- 'challenger_wins', 'opponent_wins', or 'not_happened'
     score_details TEXT,
-    scheduled_play_date DATE, -- NEW: Date for when the match is scheduled to be played
+    scheduled_play_date DATETIME, -- UPDATED: Changed from DATE to DATETIME
     FOREIGN KEY (challenger_id) REFERENCES players(id) ON DELETE CASCADE,
     FOREIGN KEY (opponent_id) REFERENCES players(id) ON DELETE CASCADE
 );
@@ -44,7 +44,7 @@ SELECT
     c.resolved_at,
     c.result,
     c.score_details,
-    c.scheduled_play_date -- NEW: Scheduled play date in the view
+    c.scheduled_play_date -- This now correctly references the DATETIME column
 FROM challenges c
 JOIN players p1 ON c.challenger_id = p1.id
 JOIN players p2 ON c.opponent_id = p2.id

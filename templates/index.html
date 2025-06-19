@@ -319,12 +319,12 @@
         gap: 5px; /* Space between dropdown and selected date text */
         flex-shrink: 0; /* Prevent shrinking */
     }
-    .scheduled-date-dropdown {
-        min-width: 130px; /* Adjusted width */
+    .scheduled-date-dropdown, .scheduled-time-dropdown {
+        min-width: 110px; /* Adjusted width */
         padding: 0.25rem 0.5rem; /* Smaller padding for form-select-sm */
         font-size: 0.8rem; /* Smaller font */
     }
-    .scheduled-date-dropdown.has-selection { /* Style when a date is selected */
+    .scheduled-date-dropdown.has-selection, .scheduled-time-dropdown.has-selection { /* Style when a date is selected */
         background-color: #ffe8cc; /* Light orange */
         border-color: #ffc078;
     }
@@ -581,7 +581,7 @@
            align-items: flex-start; /* Align to start */
            gap: 3px;
        }
-       .scheduled-date-dropdown {
+       .scheduled-date-dropdown, .scheduled-time-dropdown {
            min-width: 100%; /* Full width dropdown */
        }
        .selected-scheduled-date {
@@ -612,33 +612,37 @@
        }
     }
 
+    /* --- MOBILE OPTIMIZATION START --- */
     /* Further adjustments for very small screens (Phones) */
     @media (max-width: 480px) {
       h2 { font-size: 1.6rem; }
 
-      /* --- MODIFICATION START: Make pyramid smaller on phones --- */
+      .ranking-list .row {
+         margin: 2px 0; /* Tighter vertical spacing */
+      }
+
+      /* Make pyramid smaller on phones */
       .ranking-list .player {
-        width: 50px; /* Significantly smaller player boxes */
-        height: 50px;
-        font-size: 0.55rem; /* Smaller font */
-        margin: 2px; /* Slightly reduced margin */
+        width: 38px; /* Significantly smaller player boxes */
+        height: 38px;
+        font-size: 0.45rem; /* Smaller font */
+        margin: 1px; /* Tighter horizontal spacing */
         border-radius: 4px; /* Smaller radius */
         border-width: 1px; /* Thinner border */
       }
       .availability-toggle {
-        width: 12px; /* Smaller toggle */
-        height: 12px;
+        width: 8px; /* Smaller toggle */
+        height: 8px;
         top: 2px; /* Adjust position */
         right: 2px;
         border-width: 1px;
       }
-      /* Adjust diagonal line thickness if needed (optional) */
+      /* Adjust diagonal line thickness for smaller boxes */
       .ranking-list .player.blocked::before,
       .ranking-list .player.blocked-loser::before {
          background: linear-gradient( to top right, rgba(108, 117, 125, 0) 0%, rgba(108, 117, 125, 0) calc(50% - 0.5px), rgba(108, 117, 125, 0.4) 50%, rgba(108, 117, 125, 0) calc(50% + 0.5px), rgba(108, 117, 125, 0) 100% );
       }
-      /* --- MODIFICATION END --- */
-
+      
       .legend-item {
         font-size: 0.7rem;
         margin: 2px 5px;
@@ -677,18 +681,7 @@
           margin-left: 0; /* Remove margin if stacked */
        }
     }
-
-    /* Optional: Consider removing diagonal line on mobile if performance is an issue */
-    /*
-    @media (max-width: 768px) {
-      .ranking-list .player.blocked::before,
-      .ranking-list .player.blocked-loser::before,
-      .legend-item.blocked .legend-color::before,
-      .legend-item.blocked-loser .legend-color::before {
-        display: none;
-      }
-    }
-    */
+    /* --- MOBILE OPTIMIZATION END --- */
     
     /* Animation overlay styles */
     .animation-overlay {
@@ -806,38 +799,7 @@
 
     <!-- Pyramid / Ranking List -->
     <div class="ranking-list">
-      {% if pyramid %}
-        {% for row in pyramid %}
-          <div class="row">
-            {% for player in row %}
-              {% if player %}
-                {# --- Updated Class Logic --- #}
-                <div id="player-{{ player['id'] }}"
-                     class="player
-                       {% if not player['available'] %}unavailable                               {# White if unavailable #}
-                       {% elif player['blocked_opponent'] %}blocked                             {# Grey if blocked as opponent (Winner) #}
-                       {% elif player['blocked_challenger'] %}blocked-loser                     {# Orange if blocked only as challenger (Loser) #}
-                       {# Default is orange (available) - no explicit class needed here #}
-                       {% endif %}"
-                     data-player-id="{{ player['id'] }}">
-                  <div class="player-info">
-                    Rang {{ player['rank'] }}<br>{{ player['name'] }}
-                  </div>
-                  {# --- Updated Availability Toggle Class --- #}
-                  <div class="availability-toggle {% if player['available'] %}available{% endif %}"
-                       data-player-id="{{ player['id'] }}"></div>
-                </div>
-              {% else %}
-                <div class="player missing" style="background: #eee; border-color: #ccc; color: #888; cursor: default;">
-                    <div class="player-info">Leer</div>
-                </div>
-              {% endif %}
-            {% endfor %}
-          </div>
-        {% endfor %}
-      {% else %}
-        <p>Keine Spieler gefunden. Bitte laden Sie die Spieldaten.</p>
-      {% endif %}
+      {# This will be populated by JavaScript #}
     </div>
 
 
@@ -865,40 +827,14 @@
         <h4>
           Aktive Herausforderungen
           <span class="header-controls">
-            <span class="badge-count">{{ active_challenges|length }}</span>
+            <span class="badge-count">0</span>
             <span class="arrow">▼</span>
           </span>
         </h4>
       </div>
       <div id="activeChallengesContent" class="custom-card-body">
         <div id="active-challenges-list">
-          {% if active_challenges %}
-            {% for challenge in active_challenges %}
-              <div class="challenge-entry"
-                   data-challenge-id="{{ challenge.id }}"
-                   data-challenger-id="{{ challenge['challenger_id'] }}"
-                   data-opponent-id="{{ challenge['opponent_id'] }}"
-                   data-deadline="{{ challenge.deadline.strftime('%Y-%m-%dT%H:%M:%S') if challenge.deadline else '' }}"
-                   data-scheduled-date="{{ challenge.scheduled_play_date.strftime('%Y-%m-%d') if challenge.scheduled_play_date else '' }}"
-                   data-valid-play-dates='{{ challenge.valid_play_dates|tojson|safe }}'>
-                <span class="challenge-names">
-                    <span class="challenger-name-color">{{ challenge['challenger_name'] }}</span>
-                    gegen
-                    <span class="opponent-name-color">{{ challenge['opponent_name'] }}</span>
-                </span>
-                {# MODIFIED: Dropdown and selected date display #}
-                <div class="challenge-date-selector">
-                    <select class="form-select form-select-sm scheduled-date-dropdown">
-                        {# Options will be populated by JS #}
-                    </select>
-                    {# The span that showed the date next to the dropdown has been removed. #}
-                </div>
-                <span class="challenge-deadline">Frist: {{ challenge['deadline'].strftime('%Y-%m-%d %H:%M') if challenge.deadline else 'N/A' }}</span> {# Format deadline #}
-              </div>
-            {% endfor %}
-          {% else %}
-            <p>Derzeit keine aktiven Herausforderungen.</p>
-          {% endif %}
+          {# This will be populated by JavaScript #}
         </div>
       </div>
     </div>
@@ -910,49 +846,14 @@
         <h4>
           Gesperrte Spieler
           <span class="header-controls">
-            {# Create a unique set of blocked player IDs for the count #}
-            {% set blocked_ids = [] %}
-            {% for p in blocked_challenger_players %}{% if p.id not in blocked_ids %}{{ blocked_ids.append(p.id) or "" }}{% endif %}{% endfor %}
-            {% for p in blocked_opponent_players %}{% if p.id not in blocked_ids %}{{ blocked_ids.append(p.id) or "" }}{% endif %}{% endfor %}
-            <span class="badge-count">{{ blocked_ids|length }}</span>
+            <span class="badge-count">0</span>
             <span class="arrow">▼</span>
           </span>
         </h4>
       </div>
       <div id="blockedPlayersContent" class="custom-card-body">
         <div id="blocked-players-list">
-
-          {# --- Gesperrte Herausforderer (Losers) --- #}
-          <strong>Gesperrte Herausforderer:</strong>
-          {% if blocked_challenger_players %}
-            {% for player in blocked_challenger_players %}
-              <div class="blocked-entry">
-                <span class="blocked-name">{{ player['name'] }}</span>
-                {# --- USE PRE-FORMATTED DATE --- #}
-                <span class="blocked-info">- gesperrt bis: {{ player['block_challenger_until_fmt'] or 'N/A' }}</span>
-              </div>
-            {% endfor %}
-          {% else %}
-            <p style="margin-left: 15px; font-style: italic;">Keine.</p> {# Indent slightly and italicize #}
-          {% endif %}
-
-          {# Add some space between sections #}
-          <br>
-
-          {# --- Gesperrte Gegner (Winners) --- #}
-          <strong>Gesperrte Gegner:</strong>
-           {% if blocked_opponent_players %}
-            {% for player in blocked_opponent_players %}
-              <div class="blocked-entry">
-                <span class="blocked-name">{{ player['name'] }}</span>
-                 {# --- USE PRE-FORMATTED DATE --- #}
-                <span class="blocked-info">- gesperrt bis: {{ player['block_opponent_until_fmt'] or 'N/A' }}</span>
-              </div>
-            {% endfor %}
-          {% else %}
-             <p style="margin-left: 15px; font-style: italic;">Keine.</p> {# Indent slightly and italicize #}
-          {% endif %}
-
+          {# This will be populated by JavaScript #}
         </div>
       </div>
     </div>
@@ -964,23 +865,14 @@
         <h4>
           Nicht verfügbare Spieler
           <span class="header-controls">
-            <span class="badge-count">{{ unavailable_players|length }}</span>
+            <span class="badge-count">0</span>
             <span class="arrow">▼</span>
           </span>
         </h4>
       </div>
       <div id="unavailablePlayersContent" class="custom-card-body">
         <div id="unavailable-players-list">
-          {% if unavailable_players %}
-            {% for player in unavailable_players %}
-              <div class="unavailable-entry">
-                <span class="unavailable-name">{{ player['name'] }}</span>
-                <span class="unavailable-info">nicht verfügbar seit: {{ player['unavailable_since_fmt'] or 'N/A' }}</span> {# Use pre-formatted date #}
-              </div>
-            {% endfor %}
-          {% else %}
-            <p>Alle Spieler sind derzeit verfügbar.</p>
-          {% endif %}
+          {# This will be populated by JavaScript #}
         </div>
       </div>
     </div>
@@ -991,50 +883,14 @@
         <h4>
           Durchgeführte Herausforderungen
           <span class="header-controls">
-            <span class="badge-count">{{ completed_challenges|length }}</span>
+            <span class="badge-count">0</span>
             <span class="arrow">▼</span>
           </span>
         </h4>
       </div>
       <div id="completedChallengesContent" class="custom-card-body">
         <div id="completed-challenges-list">
-          {% if completed_challenges %}
-            {% for challenge in completed_challenges %}
-              <div class="completed-entry">
-                <span class="completed-names">{{ challenge['challenger_name'] }} gegen {{ challenge['opponent_name'] }}</span>
-
-                {# --- MODIFIED: Display Winner and Score Details --- #}
-                {% set result_text = "" %}
-                {% set result_class = "" %}
-                {% if challenge['result'] == 'challenger_wins' %}
-                  {% set result_class = "result-challenger-wins" %}
-                  {% set result_text = challenge['challenger_name'] + " gewann: " %}
-                  {% if challenge['score_details'] %}
-                    {% set result_text = result_text + " " + challenge['score_details'] %}
-                    {# --- {% set result_text = result_text + " (" + challenge['score_details'] + ")" %} --- #}
-                  {% endif %}
-                {% elif challenge['result'] == 'opponent_wins' %}
-                  {% set result_class = "result-opponent-wins" %}
-                  {% set result_text = challenge['opponent_name'] + " gewann: " %}
-                  {% if challenge['score_details'] %}
-                    {% set result_text = result_text + " " + challenge['score_details'] %}
-                    {# --- {% set result_text = result_text + " (" + challenge['score_details'] + ")" %} --- #}
-                  {% endif %}
-                {% elif challenge['result'] == 'not_happened' %}
-                  {% set result_class = "result-not-happened" %}
-                  {% set result_text = "Nicht stattgefunden" %}
-                {% else %}
-                   {% set result_text = "Unbekannt" %} {# Fallback #}
-                {% endif %}
-                <span class="completed-result {{ result_class }}">{{ result_text }}</span>
-                {# --- END MODIFICATION --- #}
-
-                <span class="completed-info">({{ challenge['resolved_at_fmt'] }})</span> {# Use pre-formatted date #}
-              </div>
-            {% endfor %}
-          {% else %}
-            <p>Bisher keine durchgeführten Herausforderungen.</p>
-          {% endif %}
+          {# This will be populated by JavaScript #}
         </div>
       </div>
     </div>
@@ -1049,7 +905,7 @@
           <div id="newplayer-name-error" class="text-danger small mt-1" style="display: none;"></div>
         </div>
         <div class="mb-3">
-          <label for="newplayer-opponent" class="form-label">Wählen Sie einen Gegner (Rang 11-35):</label>
+          <label for="newplayer-opponent" class="form-label">Wählen Sie einen Gegner (Rang 11-44):</label>
           <select class="form-select opponent-select" id="newplayer-opponent" name="newplayer-opponent">
             <option value="">Bitte auswählen...</option>
           </select>
@@ -1071,737 +927,507 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
   <script>
     $(document).ready(function () {
-      // Toggle dropdown functionality
-      // Use event delegation for dynamically loaded content as well
-      $(document).on("click", ".custom-card-header", function(event) {
-        // Only toggle if the click wasn't on the badge itself
-        if (!$(event.target).hasClass('badge-count')) {
-            const $header = $(this); // Cache $(this)
-            $header.toggleClass("collapsed");
-            $header.next(".custom-card-body").slideToggle(300); // Use slideToggle for smooth animation
-            // Update arrow direction using CSS transform for smoother rotation
-            $header.find('.arrow').css('transform', $header.hasClass('collapsed') ? 'rotate(-90deg)' : 'rotate(0deg)');
-        }
-      });
-
-
-      // Challenge color management (for active challenges)
-      const CHALLENGES_KEY = 'tennis_challenges';
-
-      function saveChallenges(challenges) {
-        try {
-            localStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
-        } catch (e) {
-            console.error("Error saving challenges to localStorage:", e);
-        }
-      }
-
-      function getChallenges() {
-        try {
-            const challenges = localStorage.getItem(CHALLENGES_KEY);
-            return challenges ? JSON.parse(challenges) : [];
-        } catch (e) {
-            console.error("Error reading challenges from localStorage:", e);
-            return [];
-        }
-      }
-
-      function initChallengesFromDOM() {
-        const challenges = [];
-        $('#active-challenges-list .challenge-entry').each(function() {
-          const $this = $(this);
-          const challengerId = $this.data('challenger-id');
-          const opponentId = $this.data('opponent-id');
-          if (challengerId && opponentId) {
-              challenges.push({
-                  challenger_id: challengerId,
-                  opponent_id: opponentId
-              });
-          }
-        });
-        saveChallenges(challenges);
-        return challenges;
-      }
-
-
-      // Apply GREEN/RED colors for ACTIVE challenges
-      function applyActiveChallengersColors() {
-        // Reset only active challenge colors first
-        $(".player").removeClass("challenger opponent");
-
-        const challenges = getChallenges();
-        challenges.forEach(function(challenge) {
-          // Apply green/red only if the player is not already styled as blocked/unavailable
-          const $challenger = $("#player-" + challenge.challenger_id);
-          if ($challenger.length && !$challenger.hasClass('unavailable') && !$challenger.hasClass('blocked') && !$challenger.hasClass('blocked-loser')) {
-             $challenger.addClass("challenger");
-          }
-          const $opponent = $("#player-" + challenge.opponent_id);
-           if ($opponent.length && !$opponent.hasClass('unavailable') && !$opponent.hasClass('blocked') && !$opponent.hasClass('blocked-loser')) {
-             $opponent.addClass("opponent");
-          }
-        });
-      }
-
-      // Reset ALL player color classes (except unavailable) before full redraw
-      function resetAllPlayerStyles() {
-        $(".player").removeClass("challenger opponent blocked blocked-loser");
-      }
-
-      // Global player data cache
-      let allPlayersData = [];
-
-      // Combined function to load players for dropdowns AND update cache
-      function loadPlayersDataAndUpdateCache() {
-        return fetch("/get_players") // Return the promise
-          .then((res) => {
-              if (!res.ok) {
-                  throw new Error(`HTTP error! status: ${res.status}`);
-              }
-              return res.json();
-          })
-          .then((players) => {
-            allPlayersData = players; // Update cache
-
-            const challengerSelect = document.getElementById("challenger");
-            const currentChallengerVal = challengerSelect.value; // Preserve selection
-            challengerSelect.innerHTML = '<option value="">Wählen Sie einen Herausforderer...</option>';
-            // $(challengerSelect).addClass("challenger-select"); // Class already added in HTML
-
-            players.forEach((p) => {
-              // Eligible challenger: Available, not in active challenge, not blocked as challenger
-              if (p.available && !p.in_challenge && !p.block_challenger) {
-                const opt = document.createElement("option");
-                opt.value = p.id;
-                opt.textContent = `${p.name} (Rang ${p.rank})`;
-                opt.className = "challenger-option";
-                challengerSelect.appendChild(opt);
-              }
-            });
-            // Try to restore selection only if the value exists in the new options
-            if ($(challengerSelect).find('option[value="' + currentChallengerVal + '"]').length > 0) {
-                challengerSelect.value = currentChallengerVal;
-            }
-
-
-            const opponentSelect = document.getElementById("newplayer-opponent");
-            const currentNewPlayerOpponentVal = opponentSelect.value; // Preserve selection
-            opponentSelect.innerHTML = '<option value="">Bitte auswählen...</option>';
-            // $(opponentSelect).addClass("opponent-select"); // Class already added in HTML
-
-            players
-              .filter((p) => p.rank >= 11 && p.rank <= 35 && p.available && !p.in_challenge && !p.block_opponent)
-              .forEach((p) => {
-                const opt = document.createElement("option");
-                opt.value = p.id;
-                opt.textContent = `${p.name} (Rang ${p.rank})`;
-                opt.className = "opponent-option";
-                opponentSelect.appendChild(opt);
-              });
-             // Try to restore selection only if the value exists in the new options
-             if ($(opponentSelect).find('option[value="' + currentNewPlayerOpponentVal + '"]').length > 0) {
-                opponentSelect.value = currentNewPlayerOpponentVal;
-             }
-
-            // Note: applyActiveChallengersColors is called after pollData finishes
-          })
-          .catch(error => {
-              console.error("Error fetching players:", error);
-              // Maybe display an error message to the user
-              $('#challengeResult').removeClass("alert-success").addClass("alert-danger").html("Fehler beim Laden der Spielerdaten.").show().delay(5000).fadeOut();
-          });
-      }
-
-      // Function to update the pyramid based on cached player data
-      function updatePyramidFromCache() {
-          resetAllPlayerStyles(); // Clear previous styles first
-
-          allPlayersData.forEach(player => {
-              const $playerDiv = $(`#player-${player.id}`);
-              if ($playerDiv.length) {
-                  // 1. Update Text Content (Rank and Name)
-                  $playerDiv.find('.player-info').html(`Rang ${player.rank}<br>${player.name}`);
-
-                  // 2. Update Availability Toggle
-                  const $toggle = $playerDiv.find('.availability-toggle');
-                  if (player.available) {
-                      $toggle.addClass('available');
-                  } else {
-                      $toggle.removeClass('available');
-                  }
-
-                  // 3. Update Background/Border Classes (Order matters!)
-                  if (!player.available) {
-                      $playerDiv.addClass('unavailable');
-                  } else if (player.block_opponent) { // Winner is blocked as opponent
-                      $playerDiv.addClass('blocked');
-                  } else if (player.block_challenger) { // Loser is blocked as challenger
-                      $playerDiv.addClass('blocked-loser');
-                  }
-                  // Active challenge colors (green/red) are applied separately by applyActiveChallengersColors()
-              } else {
-                  // This case should ideally not happen if the pyramid structure is static
-                  // If it does, it means a player was added/removed and the HTML needs full refresh
-                  console.warn(`Player div not found for ID: ${player.id}. Consider full page refresh.`);
-              }
-          });
-          // Apply active challenge colors AFTER setting base styles
-          applyActiveChallengersColors();
-      }
-
-
-      // Combined function to update dynamic sections from server HTML
-      function pollData() {
-        console.log("Polling data...");
-        // Fetch fresh player data first and update cache
-        loadPlayersDataAndUpdateCache().then(() => {
-            // Now fetch the full HTML to update lists etc.
-            $.get(window.location.pathname) // Use current path for robustness
-             .done(function (data) {
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(data, "text/html");
-
-              // --- Update Lists and Badges ---
-              const sections = [
-                  { listId: "active-challenges-list", headerId: "activeChallengesHeader" },
-                  { listId: "blocked-players-list", headerId: "blockedPlayersHeader" },
-                  { listId: "unavailable-players-list", headerId: "unavailablePlayersHeader" },
-                  { listId: "completed-challenges-list", headerId: "completedChallengesHeader" } // Updated this list too
-              ];
-
-              sections.forEach(section => {
-                  const newListElement = doc.getElementById(section.listId);
-                  const currentListElement = $(`#${section.listId}`);
-                  if (newListElement && currentListElement.length) {
-                      const newListContent = newListElement.innerHTML;
-                      // Only update if content actually changed to avoid flicker
-                      if (currentListElement.html() !== newListContent) {
-                          currentListElement.html(newListContent);
-                          console.log(`Updated ${section.listId}`);
-                      }
-                  } else {
-                      console.warn(`Element not found during poll: ${section.listId}`);
-                  }
-
-
-                  const headerElement = doc.getElementById(section.headerId);
-                  const currentHeader = $(`#${section.headerId}`);
-                  if (headerElement && currentHeader.length) {
-                      const newBadgeCount = $(headerElement).find('.badge-count').text();
-                      const currentBadge = currentHeader.find('.badge-count');
-                      if (currentBadge.text() !== newBadgeCount) {
-                          currentBadge.text(newBadgeCount);
-                          console.log(`Updated badge for ${section.headerId}`);
-                      }
-                  } else {
-                       console.warn(`Element not found during poll: ${section.headerId}`);
-                  }
-              });
-
-
-              // --- Update Pyramid and Active Challenge Colors ---
-              // Process Active Challenges from the newly fetched HTML for Coloring
-              const newChallengesContainer = doc.getElementById("active-challenges-list");
-              if (newChallengesContainer) {
-                const newChallenges = [];
-                $(newChallengesContainer).find('.challenge-entry').each(function() {
-                  const $newChallenge = $(this);
-                  const challengerId = $newChallenge.data('challenger-id');
-                  const opponentId = $newChallenge.data('opponent-id');
-                  if (challengerId && opponentId) {
-                    newChallenges.push({
-                      challenger_id: challengerId,
-                      opponent_id: opponentId
-                    });
-                  }
-                });
-                saveChallenges(newChallenges); // Update localStorage for active challenges
-              } else {
-                  console.warn("Element not found during poll: active-challenges-list");
-              }
-
-              // Update the pyramid visuals based on the latest cached data
-              updatePyramidFromCache();
-
-              // Get the server's current date from the fetched document's body
-              const serverTodayStr = doc.body.getAttribute('data-today-date');
-
-              // --- Populate Date Dropdowns for Active Challenges ---
-              if (doc.getElementById("active-challenges-list")) { // Check if the list exists in fetched data
-                  $('#active-challenges-list .challenge-entry').each(function() {
-                      const $entry = $(this);
-                      // Read the pre-calculated valid dates from the data attribute using .attr() for reliability.
-                      const validPlayDatesAttr = $entry.attr('data-valid-play-dates');
-                      const scheduledDateStr = $entry.data('scheduled-date');
-                      const $dropdown = $entry.find('.scheduled-date-dropdown');
-                      let validPlayDates = [];
-
-                      // Ensure validPlayDatesAttr is a string and looks like a JSON array before parsing.
-                      if (typeof validPlayDatesAttr === 'string' && validPlayDatesAttr.startsWith('[')) {
-                          try {
-                              validPlayDates = JSON.parse(validPlayDatesAttr);
-                          } catch (e) {
-                              console.error("Failed to parse valid-play-dates JSON:", validPlayDatesAttr, e);
-                              validPlayDates = []; // Reset to empty on error
-                          }
-                      }
-                      
-                      $dropdown.empty(); // Clear old options
-                      $dropdown.append('<option value="">Datum wählen...</option>');
-
-                      // If parsing was successful and we have an array of dates, populate the dropdown.
-                      if (Array.isArray(validPlayDates) && validPlayDates.length > 0) {
-                          validPlayDates.forEach(dateValue => {
-                              const optionText = dateValue; // Format is YYYY-MM-DD
-                              const $option = $('<option></option>').val(dateValue).text(optionText);
-
-                              // If this date is the currently scheduled one, select it.
-                              if (scheduledDateStr && scheduledDateStr === dateValue) {
-                                  $option.prop('selected', true);
-                              }
-                              $dropdown.append($option);
-                          });
-                      }
-
-                      // Add a visual indicator if a date has been selected.
-                      if (scheduledDateStr) {
-                          $dropdown.addClass('has-selection');
-                      } else {
-                          $dropdown.removeClass('has-selection');
-                      }
-                  });
-              }
-              // --- End Populate Date Dropdowns ---
-
-              // Apply temporary selections (green/red highlights from dropdowns)
-              applyTemporarySelections();
-
-              console.log("Polling finished.");
-
-            }).fail(function(xhr, status, error) {
-                console.error("Error fetching /index HTML:", status, error);
-                $('#challengeResult').removeClass("alert-success").addClass("alert-danger").html("Fehler beim Aktualisieren der Listen.").show().delay(5000).fadeOut();
-            });
-        }).catch(error => {
-             console.error("Error in loadPlayersDataAndUpdateCache during poll:", error);
-        });
-      }
-
-
-      // Variables to store temporary selections for coloring
+      // --- GLOBAL STATE & UI HELPERS ---
       let tempChallengerId = null;
       let tempOpponentId = null;
       let tempNewPlayerOpponentId = null;
 
-      // Function to apply temporary selections (green/red) to the pyramid
-      function applyTemporarySelections() {
-        // Don't reset here, apply ON TOP of existing styles from updatePyramidFromCache
-        // applyActiveChallengersColors(); // Apply persistent colors first - Already done in updatePyramidFromCache
+      // Toggle dropdown functionality
+      $(document).on("click", ".custom-card-header", function(event) {
+        if (!$(event.target).hasClass('badge-count')) {
+            const $header = $(this);
+            $header.toggleClass("collapsed");
+            $header.next(".custom-card-body").slideToggle(300);
+            $header.find('.arrow').css('transform', $header.hasClass('collapsed') ? 'rotate(-90deg)' : 'rotate(0deg)');
+        }
+      });
 
-        // Helper to add class only if element exists and doesn't have blocking/unavailable classes
-        const applyHighlight = (playerId, className) => {
-            if (!playerId) return;
-            const $player = $(`#player-${playerId}`);
-            if ($player.length && !$player.hasClass('unavailable') && !$player.hasClass('blocked') && !$player.hasClass('blocked-loser')) {
-                // Remove other highlight first if switching roles (e.g., selected as challenger, then opponent)
-                if (className === 'challenger') $player.removeClass('opponent');
-                if (className === 'opponent') $player.removeClass('challenger');
-                $player.addClass(className);
-            }
-        };
+      // --- DATA-DRIVEN UI UPDATE FUNCTIONS ---
 
-        applyHighlight(tempChallengerId, "challenger"); // Green highlight
-        applyHighlight(tempOpponentId, "opponent");     // Red highlight
-        applyHighlight(tempNewPlayerOpponentId, "opponent"); // Red highlight for new player opponent selection
+      /**
+       * Main function to update the entire UI from a data object.
+       * @param {object} data - The comprehensive data object from the server.
+       */
+      function updateUI(data) {
+          if (!data) {
+              console.error("updateUI called with no data.");
+              return;
+          }
+          console.log("Updating UI with new data...");
+
+          // Preserve selections
+          const selectedChallenger = $('#challenger').val();
+          const selectedOpponent = $('#opponent').val();
+          const selectedNewPlayerOpponent = $('#newplayer-opponent').val();
+
+          // Store temporary highlights
+          tempChallengerId = selectedChallenger;
+          tempOpponentId = selectedOpponent;
+          tempNewPlayerOpponentId = selectedNewPlayerOpponent;
+
+          // Update all UI components
+          updatePlayerDropdowns(data.players);
+          updatePyramid(data.players, data.active_challenges);
+          updateActiveChallenges(data.active_challenges);
+          updateBlockedPlayers(data.blocked_challenger_players, data.blocked_opponent_players);
+          updateUnavailablePlayers(data.unavailable_players);
+          updateCompletedChallenges(data.completed_challenges);
+
+          // Restore challenger selection and trigger opponent fetch
+          if (selectedChallenger) {
+              $('#challenger').val(selectedChallenger);
+              $('#challenger').trigger('change', [{ preserveOpponent: selectedOpponent }]);
+          }
+
+          // Restore new player opponent selection
+          if (selectedNewPlayerOpponent) {
+              $('#newplayer-opponent').val(selectedNewPlayerOpponent);
+          }
+
+          // Re-validate buttons and apply highlights
+          validateNewPlayerChallenge();
+          $('#opponent').trigger('change');
+          applyTemporarySelections();
       }
 
-      // Initialize Socket.IO and listen for update events
-      var socket = io({
-          reconnectionAttempts: 5,
-          reconnectionDelay: 2000, // Increase delay slightly
+      /**
+       * Rebuilds the player pyramid.
+       * @param {Array} players - Array of player objects.
+       * @param {Array} active_challenges - Array of active challenge objects.
+       */
+      function updatePyramid(players, active_challenges) {
+          const pyramidData = ((players) => {
+              const pyramid = [];
+              let start = 0;
+              // UPDATED: Row sizes for 45 players
+              const rowSizes = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+              for (const size of rowSizes) {
+                  const row = [];
+                  for (let i = 0; i < size; i++) {
+                      row.push(start < players.length ? players[start] : null);
+                      start++;
+                  }
+                  pyramid.push(row);
+              }
+              return pyramid;
+          })(players);
+
+          const $rankingList = $('.ranking-list');
+          $rankingList.empty();
+
+          const challengerIds = new Set(active_challenges.map(c => c.challenger_id));
+          const opponentIds = new Set(active_challenges.map(c => c.opponent_id));
+
+          pyramidData.forEach(row => {
+              const $rowDiv = $('<div class="row"></div>');
+              row.forEach(player => {
+                  if (player) {
+                      let playerClass = 'player';
+                      if (!player.available) playerClass += ' unavailable';
+                      else if (challengerIds.has(player.id)) playerClass += ' challenger';
+                      else if (opponentIds.has(player.id)) playerClass += ' opponent';
+                      else if (player.blocked_opponent) playerClass += ' blocked';
+                      else if (player.blocked_challenger) playerClass += ' blocked-loser';
+
+                      const playerHtml = `
+                          <div id="player-${player.id}" class="${playerClass}" data-player-id="${player.id}">
+                              <div class="player-info">Rang ${player.rank}<br>${player.name}</div>
+                              <div class="availability-toggle ${player.available ? 'available' : ''}" data-player-id="${player.id}"></div>
+                          </div>`;
+                      $rowDiv.append(playerHtml);
+                  } else {
+                      $rowDiv.append('<div class="player missing" style="background: #eee; border-color: #ccc; color: #888; cursor: default;"><div class="player-info">Leer</div></div>');
+                  }
+              });
+              $rankingList.append($rowDiv);
+          });
+      }
+
+      /**
+       * Repopulates all player selection dropdowns.
+       * @param {Array} players - Array of player objects.
+       */
+      function updatePlayerDropdowns(players) {
+          const $challengerSelect = $("#challenger");
+          $challengerSelect.html('<option value="">Wählen Sie einen Herausforderer...</option>');
+          players.forEach(p => {
+              if (p.available && !p.in_challenge && !p.blocked_challenger) {
+                  $challengerSelect.append(`<option value="${p.id}" class="challenger-option">${p.name} (Rang ${p.rank})</option>`);
+              }
+          });
+
+          const $newPlayerOpponentSelect = $("#newplayer-opponent");
+          $newPlayerOpponentSelect.html('<option value="">Bitte auswählen...</option>');
+          players.forEach(p => {
+              // UPDATED: Opponent range for 45 players
+              if (p.rank >= 11 && p.rank <= 44 && p.available && !p.in_challenge && !p.block_opponent) {
+                  $newPlayerOpponentSelect.append(`<option value="${p.id}" class="opponent-option">${p.name} (Rang ${p.rank})</option>`);
+              }
+          });
+      }
+
+      /**
+       * Rebuilds the list of active challenges.
+       * @param {Array} challenges - Array of active challenge objects.
+       */
+      function updateActiveChallenges(challenges) {
+          const $list = $('#active-challenges-list');
+          $('#activeChallengesHeader .badge-count').text(challenges.length);
+          $list.empty();
+
+          if (challenges.length === 0) {
+              $list.html('<p>Derzeit keine aktiven Herausforderungen.</p>');
+              return;
+          }
+
+          challenges.forEach(c => {
+              const validDatesJson = JSON.stringify(c.valid_play_dates || []);
+              const entryHtml = `
+                  <div class="challenge-entry" data-challenge-id="${c.id}" data-scheduled-date="${c.scheduled_date || ''}" data-scheduled-time="${c.scheduled_time || ''}" data-valid-play-dates='${validDatesJson}'>
+                      <span class="challenge-names">
+                          <span class="challenger-name-color">${c.challenger_name}</span> gegen <span class="opponent-name-color">${c.opponent_name}</span>
+                      </span>
+                      <div class="challenge-date-selector">
+                          <select class="form-select form-select-sm scheduled-date-dropdown"></select>
+                          <select class="form-select form-select-sm scheduled-time-dropdown"></select>
+                      </div>
+                      <span class="challenge-deadline">Frist: ${c.deadline_formatted || 'N/A'}</span>
+                  </div>`;
+              $list.append(entryHtml);
+          });
+          populateDateTimeSelectors();
+      }
+
+      function populateDateTimeSelectors() {
+          $('#active-challenges-list .challenge-entry').each(function() {
+              const $entry = $(this);
+              const $dateDropdown = $entry.find('.scheduled-date-dropdown');
+              const $timeDropdown = $entry.find('.scheduled-time-dropdown');
+
+              const validPlayDates = $entry.data('valid-play-dates') || [];
+              const scheduledDate = $entry.data('scheduled-date');
+              const scheduledTime = $entry.data('scheduled-time');
+
+              // Populate Date Dropdown
+              $dateDropdown.empty().append('<option value="">Datum wählen...</option>');
+              if (Array.isArray(validPlayDates)) {
+                  validPlayDates.forEach(dateValue => {
+                      const $option = $('<option></option>').val(dateValue).text(dateValue);
+                      if (scheduledDate === dateValue) {
+                          $option.prop('selected', true);
+                      }
+                      $dateDropdown.append($option);
+                  });
+              }
+              if (scheduledDate) $dateDropdown.addClass('has-selection');
+
+              // Populate Time Dropdown
+              $timeDropdown.empty().append('<option value="">Zeit wählen...</option>');
+              for (let h = 6; h < 24; h++) {
+                  for (let m = 0; m < 60; m += 15) {
+                      const hour = h.toString().padStart(2, '0');
+                      const minute = m.toString().padStart(2, '0');
+                      const timeValue = `${hour}:${minute}`;
+                      const $option = $('<option></option>').val(timeValue).text(timeValue);
+                      if (scheduledTime === timeValue) {
+                          $option.prop('selected', true);
+                      }
+                      $timeDropdown.append($option);
+                  }
+              }
+              if (scheduledTime) $timeDropdown.addClass('has-selection');
+              
+              // Initially disable time dropdown if no date is selected
+              $timeDropdown.prop('disabled', !scheduledDate);
+          });
+      }
+
+      function updateBlockedPlayers(challengers, opponents) {
+          const $list = $('#blocked-players-list');
+          const total = new Set([...challengers.map(p => p.id), ...opponents.map(p => p.id)]).size;
+          $('#blockedPlayersHeader .badge-count').text(total);
+          $list.empty();
+
+          let html = '<strong>Gesperrte Herausforderer:</strong>';
+          if (challengers.length > 0) {
+              challengers.forEach(p => { html += `<div class="blocked-entry"><span>${p.name}</span><span class="blocked-info">- gesperrt bis: ${p.block_challenger_until_formatted || 'N/A'}</span></div>`; });
+          } else { html += '<p style="margin-left: 15px; font-style: italic;">Keine.</p>'; }
+
+          html += '<br><strong>Gesperrte Gegner:</strong>';
+          if (opponents.length > 0) {
+              opponents.forEach(p => { html += `<div class="blocked-entry"><span>${p.name}</span><span class="blocked-info">- gesperrt bis: ${p.block_opponent_until_formatted || 'N/A'}</span></div>`; });
+          } else { html += '<p style="margin-left: 15px; font-style: italic;">Keine.</p>'; }
+          $list.html(html);
+      }
+
+      function updateUnavailablePlayers(unavailable) {
+          const $list = $('#unavailable-players-list');
+          $('#unavailablePlayersHeader .badge-count').text(unavailable.length);
+          $list.empty();
+          if (unavailable.length === 0) {
+              $list.html('<p>Alle Spieler sind derzeit verfügbar.</p>');
+              return;
+          }
+          unavailable.forEach(p => { $list.append(`<div class="unavailable-entry"><span>${p.name}</span><span class="unavailable-info">nicht verfügbar seit: ${p.unavailable_since_formatted || 'N/A'}</span></div>`); });
+      }
+
+      function updateCompletedChallenges(completed) {
+          const $list = $('#completed-challenges-list');
+          $('#completedChallengesHeader .badge-count').text(completed.length);
+          $list.empty();
+          if (completed.length === 0) {
+              $list.html('<p>Bisher keine durchgeführten Herausforderungen.</p>');
+              return;
+          }
+          completed.forEach(c => {
+              let result_text = "Unbekannt", result_class = "";
+              if (c.result === 'challenger_wins') {
+                  result_class = "result-challenger-wins";
+                  result_text = `${c.challenger_name} gewann: ${c.score_details || ''}`;
+              } else if (c.result === 'opponent_wins') {
+                  result_class = "result-opponent-wins";
+                  result_text = `${c.opponent_name} gewann: ${c.score_details || ''}`;
+              } else if (c.result === 'not_happened') {
+                  result_class = "result-not-happened";
+                  result_text = "Nicht stattgefunden";
+              }
+              $list.append(`<div class="completed-entry"><span class="completed-names">${c.challenger_name} gegen ${c.opponent_name}</span><span class="completed-result ${result_class}">${result_text.trim()}</span><span class="completed-info">(${c.resolved_at_formatted || 'N/A'})</span></div>`);
+          });
+      }
+
+      function applyTemporarySelections() {
+          // This function is now simpler: it just adds highlights on top of the rendered pyramid.
+          const highlight = (playerId, className) => {
+              if (!playerId) return;
+              const $player = $(`#player-${playerId}`);
+              if ($player.length && !$player.hasClass('unavailable')) {
+                  if (className === 'challenger') $player.removeClass('opponent');
+                  if (className === 'opponent') $player.removeClass('challenger');
+                  $player.addClass(className);
+              }
+          };
+          highlight(tempChallengerId, "challenger");
+          highlight(tempOpponentId, "opponent");
+          highlight(tempNewPlayerOpponentId, "opponent");
+      }
+
+      // --- SOCKET.IO SETUP ---
+      const socket = io({ reconnectionAttempts: 5, reconnectionDelay: 2000 });
+
+      socket.on("connect", () => console.log("Socket.IO connected:", socket.id));
+      socket.on("disconnect", (reason) => console.log("Socket.IO disconnected:", reason));
+      socket.on("connect_error", (err) => console.error("Socket.IO connection error:", err.message));
+
+      socket.on("data_update", (payload) => {
+          console.log("Socket.IO 'data_update' event received", payload.type);
+          if (payload && payload.data) {
+              updateUI(payload.data);
+          }
       });
 
-      socket.on("connect", function() {
-          console.log("Socket.IO connected:", socket.id);
-          pollData(); // Refresh data on connect/reconnect
+      // This handler now only needs to request a full update.
+      // The server sends the correct data, and the 'data_update' handler will render it.
+      socket.on("player_update", (payload) => {
+          console.log("Socket.IO 'player_update' received", payload);
+          if (!payload || !payload.player) {
+              console.warn("Received invalid player_update payload.");
+              return;
+          }
+          // Request a full data refresh to ensure the entire UI is consistent.
+          console.log("Requesting full data refresh for consistency after player update.");
+          socket.emit("request_full_update");
       });
 
-      socket.on("disconnect", function(reason) {
-          console.log("Socket.IO disconnected:", reason);
-          // Optionally display a message indicating disconnection
-          // $('#challengeResult').removeClass("alert-success alert-danger").addClass("alert-warning").html("Verbindung zum Server verloren. Versuche erneut...").show();
-      });
-
-       socket.on("connect_error", (err) => {
-          console.error("Socket.IO connection error:", err.message);
-          // Optionally display a persistent error message
-          // $('#challengeResult').removeClass("alert-success alert-warning").addClass("alert-danger").html("Verbindung zum Server fehlgeschlagen.").show();
-       });
-
-
-      socket.on("update", function (data) {
-        console.log("Socket.IO 'update' event received", data);
-        // Hide any connection warnings/errors on successful update
-        // $('#challengeResult.alert-warning, #challengeResult.alert-danger').fadeOut(); // Example
-
-        // If the update is specific to a scheduled date, update that specific entry's display
-        if (data && data.challenge_id && 'scheduled_date' in data) {
-            const $entry = $(`.challenge-entry[data-challenge-id="${data.challenge_id}"]`);
-            // The full pollData will also run and refresh it, but this could be faster for targeted UI update
-        }
-        pollData();
-      });
-
-      // No longer strictly needed if 'update' covers it, but keep for robustness
-      socket.on("challenge_resolved", function() {
-        console.log("Socket.IO 'challenge_resolved' event received");
-        pollData();
-      });
-
-      // --- NEW: Listen for Database Reset ---
-      socket.on("database_reset", function(data) {
+      socket.on("database_reset", (data) => {
           console.log("Received 'database_reset' event:", data);
-          // Display a notification and refresh the page data
-          $('#challengeResult') // Use an existing notification area or create one
-              .removeClass("alert-success alert-danger")
-              .addClass("alert-info")
-              .html("Die Datenbank wurde zurückgesetzt. Die Seite wird neu geladen...")
-              .fadeIn();
-          // Refresh all data after a short delay to allow notification display
-          setTimeout(pollData, 1500);
+          $('#challengeResult').removeClass("alert-success alert-danger").addClass("alert-info").html("Die Datenbank wurde zurückgesetzt. Die Seite wird neu geladen...").fadeIn();
+          setTimeout(() => location.reload(), 2000);
       });
-      // --- END NEW ---
 
+      // --- EVENT HANDLERS ---
 
-      // Initial setup
-      initChallengesFromDOM(); // Get initial active challenges
-      pollData(); // Initial data load and render
-
-
-      // Bind challenge form submission
       $("#challengeForm").on("submit", function (e) {
         e.preventDefault();
-        const challengerId = $("#challenger").val();
-        const opponentId = $("#opponent").val();
+        const challengerId = $("#challenger").val(), opponentId = $("#opponent").val();
         if (!challengerId || !opponentId) return;
 
-        // Disable button during request
-        const $submitButton = $("#challengeButton");
-        $submitButton.prop("disabled", true).text("Sende...");
-        const $resultDiv = $("#challengeResult"); // Cache result div
-        $resultDiv.hide().removeClass("alert-danger alert-success"); // Reset result div
+        const $btn = $("#challengeButton");
+        $btn.prop("disabled", true).text("Sende...");
+        $("#challengeResult").hide();
 
         $.post("/challenge", { challenger: challengerId, opponent: opponentId })
           .done(function (response) {
-              $resultDiv.removeClass("alert-danger").addClass("alert-success").html(`${response.message} (Zeitstempel: ${response.timestamp})`).fadeIn();
-              setTimeout(function() {
-                  $resultDiv.fadeOut(function() { $(this).html('').removeClass('alert-success'); });
-              }, 15000); // Keep message longer
-
-              // Update active challenges in localStorage immediately
-              const challenges = getChallenges();
-              challenges.push({ challenger_id: challengerId, opponent_id: opponentId });
-              saveChallenges(challenges);
-
-              // Reset form and temporary highlights
+              $("#challengeResult").removeClass("alert-danger").addClass("alert-success").html(`${response.message}`).fadeIn().delay(15000).fadeOut();
+              // UI will be updated by the socket event from the server.
+              // Just reset the form.
               tempChallengerId = null;
               tempOpponentId = null;
-              $("#challenger").val(""); // Clear selection
-              $("#opponent").html('<option value="">Wählen Sie einen Gegner...</option>').prop("disabled", true).val(""); // Clear and disable opponent select
-              // $submitButton.prop("disabled", true); // Already disabled, will be re-enabled by pollData
-
-              pollData(); // Refresh UI
+              $("#challenger").val("");
+              $("#opponent").html('<option value="">Wählen Sie einen Gegner...</option>').prop("disabled", true);
+              $btn.prop("disabled", true).text("Herausfordern");
           })
           .fail(function(xhr) {
               const errorMsg = xhr.responseJSON?.error || "Fehler beim Erstellen der Herausforderung.";
-              $resultDiv.removeClass("alert-success").addClass("alert-danger").html(errorMsg).fadeIn();
-               // Re-enable button on failure
-              $submitButton.prop("disabled", false).text("Herausfordern");
-          })
-          .always(function() {
-              // Ensure button text is reset if pollData doesn't re-enable it quickly
-               setTimeout(() => {
-                   if ($submitButton.text() === "Sende...") {
-                       $submitButton.text("Herausfordern");
-                       // Re-evaluate button state based on current selections
-                       $("#opponent").trigger('change'); // Trigger change to re-evaluate button state
-                   }
-               }, 500);
+              $("#challengeResult").removeClass("alert-success").addClass("alert-danger").html(errorMsg).fadeIn();
+              $btn.prop("disabled", false).text("Herausfordern");
           });
       });
 
-
-      // Challenger selection logic
-      $("#challenger").on("change", function () {
+      $("#challenger").on("change", function (e, data) {
         const challengerId = $(this).val();
-        const previousChallengerId = tempChallengerId;
-        tempChallengerId = challengerId; // Store temporary selection
-        tempOpponentId = null; // Clear opponent selection
-
-        const opponentSelect = $("#opponent");
-        opponentSelect.html('<option value="">Wählen Sie einen Gegner...</option>').prop("disabled", true).val(""); // Clear and disable opponent select
+        tempChallengerId = challengerId;
+        tempOpponentId = null;
+        const $opponentSelect = $("#opponent");
+        $opponentSelect.html('<option value="">Lade Gegner...</option>').prop("disabled", true);
         $("#challengeButton").prop("disabled", true);
-
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
         applyTemporarySelections();
 
-        if (challengerId) {
-          // Fetch eligible opponents
-          $.post("/eligible_opponents", { challenger_id: challengerId })
-            .done(function (data) {
-                if (data && data.length > 0) {
-                    data.forEach((o) => {
-                      const opt = document.createElement("option");
-                      opt.value = o.id;
-                      opt.textContent = `${o.name} (Rang ${o.rank})`;
-                      opt.className = "opponent-option";
-                      opponentSelect.append(opt);
-                    });
-                    opponentSelect.prop("disabled", false); // Enable if opponents found
-                } else {
-                    // Keep disabled, maybe add placeholder text?
-                    opponentSelect.html('<option value="">Keine Gegner verfügbar</option>').prop("disabled", true);
-                }
-            })
-            .fail(function() {
-              console.error("Failed to fetch eligible opponents.");
-              opponentSelect.html('<option value="">Fehler beim Laden</option>').prop("disabled", true);
-              // Handle error display if needed
-            });
+        if (!challengerId) {
+            $opponentSelect.html('<option value="">Wählen Sie einen Gegner...</option>');
+            return;
         }
+        $.post("/eligible_opponents", { challenger_id: challengerId })
+          .done(function (opponents) {
+              $opponentSelect.html('<option value="">Wählen Sie einen Gegner...</option>');
+              if (Array.isArray(opponents) && opponents.length > 0) {
+                  opponents.forEach(o => { $opponentSelect.append(`<option value="${o.id}" class="opponent-option">${o.name} (Rang ${o.rank})</option>`); });
+                  $opponentSelect.prop("disabled", false);
+                  if (data && data.preserveOpponent && $opponentSelect.find(`option[value="${data.preserveOpponent}"]`).length > 0) {
+                      $opponentSelect.val(data.preserveOpponent).trigger('change');
+                  }
+              } else {
+                  const errorMsg = opponents.error || "Keine Gegner verfügbar";
+                  $opponentSelect.html(`<option value="">${errorMsg}</option>`);
+              }
+          });
       });
 
-
-      // Opponent selection logic
       $("#opponent").on("change", function () {
-        const opponentId = $(this).val();
-        const previousOpponentId = tempOpponentId;
-        tempOpponentId = opponentId; // Store temporary selection
-
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
+        tempOpponentId = $(this).val();
         applyTemporarySelections();
-
         $("#challengeButton").prop("disabled", !(tempChallengerId && tempOpponentId));
       });
 
-
-      // Toggle availability click event using event delegation
-      // Use 'body' or a closer static parent if '.ranking-list' itself is replaced
       $(document).on("click", ".availability-toggle", function (e) {
-        e.stopPropagation(); // Prevent triggering clicks on the player div itself
+        e.stopPropagation();
         const $toggle = $(this);
-        const playerId = $toggle.data("player-id");
-
-        // Prevent multiple clicks while processing
         if ($toggle.hasClass('processing')) return;
         $toggle.addClass('processing');
-
-        $.ajax({
-          url: "/toggle_availability",
-          type: "POST",
-          data: { player_id: playerId },
-          success: function (response) {
-            if (response.success) {
-                console.log(`Availability toggled for ${playerId}. New state: ${response.new_availability}`);
-                pollData(); // Refresh data from server to get correct state
-            } else {
-                alert("Fehler beim Umschalten der Verfügbarkeit: " + response.message);
-                pollData(); // Refresh to be safe
-            }
-          },
-          error: function (xhr, status, error) {
-            console.error("Fehler:", error);
-            alert("Beim Umschalten der Verfügbarkeit ist ein Fehler aufgetreten.");
-            pollData(); // Refresh to be safe
-          },
-          complete: function() {
-              // Remove processing flag after request finishes
-              // Use a small delay to prevent immediate re-clicks if UI updates slowly
-              setTimeout(() => { $toggle.removeClass('processing'); }, 200);
-          }
-        });
+        $.post("/toggle_availability", { player_id: $toggle.data("player-id") })
+          .fail(function (xhr) { alert("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); })
+          .always(() => setTimeout(() => $toggle.removeClass('processing'), 200));
+          // The UI will update via the socket event.
       });
 
-
-      // --- Event listener for scheduled date dropdown change ---
-      $(document).on("change", ".scheduled-date-dropdown", function () {
-          const $dropdown = $(this);
-          const challengeId = $dropdown.closest('.challenge-entry').data('challenge-id');
-          const selectedDate = $dropdown.val();
+      // UPDATED: Event handler for both date and time dropdowns
+      $(document).on("change", ".scheduled-date-dropdown, .scheduled-time-dropdown", function () {
+          const $entry = $(this).closest('.challenge-entry');
+          const $dateDropdown = $entry.find('.scheduled-date-dropdown');
+          const $timeDropdown = $entry.find('.scheduled-time-dropdown');
           
-          // Disable dropdown during request
-          $dropdown.prop('disabled', true);
+          const challengeId = $entry.data('challenge-id');
+          const selectedDate = $dateDropdown.val();
+          const selectedTime = $timeDropdown.val();
 
-          $.ajax({
-              url: "/update_scheduled_date",
-              type: "POST",
-              data: {
-                  challenge_id: challengeId,
-                  selected_date: selectedDate
-              },
-              success: function(response) {
-                  if (response.success) {
-                      if (selectedDate) {
-                          $dropdown.addClass('has-selection');
-                      } else {
-                          $dropdown.removeClass('has-selection');
+          // Enable/disable time dropdown based on date selection
+          $timeDropdown.prop('disabled', !selectedDate);
+          if (!selectedDate) {
+              $timeDropdown.val(''); // Reset time if date is deselected
+          }
+
+          // Only send update if a date is selected. Time is optional.
+          if (selectedDate) {
+              $dateDropdown.addClass('has-selection');
+              if (selectedTime) {
+                  $timeDropdown.addClass('has-selection');
+              } else {
+                  $timeDropdown.removeClass('has-selection');
+              }
+
+              // Disable both dropdowns during the request
+              $dateDropdown.prop('disabled', true);
+              $timeDropdown.prop('disabled', true);
+
+              $.ajax({
+                  url: "/update_scheduled_date",
+                  type: "POST",
+                  data: {
+                      challenge_id: challengeId,
+                      selected_date: selectedDate,
+                      selected_time: selectedTime
+                  },
+                  success: function(response) {
+                      if (!response.success) {
+                          alert("Fehler: " + response.message);
                       }
-                      // Optionally show a small success message, or rely on SocketIO update
-                      console.log("Scheduled date updated successfully for challenge " + challengeId);
-                  } else {
-                      alert("Fehler: " + response.message);
-                      // Revert dropdown if needed, or pollData will fix it
+                      // Rely on socket event for UI update
+                  },
+                  error: function() {
+                      alert("Netzwerkfehler beim Aktualisieren des Spieldatums.");
+                  },
+                  complete: function() {
+                      // Re-enable dropdowns after request
+                      $dateDropdown.prop('disabled', false);
+                      // Keep time dropdown disabled if no date is selected
+                      $timeDropdown.prop('disabled', !$dateDropdown.val());
                   }
-              },
-              error: function() {
-                  alert("Netzwerkfehler beim Aktualisieren des Spieldatums.");
-              },
-              complete: function() { $dropdown.prop('disabled', false); } // Re-enable dropdown
-          });
+              });
+          } else {
+              // If date is deselected, clear the datetime in the DB
+              $dateDropdown.removeClass('has-selection');
+              $timeDropdown.removeClass('has-selection');
+              $.post("/update_scheduled_date", { challenge_id: challengeId, selected_date: '', selected_time: '' });
+          }
       });
 
       // --- New Player Challenge Logic ---
-      const $newPlayerInput = $("#newplayer");
-      const $newPlayerOpponentSelect = $("#newplayer-opponent");
-      const $newPlayerButton = $("#newplayer-challenge");
-      const $newPlayerNameError = $("#newplayer-name-error");
-      const $newPlayerResultDiv = $("#newplayer-result"); // Cache result div
-
+      const $newPlayerInput = $("#newplayer"), $newPlayerOpponentSelect = $("#newplayer-opponent"), $newPlayerButton = $("#newplayer-challenge"), $newPlayerNameError = $("#newplayer-name-error");
       function validateNewPlayerChallenge() {
-        var name = $newPlayerInput.val().trim();
-        var opponent = $newPlayerOpponentSelect.val();
-        var lettersCount = (name.match(/[A-Za-z]/g) || []).length;
-        var hasDigits = /\d/.test(name);
-        let nameValid = lettersCount >= 5 && !hasDigits;
-
-        if (name.length > 0 && !nameValid) {
-            $newPlayerNameError.text("Name muss min. 5 Buchstaben haben und keine Zahlen enthalten.").show();
-        } else {
-            $newPlayerNameError.hide();
-        }
-
+        const name = $newPlayerInput.val().trim();
+        const opponent = $newPlayerOpponentSelect.val();
+        const nameValid = (name.match(/[A-Za-z]/g) || []).length >= 5 && !/\d/.test(name);
+        $newPlayerNameError.toggle(name.length > 0 && !nameValid).text("Name muss min. 5 Buchstaben haben und keine Zahlen enthalten.");
         $newPlayerButton.prop("disabled", !(nameValid && opponent));
       }
-
-      // Use 'input' event for real-time validation
       $newPlayerInput.on("input change", validateNewPlayerChallenge);
-      $newPlayerOpponentSelect.on("change", validateNewPlayerChallenge);
-
-      // New player opponent selection logic (for highlighting)
-      $newPlayerOpponentSelect.on("change", function () {
-        const opponentId = $(this).val();
-        const previousOpponentId = tempNewPlayerOpponentId;
-        tempNewPlayerOpponentId = opponentId; // Store temp selection
-
-        // Update pyramid visuals: base styles, active challenge colors, then temporary selections
-        updatePyramidFromCache();
-        applyTemporarySelections();
-
-        validateNewPlayerChallenge(); // Re-validate button state
+      $newPlayerOpponentSelect.on("change", function() {
+          tempNewPlayerOpponentId = $(this).val();
+          applyTemporarySelections();
+          validateNewPlayerChallenge();
       });
-
-      // New player challenge button click
       $newPlayerButton.click(function () {
-        var newplayerName = $newPlayerInput.val().trim();
-        var opponentId = $newPlayerOpponentSelect.val();
-        if (!newplayerName || !opponentId) return; // Should be disabled anyway, but check
-
-        // Disable button during request
+        const newplayerName = $newPlayerInput.val().trim(), opponentId = $newPlayerOpponentSelect.val();
+        if (!newplayerName || !opponentId) return;
         $newPlayerButton.prop("disabled", true).text("Sende...");
-        $newPlayerResultDiv.hide().removeClass("alert-danger alert-success"); // Reset result div
-
+        $("#newplayer-result").hide();
         $.post("/newplayer_challenge", { newplayer_name: newplayerName, opponent_id: opponentId })
          .done(function (response) {
-            $newPlayerResultDiv.addClass("alert-success").html(response.message).fadeIn();
-            setTimeout(function() {
-                $newPlayerResultDiv.fadeOut(function() { $(this).html('').removeClass('alert-success'); });
-            }, 15000); // Keep message longer
-
-            // Reset form and temp highlight
+            $("#newplayer-result").addClass("alert-success").html(response.message).fadeIn().delay(15000).fadeOut();
             tempNewPlayerOpponentId = null;
             $newPlayerInput.val("");
             $newPlayerOpponentSelect.val("");
-            // $newPlayerButton.prop("disabled", true); // Will be re-enabled by pollData/validation
-
-            pollData(); // Refresh UI
+            validateNewPlayerChallenge();
          })
          .fail(function (xhr) {
-            const errorMsg = xhr.responseJSON?.error || "Es ist ein Fehler aufgetreten.";
-            $newPlayerResultDiv.addClass("alert-danger").html(errorMsg).fadeIn();
-            // Re-enable button on failure
+            $("#newplayer-result").addClass("alert-danger").html(xhr.responseJSON?.error || "Es ist ein Fehler aufgetreten.").fadeIn();
             $newPlayerButton.prop("disabled", false).text("Neue Spieler-Herausforderung");
-         })
-         .always(function() {
-             // Ensure button text is reset if pollData doesn't re-enable it quickly
-             setTimeout(() => {
-                 if ($newPlayerButton.text() === "Sende...") {
-                     $newPlayerButton.text("Neue Spieler-Herausforderung");
-                     validateNewPlayerChallenge(); // Re-evaluate button state
-                 }
-             }, 500);
          });
       });
 
-      // --- End New Player Challenge Logic ---
-
-      // Duck logo click animation
-      const duckLogo = document.querySelector('img[src="/static/a1_duck_11.png"]');
-      if (duckLogo) {
-        // Add ID and cursor pointer to the logo
-        duckLogo.id = 'duckLogo';
-        duckLogo.style.cursor = 'pointer';
-        
-        duckLogo.addEventListener('click', function() {
-          const overlay = document.getElementById('animationOverlay');
-          
-          // Show the overlay
-          overlay.classList.add('active');
-          
-          // Create tennis balls flying from the center
-          const centerX = window.innerWidth / 2;
-          const centerY = window.innerHeight / 2;
-          
+      // Duck logo animation
+      $(document).on('click', '#duckLogo', function() {
+          const overlay = $('#animationOverlay');
+          overlay.addClass('active');
+          const centerX = window.innerWidth / 2, centerY = window.innerHeight / 2;
           for (let i = 0; i < 12; i++) {
-            const ball = document.createElement('div');
-            ball.className = 'tennis-ball';
-            
-            // Random angles for the balls to fly
-            const angle = (i / 12) * 2 * Math.PI;
-            const distance = Math.min(window.innerWidth, window.innerHeight) * 0.4;
-            const tx = Math.cos(angle) * distance;
-            const ty = Math.sin(angle) * distance;
-            
-            ball.style.setProperty('--tx', `${tx}px`);
-            ball.style.setProperty('--ty', `${ty}px`);
-            ball.style.left = `${centerX}px`;
-            ball.style.top = `${centerY}px`;
-            
-            overlay.appendChild(ball);
-            
-            // Remove balls after animation
-            setTimeout(() => {
-              if (ball.parentNode) {
-                ball.parentNode.removeChild(ball);
-              }
-            }, 1500);
+              const angle = (i / 12) * 2 * Math.PI, distance = Math.min(window.innerWidth, window.innerHeight) * 0.4;
+              const tx = Math.cos(angle) * distance, ty = Math.sin(angle) * distance;
+              const ball = $('<div class="tennis-ball"></div>').css({ '--tx': `${tx}px`, '--ty': `${ty}px`, left: `${centerX}px`, top: `${centerY}px` });
+              overlay.append(ball);
+              setTimeout(() => ball.remove(), 1500);
           }
-          
-          // Hide the overlay after 2.5 seconds
-          setTimeout(function() {
-            overlay.classList.remove('active');
-            
-            // Remove any remaining tennis balls
-            const balls = overlay.querySelectorAll('.tennis-ball');
-            balls.forEach(ball => {
-              if (ball.parentNode) {
-                ball.parentNode.removeChild(ball);
-              }
-            });
-          }, 2500);
-        });
-      }
+          setTimeout(() => overlay.removeClass('active'), 2500);
+      });
 
     }); // End document ready
   </script>
@@ -1828,7 +1454,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 1.87G  •  10. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 2.05G-prod  •  19. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     
