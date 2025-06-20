@@ -1,6 +1,8 @@
+##########################################
 192.168.1.213
 user: stecher
 psw:
+##########################################
 
 https://192.168.1.213/stecher_start
 https://192.168.1.213/index
@@ -14,97 +16,155 @@ ssh stecher@192.168.1.213 -o PreferredAuthentications=password -v
 
 scp -r -o PreferredAuthentications=password . stecher@192.168.1.213:~/stecher_tennis/
 
+##########################################
+## duckdns.org
+##########################################
+
+tc-breakpoint-forderung.duckdns.org
+
+*) on raspberry:
+   mkdir duckdns
+   cd duckdns
+   nano duck_stechertennis.sh
+
+   echo url="https://www.duckdns.org/update?domains=tc-breakpoint-forderung&token=f5035eb4-6739-4f5e-b0e7-5ee827c7062d&ip=" | curl -k -o ~/duckdns/duck.log -K -
+
+  chmod 700 duck_stechertennis.sh
+  
+  crontab -e
+  */5 * * * * ~/duckdns/duck_stechertennis.sh >/dev/null 2>&1
+  
+  *) test the script
+     ./duck_stechertennis.sh
+     cat duck.log
 
 ##########################################
 ## create, activate virtuell python environment
 ##########################################
-python3 -m venv stecher_tennis
 
-cd stecher_tennis
-source ./bin/activate
+On my Ubuntu machine:
+*) Activate your conda environment:
+   conda activate stecher_tennis
 
+  Generate a requirements.txt file:
+  pip freeze > requirements.txt
+
+  *) Transfer this requirements.txt file to your Raspberry Pi within the tennis_app directory!
+     use only core production packages:
+     content of prod-requirements.txt:
+     # Core Flask and Web Server
+     Flask
+     gunicorn
+     Werkzeug
+     itsdangerous
+     Jinja2
+     click
+
+     # Flask Plugins
+     flask-cors
+     Flask-SocketIO
+
+     # Async and Networking
+     eventlet
+     greenlet
+     python-engineio
+     python-socketio
+
+     # Configuration
+     python-dotenv
+
+     # Other potential runtime dependencies (include ONLY if your app uses them in production)
+     google-generativeai
+     openai
+     numpy
+     scipy
+     pydantic
+     requests
+
+*) On your Raspberry Pi:
+   # Update package lists and upgrade existing packages
+   sudo apt-get update && sudo apt-get upgrade -y
+
+   # Install Python, pip, venv
+   sudo apt-get install python3-pip python3-venv -y
+
+   # Install build dependencies for scientific packages like numpy and scipy
+   sudo apt-get install libatlas-base-dev libsqlite3-dev -y
+
+   mkdir stecher_tennis
+   cd stecher_tennis
+   pwd
+   /home/stecher/stecher_tennis
+
+   python3 -m venv stecher_tennis
+   source ./bin/activate
+   or
+   source stecher_tennis/bin/activate
 
 ##########################################
-## for development:
+## Create a Secure Environment File
+## https://www.uuidgenerator.net/version4
 ##########################################
-Important notes:
-================
-*) Use 0.0.0.0 as the host if you want to access the app from other devices on your network
+sudo nano /home/stecher/stecher_tennis/.env
 
-*) In the browser, always use http://127.0.0.1:5000/index or http://localhost:5000/index
-   when accessing from the same machine
-
-*) From other devices, use the server's actual IP address
-   e.g., http://192.168.1.100:5000/index
-
-The reason for using 0.0.0.0 is that it binds to all available network interfaces,
-making your app accessible both locally and from other devices on your network.
-
-Using 127.0.0.1 would only allow local connections.
-
-# Default (binds to all interfaces on port 5000)
-python3 app.py
-
-# Explicitly specify host and port
-python3 app.py --host=0.0.0.0 --port=5000
-
-# Or use localhost only
-python3 app.py --host=127.0.0.1 --port=5000
-
-# Enable debug mode
-python3 app.py --host=0.0.0.0 --port=5000 --debug
+# /home/stecher/stecher_tennis/.env
+SECRET_KEY=8376579c-7d1d-486e-9eb6-0f6b42f531cd
 
 ##########################################
-## Production-Ready Setup with Gunicorn (Best Practice)
-##########################################
-source ./bin/activate
-pip install gunicorn eventlet
-
-# In app.py
-socketio = SocketIO(app, async_mode="eventlet")  # Match with gunicorn worker class
-
-##########################################
-## Setting Up Automatic Startup
+## Create the Final, Production-Grade systemd Service File
 ##########################################
 sudo nano /etc/systemd/system/stecher-tennis.service
 
 [Unit]
-Description=Stecher Tennis Flask Application
+Description=Gunicorn instance for Stecher Tennis App
+# This service will only start after the network is available
 After=network.target
 
 [Service]
+# Run the service as the 'stecher' user and 'www-data' group
+# (Ensure 'stecher' is in the 'www-data' group: sudo usermod -aG www-data stecher)
 User=stecher
-Group=stecher
+Group=www-data
+
+# Set the working directory to the project folder
 WorkingDirectory=/home/stecher/stecher_tennis
-ExecStart=/bin/bash -c 'source ./bin/activate && gunicorn --worker-class eventlet -w $(nproc) --bind 127.0.0.1:5000 --timeout 120 app:app'
+
+# Load secrets and configuration from a secure file
+EnvironmentFile=/home/stecher/stecher_tennis/.env
+
+# Command to start the Gunicorn server with Eventlet
+# - Uses absolute path to the gunicorn in the virtual environment
+# - Sets a stable number of workers suitable for a Raspberry Pi 4
+# - Binds to localhost on port 8000 (for the reverse proxy)
+ExecStart=/home/stecher/stecher_tennis/bin/gunicorn --workers 3 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
+
+# Always restart the service if it fails
 Restart=always
 RestartSec=10
+
+# Logging configuration
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=stecher-tennis
 
-# Environment configuration
-Environment=PYTHONUNBUFFERED=1
-Environment=FLASK_ENV=production
-Environment=SECRET_KEY=your-secure-key-here
-
-# Resource limits (updated directives)
+# Resource limits for stability
 MemoryMax=2G
 CPUQuota=80%
 LimitNOFILE=65536
 
-# Security enhancements
+# Security hardening directives
 PrivateTmp=true
-ProtectHome=false
 ProtectSystem=full
 NoNewPrivileges=true
-
-# Startup configuration
-TimeoutStartSec=60
+# ProtectHome is set to false because the app runs from a home directory.
+# If the app were in /srv/ or /var/www/, this could be set to 'read-only' or 'true'.
+ProtectHome=false
 
 [Install]
+# Enable the service to start automatically on boot
 WantedBy=multi-user.target
 
+#############################
 
 # Reload systemd to recognize the new service
 sudo systemctl daemon-reload
@@ -133,95 +193,5 @@ sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00"
 
 # Show logs between specific times
 sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00" --until="2025-03-11 09:00:00"
-
-
-##########################################
-## /etc/nginx/sites-available/stechertennis
-##########################################
-server {
-    listen 443 ssl http2;
-    server_name stechertennis.duckdns.org;
-
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    ssl_certificate /etc/letsencrypt/live/stechertennis.duckdns.org/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/stechertennis.duckdns.org/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Security headers
-    add_header X-Frame-Options SAMEORIGIN;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header X-Content-Type-Options nosniff;
-    add_header Referrer-Policy "strict-origin-when-cross-origin";
-    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()";
-
-    # HSTS (optional)
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-
-    # Logging
-    access_log /var/log/nginx/stechertennis.access.log;
-    error_log /var/log/nginx/stechertennis.error.log warn;
-}
-
-##########################################
-## sudo nginx -t
-##########################################
-nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-nginx: configuration file /etc/nginx/nginx.conf test is successful
-
-sudo systemctl reload nginx
-sudo systemctl status nginx
-
-##########################################
-   for production:
-   gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --bind 127.0.0.1:5000 app:app
-##########################################
-
-*) sudo certbot --nginx -d stechertennis.duckdns.org
-Saving debug log to /var/log/letsencrypt/letsencrypt.log
-Requesting a certificate for stechertennis.dedyn.io
-
-Successfully received certificate.
-Certificate is saved at: /etc/letsencrypt/live/stechertennis.dedyn.io/fullchain.pem
-Key is saved at:         /etc/letsencrypt/live/stechertennis.dedyn.io/privkey.pem
-This certificate expires on 2025-05-14.
-These files will be updated when the certificate renews.
-Certbot has set up a scheduled task to automatically renew this certificate in the background.
-
-Deploying certificate
-Successfully deployed certificate for stechertennis.dedyn.io to /etc/nginx/sites-enabled/stecher_tennis
-Congratulations! You have successfully enabled HTTPS on https://stechertennis.dedyn.io
-
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-If you like Certbot, please consider supporting our work by:
- * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
- * Donating to EFF:                    https://eff.org/donate-le
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-##########################################
-## RustDesk
-##########################################
-wget https://github.com/rustdesk/rustdesk/releases/download/1.3.7/rustdesk-1.3.7-aarch64.deb
-sudo dpkg -i rustdesk-1.3.7-aarch64.deb
-sudo apt-get install -f  # Fix dependencies if needed
-
-sudo systemctl restart rustdesk
-
-rustdesk --get-id
-496 316 474
-
-RustDesk-Web-client: https://rustdesk.com/web/
-
-
-
 
 

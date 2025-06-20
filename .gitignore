@@ -1,0 +1,16 @@
+# Exclude mobile_stecher_tennis directory except for specific parts
+mobile_stecher_tennis/*
+# But include the lib directory
+!mobile_stecher_tennis/lib/
+!mobile_stecher_tennis/lib/**
+# And include files directly in mobile_stecher_tennis
+!mobile_stecher_tennis/*.*
+# Other exclusions
+documentation/02_app_description.txt
+# aider-specific files
+.aider*
+.aider.conf.yml
+# Exclude backup
+.env
+backup/*
+

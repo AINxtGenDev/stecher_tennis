@@ -1,0 +1,30 @@
+# prod-requirements.txt
+
+# Core Flask and Web Server
+Flask
+gunicorn
+Werkzeug
+itsdangerous
+Jinja2
+click
+
+# Flask Plugins
+flask-cors
+Flask-SocketIO
+
+# Async and Networking
+eventlet
+greenlet
+python-engineio
+python-socketio
+
+# Configuration
+python-dotenv
+
+# Other potential runtime dependencies (include ONLY if your app uses them in production)
+google-generativeai
+openai
+numpy
+scipy
+pydantic
+requests

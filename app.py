@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import re
 import os
+
+# --- NEW: Import the dotenv library ---
+from dotenv import load_dotenv
 import sqlite3
 import json
 import logging
@@ -20,7 +23,7 @@ from threading import Lock
 try:
     # Flask < 2.2
     from flask.json import JSONEncoder as FlaskJSONEncoder
-    
+
     class CustomJSONEncoder(FlaskJSONEncoder):
         def default(self, obj):
             if isinstance(obj, datetime):
@@ -30,14 +33,14 @@ try:
             elif hasattr(obj, "__dict__"):
                 return obj.__dict__
             return super().default(obj)
-    
+
     # For socketio kwarg
     CustomJSONProvider = None
 
 except ImportError:
     # Flask 2.2+
     from flask.json.provider import DefaultJSONProvider
-    
+
     class CustomJSONProvider(DefaultJSONProvider):
         def default(self, obj):
             if isinstance(obj, datetime):
@@ -64,7 +67,9 @@ app = Flask(__name__)
 # On your Pi, run: export SECRET_KEY='a-very-long-and-random-secret-string'
 app.secret_key = os.environ.get("SECRET_KEY", "default-dev-key-for-testing-only")
 if app.secret_key == "default-dev-key-for-testing-only":
-    logger.warning("SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production.")
+    logger.warning(
+        "SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production."
+    )
 
 app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
 
@@ -79,18 +84,22 @@ else:
 # The logger settings reduce log spam in production.
 socketio_kwargs = {
     "async_mode": "eventlet",
-    "cors_allowed_origins": os.environ.get("CORS_ALLOWED_ORIGINS", "*"), # Use env var for production
+    "cors_allowed_origins": os.environ.get(
+        "CORS_ALLOWED_ORIGINS", "*"
+    ),  # Use env var for production
     "ping_timeout": 60,
     "ping_interval": 25,
-    "logger": True, # Set to False for less verbose production logs
-    "engineio_logger": False, # Definitely False for production
+    "logger": True,  # Set to False for less verbose production logs
+    "engineio_logger": False,  # Definitely False for production
 }
 if CustomJSONEncoder:
     socketio_kwargs["json"] = CustomJSONEncoder
 
 socketio = SocketIO(app, **socketio_kwargs)
 if socketio_kwargs["cors_allowed_origins"] == "*":
-    logger.warning("SECURITY WARNING: CORS is configured to allow all origins. Lock this down in production.")
+    logger.warning(
+        "SECURITY WARNING: CORS is configured to allow all origins. Lock this down in production."
+    )
 
 
 # Data caching mechanism
@@ -124,9 +133,6 @@ class DataCache:
 
 # Global cache instance
 data_cache = DataCache()
-
-
-# --- REMOVED: UpdateBatcher class was here. It added unnecessary complexity. ---
 
 
 # Helper function to serialize player data
@@ -214,12 +220,20 @@ def serialize_challenge(challenge_row):
     if challenge.get("scheduled_play_date"):
         if isinstance(challenge["scheduled_play_date"], datetime):
             # Split into date and time for easier use on the frontend
-            challenge["scheduled_date"] = challenge["scheduled_play_date"].strftime("%Y-%m-%d")
-            challenge["scheduled_time"] = challenge["scheduled_play_date"].strftime("%H:%M")
-            challenge["scheduled_play_date"] = challenge["scheduled_play_date"].strftime("%Y-%m-%d %H:%M:%S")
+            challenge["scheduled_date"] = challenge["scheduled_play_date"].strftime(
+                "%Y-%m-%d"
+            )
+            challenge["scheduled_time"] = challenge["scheduled_play_date"].strftime(
+                "%H:%M"
+            )
+            challenge["scheduled_play_date"] = challenge[
+                "scheduled_play_date"
+            ].strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(challenge["scheduled_play_date"], str):
             try:
-                dt = datetime.strptime(challenge["scheduled_play_date"].split(".")[0], "%Y-%m-%d %H:%M:%S")
+                dt = datetime.strptime(
+                    challenge["scheduled_play_date"].split(".")[0], "%Y-%m-%d %H:%M:%S"
+                )
                 challenge["scheduled_date"] = dt.strftime("%Y-%m-%d")
                 challenge["scheduled_time"] = dt.strftime("%H:%M")
                 challenge["scheduled_play_date"] = dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -229,7 +243,6 @@ def serialize_challenge(challenge_row):
     else:
         challenge["scheduled_date"] = None
         challenge["scheduled_time"] = None
-
 
     return challenge
 
@@ -699,7 +712,7 @@ def eligible_opponents_for(challenger):
         max_rank_diff = 6  # Can challenge up to 6 ranks higher
     elif 29 <= challenger_rank <= 36:
         max_rank_diff = 7  # Can challenge up to 7 ranks higher
-    elif 37 <= challenger_rank <= 45: # UPDATED: New rank band
+    elif 37 <= challenger_rank <= 45:  # UPDATED: New rank band
         max_rank_diff = 8  # Can challenge up to 8 ranks higher
     else:  # Should not happen if rank is always >= 1
         max_rank_diff = 0
@@ -1622,15 +1635,15 @@ def toggle_availability():
 
         new_availability = 0 if player["available"] == 1 else 1
         now_dt = get_current_time()
-        
-        with db: # Use a transaction
+
+        with db:  # Use a transaction
             if new_availability == 0:  # Becoming unavailable
                 new_unavailable_since = now_dt
                 db.execute(
                     "UPDATE players SET available = ?, unavailable_since = ? WHERE id = ?",
                     (new_availability, new_unavailable_since, player_id),
                 )
-                block_challenger_until_fmt = None # No new block
+                block_challenger_until_fmt = None  # No new block
             else:  # Becoming available
                 # CORRECTED LOGIC: Set a 3-day CHALLENGER block.
                 block_challenger_until = now_dt + timedelta(days=3)
@@ -1638,7 +1651,9 @@ def toggle_availability():
                     "UPDATE players SET available = ?, unavailable_since = NULL, block_challenger_until = ? WHERE id = ?",
                     (new_availability, block_challenger_until, player_id),
                 )
-                block_challenger_until_fmt = block_challenger_until.strftime("%Y-%m-%d %H:%M")
+                block_challenger_until_fmt = block_challenger_until.strftime(
+                    "%Y-%m-%d %H:%M"
+                )
 
         # Invalidate cache after updating player
         data_cache.invalidate()
@@ -1652,7 +1667,7 @@ def toggle_availability():
             player["name"],
             new_availability,
         )
-        
+
         # Return the actual new state for confirmation
         return jsonify(
             {
@@ -2194,7 +2209,7 @@ def update_scheduled_date():
         return jsonify({"success": False, "message": "Fehlende Challenge-ID."}), 400
 
     try:
-        db = get_db() # MOVED: Get DB connection at the start
+        db = get_db()  # MOVED: Get DB connection at the start
         challenge_id = int(challenge_id_str)
         scheduled_dt_obj = None
 
@@ -2204,7 +2219,7 @@ def update_scheduled_date():
             time_str = selected_time_str if selected_time_str else "00:00"
             datetime_str = f"{selected_date_str} {time_str}"
             scheduled_dt_obj = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
-        
+
             # Validation against deadline
             cur = db.execute(
                 "SELECT deadline FROM challenges WHERE id = ? AND resolved = 0",
@@ -2213,14 +2228,29 @@ def update_scheduled_date():
             challenge_record = cur.fetchone()
 
             if not challenge_record:
-                return jsonify({"success": False, "message": "Herausforderung nicht gefunden."}), 404
+                return (
+                    jsonify(
+                        {"success": False, "message": "Herausforderung nicht gefunden."}
+                    ),
+                    404,
+                )
 
             deadline_dt = challenge_record["deadline"]
             if not isinstance(deadline_dt, datetime):
-                 deadline_dt = datetime.strptime(str(deadline_dt).split(".")[0], "%Y-%m-%d %H:%M:%S")
+                deadline_dt = datetime.strptime(
+                    str(deadline_dt).split(".")[0], "%Y-%m-%d %H:%M:%S"
+                )
 
             if scheduled_dt_obj > deadline_dt:
-                return jsonify({"success": False, "message": "Spieldatum kann nicht nach der Frist liegen."}), 400
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Spieldatum kann nicht nach der Frist liegen.",
+                        }
+                    ),
+                    400,
+                )
 
         # This part is now inside the main try block
         db.execute(
@@ -2230,18 +2260,31 @@ def update_scheduled_date():
         db.commit()
 
         data_cache.invalidate()
-        emit_data_update_optimized("scheduled_date_updated", {"challenge_id": challenge_id})
-        
-        logger.info(f"Spieldatum für Herausforderung {challenge_id} auf {scheduled_dt_obj} gesetzt.")
-        return jsonify({"success": True, "message": "Spieldatum erfolgreich aktualisiert."})
+        emit_data_update_optimized(
+            "scheduled_date_updated", {"challenge_id": challenge_id}
+        )
+
+        logger.info(
+            f"Spieldatum für Herausforderung {challenge_id} auf {scheduled_dt_obj} gesetzt."
+        )
+        return jsonify(
+            {"success": True, "message": "Spieldatum erfolgreich aktualisiert."}
+        )
 
     except (ValueError, TypeError) as e:
         logger.warning(f"Invalid date/time format received: {e}")
-        return jsonify({"success": False, "message": "Ungültiges Datums- oder Zeitformat."}), 400
+        return (
+            jsonify(
+                {"success": False, "message": "Ungültiges Datums- oder Zeitformat."}
+            ),
+            400,
+        )
     except sqlite3.Error as e:
-        if 'db' in locals() and db.in_transaction:
+        if "db" in locals() and db.in_transaction:
             db.rollback()
-        logger.exception(f"DB-Fehler beim Aktualisieren des Spieldatums für Challenge {challenge_id}: {e}")
+        logger.exception(
+            f"DB-Fehler beim Aktualisieren des Spieldatums für Challenge {challenge_id}: {e}"
+        )
         return jsonify({"success": False, "message": "Datenbankfehler."}), 500
 
 
@@ -2772,5 +2815,5 @@ if __name__ == "__main__":
     host = os.environ.get("FLASK_HOST", "0.0.0.0")
     port = int(os.environ.get("FLASK_PORT", 5000))
     debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() in ["true", "1"]
-    
+
     socketio.run(app, host=host, port=port, debug=debug_mode, use_reloader=debug_mode)
