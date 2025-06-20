@@ -37,6 +37,10 @@ tc-breakpoint-forderung.duckdns.org
   *) test the script
      ./duck_stechertennis.sh
      cat duck.log
+     OK
+
+    ping tc-breakpoint-forderung.duckdns.org
+
 
 ##########################################
 ## create, activate virtuell python environment
@@ -91,15 +95,17 @@ On my Ubuntu machine:
    # Install build dependencies for scientific packages like numpy and scipy
    sudo apt-get install libatlas-base-dev libsqlite3-dev -y
 
-   mkdir stecher_tennis
-   cd stecher_tennis
    pwd
-   /home/stecher/stecher_tennis
-
+   /home/stecher
+   
    python3 -m venv stecher_tennis
+   cd stecher_tennis
+   
    source ./bin/activate
    or
    source stecher_tennis/bin/activate
+   
+   pip install -r prod-requirements.txt
 
 ##########################################
 ## Create a Secure Environment File
@@ -109,6 +115,12 @@ sudo nano /home/stecher/stecher_tennis/.env
 
 # /home/stecher/stecher_tennis/.env
 SECRET_KEY=8376579c-7d1d-486e-9eb6-0f6b42f531cd
+
+short test if app is working fine:
+*) python3 app.py
+   this will create the tennis.db
+*) gunicorn --workers 3 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
+
 
 ##########################################
 ## Create the Final, Production-Grade systemd Service File
@@ -136,7 +148,7 @@ EnvironmentFile=/home/stecher/stecher_tennis/.env
 # - Uses absolute path to the gunicorn in the virtual environment
 # - Sets a stable number of workers suitable for a Raspberry Pi 4
 # - Binds to localhost on port 8000 (for the reverse proxy)
-ExecStart=/home/stecher/stecher_tennis/bin/gunicorn --workers 3 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
+ExecStart=/home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
 
 # Always restart the service if it fails
 Restart=always
@@ -179,6 +191,28 @@ sudo systemctl restart stecher-tennis
 # Check service status
 sudo systemctl status stecher-tennis.service
 
+● stecher-tennis.service - Gunicorn instance for Stecher Tennis App
+     Loaded: loaded (/etc/systemd/system/stecher-tennis.service; enabled; preset: enabled)
+     Active: active (running) since Fri 2025-06-20 11:10:33 CEST; 5s ago
+   Main PID: 3126 (gunicorn)
+      Tasks: 5 (limit: 3927)
+        CPU: 4.796s
+     CGroup: /system.slice/stecher-tennis.service
+             ├─3126 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+             ├─3127 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+             ├─3128 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+             ├─3129 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+             └─3130 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+
+Jun 20 11:10:33 stechertennis systemd[1]: Started stecher-tennis.service - Gunicorn instance for Stecher Tennis App.
+Jun 20 11:10:34 stechertennis stecher-tennis[3126]: [2025-06-20 11:10:34 +0200] [3126] [INFO] Starting gunicorn 23.0.0
+Jun 20 11:10:34 stechertennis stecher-tennis[3126]: [2025-06-20 11:10:34 +0200] [3126] [INFO] Listening at: http://127.0.0.1:8000 (>
+Jun 20 11:10:34 stechertennis stecher-tennis[3126]: [2025-06-20 11:10:34 +0200] [3126] [INFO] Using worker: eventlet
+Jun 20 11:10:34 stechertennis stecher-tennis[3127]: [2025-06-20 11:10:34 +0200] [3127] [INFO] Booting worker with pid: 3127
+Jun 20 11:10:34 stechertennis stecher-tennis[3128]: [2025-06-20 11:10:34 +0200] [3128] [INFO] Booting worker with pid: 3128
+Jun 20 11:10:34 stechertennis stecher-tennis[3129]: [2025-06-20 11:10:34 +0200] [3129] [INFO] Booting worker with pid: 3129
+Jun 20 11:10:34 stechertennis stecher-tennis[3130]: [2025-06-20 11:10:34 +0200] [3130] [INFO] Booting worker with pid: 3130
+
 # View live logs (continuous monitoring)
 sudo journalctl -u stecher-tennis.service -f
 
@@ -218,25 +252,63 @@ sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
 sudo apt update
- sudo apt install caddy
-   
+sudo apt install caddy
+
+ ---> overwrite the entire original content
+ 
 sudo nano /etc/caddy/Caddyfile
-# Your DuckDNS domain
+# Caddyfile for the Tennis Ranking App
 tc-breakpoint-forderung.duckdns.org {
-    # Enable secure transport layer security (HTTPS)
+    # Enable automatic HTTPS with Let's Encrypt
+    # The email is used for certificate renewal notices.
     tls otto.kuegerl@gmail.com
 
-    # Log errors for troubleshooting
+    # Set up logging for this site
+    # This is very useful for troubleshooting.
     log {
         output file /var/log/caddy/tc-breakpoint.log
         level ERROR
     }
 
-    # Reverse proxy requests to your Gunicorn app
-    reverse_proxy localhost:8000
+    # Reverse proxy all requests to the Gunicorn application
+    # running on localhost port 8000.
+    reverse_proxy localhost:8000 {
+        # Best Practice: Forward the original host and client IP headers
+        # This allows your Flask app to know the real domain and user IP.
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+    }
 }
 
+*) Caddy has a built-in tool to clean up the formatting
+sudo caddy fmt --overwrite /etc/caddy/Caddyfile
+
 sudo systemctl reload caddy
+
+sudo systemctl status caddy
+
+● caddy.service - Caddy
+     Loaded: loaded (/lib/systemd/system/caddy.service; enabled; preset: enabled)
+     Active: active (running) since Fri 2025-06-20 10:47:54 CEST; 11min ago
+       Docs: https://caddyserver.com/docs/
+    Process: 3038 ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile --force (code=exited, status=0/SUCCESS)
+   Main PID: 2563 (caddy)
+      Tasks: 9 (limit: 3927)
+        CPU: 613ms
+     CGroup: /system.slice/caddy.service
+             └─2563 /usr/bin/caddy run --environ --config /etc/caddy/Caddyfile
+
+Jun 20 10:58:58 stechertennis caddy[2563]: {"level":"info","ts":1750409938.9827185,"logger":"tls.issuance.acme","msg":"served key a>
+Jun 20 10:58:59 stechertennis caddy[2563]: {"level":"info","ts":1750409939.401971,"logger":"tls.issuance.acme","msg":"served key au>
+Jun 20 10:59:00 stechertennis caddy[2563]: {"level":"info","ts":1750409940.2541556,"msg":"authorization finalized","identifier":"tc>
+Jun 20 10:59:00 stechertennis caddy[2563]: {"level":"info","ts":1750409940.2542856,"msg":"validations succeeded; finalizing order",>
+Jun 20 10:59:00 stechertennis caddy[2563]: {"level":"info","ts":1750409940.8887146,"msg":"got renewal info","names":["tc-breakpoint>
+Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"info","ts":1750409941.220211,"msg":"got renewal info","names":["tc-breakpoint->
+Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"info","ts":1750409941.2204647,"msg":"successfully downloaded available certifi>
+Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"info","ts":1750409941.23507,"logger":"tls.obtain","msg":"certificate obtained >
+Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"info","ts":1750409941.2356591,"logger":"tls.obtain","msg":"releasing lock","id>
+Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"warn","ts":1750409941.2388165,"logger":"tls","msg":"stapling OCSP","error":"no>
+
 
 ##########################################
 https://tc-breakpoint-forderung.duckdns.org:10443
