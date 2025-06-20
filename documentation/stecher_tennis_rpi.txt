@@ -115,12 +115,13 @@ sudo nano /home/stecher/stecher_tennis/.env
 
 # /home/stecher/stecher_tennis/.env
 SECRET_KEY=8376579c-7d1d-486e-9eb6-0f6b42f531cd
+CORS_ALLOWED_ORIGINS=https://tc-breakpoint-forderung.duckdns.org:10443
 
 short test if app is working fine:
 *) python3 app.py
    this will create the tennis.db
-*) gunicorn --workers 3 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
 
+*) gunicorn --workers 3 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
 
 ##########################################
 ## Create the Final, Production-Grade systemd Service File
@@ -129,51 +130,34 @@ sudo nano /etc/systemd/system/stecher-tennis.service
 
 [Unit]
 Description=Gunicorn instance for Stecher Tennis App
-# This service will only start after the network is available
 After=network.target
 
 [Service]
-# Run the service as the 'stecher' user and 'www-data' group
-# (Ensure 'stecher' is in the 'www-data' group: sudo usermod -aG www-data stecher)
 User=stecher
 Group=www-data
-
-# Set the working directory to the project folder
 WorkingDirectory=/home/stecher/stecher_tennis
-
-# Load secrets and configuration from a secure file
 EnvironmentFile=/home/stecher/stecher_tennis/.env
 
-# Command to start the Gunicorn server with Eventlet
-# - Uses absolute path to the gunicorn in the virtual environment
-# - Sets a stable number of workers suitable for a Raspberry Pi 4
-# - Binds to localhost on port 8000 (for the reverse proxy)
-ExecStart=/home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
+# --- DEFINITIVE FIX: Use a SINGLE eventlet worker ---
+# A single, async worker is more efficient on a Raspberry Pi and
+# completely solves the "Invalid session" problem by ensuring all
+# connections are handled by the same process.
+ExecStart=/home/stecher/stecher_tennis/bin/gunicorn --workers 1 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
 
-# Always restart the service if it fails
 Restart=always
 RestartSec=10
-
-# Logging configuration
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=stecher-tennis
-
-# Resource limits for stability
 MemoryMax=2G
 CPUQuota=80%
 LimitNOFILE=65536
-
-# Security hardening directives
 PrivateTmp=true
 ProtectSystem=full
 NoNewPrivileges=true
-# ProtectHome is set to false because the app runs from a home directory.
-# If the app were in /srv/ or /var/www/, this could be set to 'read-only' or 'true'.
 ProtectHome=false
 
 [Install]
-# Enable the service to start automatically on boot
 WantedBy=multi-user.target
 
 #############################
@@ -257,28 +241,25 @@ sudo apt install caddy
  ---> overwrite the entire original content
  
 sudo nano /etc/caddy/Caddyfile
-# Caddyfile for the Tennis Ranking App
+# Caddyfile for the Tennis Ranking App (v3 - Definitive WebSocket Fix)
 tc-breakpoint-forderung.duckdns.org {
-    # Enable automatic HTTPS with Let's Encrypt
-    # The email is used for certificate renewal notices.
     tls otto.kuegerl@gmail.com
 
-    # Set up logging for this site
-    # This is very useful for troubleshooting.
     log {
         output file /var/log/caddy/tc-breakpoint.log
         level ERROR
     }
 
     # Reverse proxy all requests to the Gunicorn application
-    # running on localhost port 8000.
     reverse_proxy localhost:8000 {
-        # Best Practice: Forward the original host and client IP headers
-        # This allows your Flask app to know the real domain and user IP.
+        # --- DEFINITIVE FIX: Add headers required for WebSocket proxying ---
         header_up Host {http.request.host}
         header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
     }
 }
+
 
 *) Caddy has a built-in tool to clean up the formatting
 sudo caddy fmt --overwrite /etc/caddy/Caddyfile

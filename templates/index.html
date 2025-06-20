@@ -1225,17 +1225,10 @@
           }
       });
 
-      // This handler now only needs to request a full update.
-      // The server sends the correct data, and the 'data_update' handler will render it.
+      // OPTIMIZED: This event is no longer used for requesting data, simplifying the client.
+      // The server now proactively sends a full 'data_update' after any action.
       socket.on("player_update", (payload) => {
-          console.log("Socket.IO 'player_update' received", payload);
-          if (!payload || !payload.player) {
-              console.warn("Received invalid player_update payload.");
-              return;
-          }
-          // Request a full data refresh to ensure the entire UI is consistent.
-          console.log("Requesting full data refresh for consistency after player update.");
-          socket.emit("request_full_update");
+          console.log("Socket.IO 'player_update' received, but no action taken as 'data_update' is authoritative.", payload);
       });
 
       socket.on("database_reset", (data) => {
@@ -1454,7 +1447,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 2.06G-prod  •  20. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 2.09-prod-opt  •  20. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     
