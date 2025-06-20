@@ -253,8 +253,8 @@ CREATE TABLE challenges (
 ## 🐧 Raspberry Pi Deployment
 
 ### System Requirements
-- Raspberry Pi 3B+ or newer
-- Raspberry Pi OS (64-bit recommended)
+- Raspberry Pi 4 or newer
+- Raspberry Pi OS (64-bit)
 - Internet connection for SSL certificates
 
 ### Production Deployment
