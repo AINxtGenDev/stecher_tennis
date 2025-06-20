@@ -25,6 +25,6 @@ dependencies:
   # Debug tools
   - flask-debugtoolbar  # For debugging Flask applications  
   # Optional but recommended
-  # - gunicorn       # For production deployment
+  - gunicorn       # For production deployment
   - watchdog       # For auto-reloading during development
 
