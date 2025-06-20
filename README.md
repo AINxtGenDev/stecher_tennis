@@ -59,11 +59,36 @@ The **Tennis Ranking Web Application** is a full-featured system for managing te
 ## 🚀 Installation & Setup
 
 ### Prerequisites
-- Python 3.8+
-- pip and venv
+- Python 3.12+ (or use Miniconda for environment management)
+- pip and venv (if not using conda)
 - SQLite3
 
+**Recommended**: Miniconda for development, especially on Ubuntu 24.04
+
 ### Local Development Setup
+
+#### Option 1: Using Miniconda (Recommended for Development on Ubuntu 24.04)
+
+1. **Setup Project Directory and Conda Environment**
+```bash
+mkdir stecher_tennis
+cd stecher_tennis
+git clone <repository-url> .
+
+# Create conda environment from environment.yml
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate stecher_tennis
+```
+
+2. **Verify Installation**
+```bash
+conda list  # Check installed packages
+python --version  # Should show Python 3.12
+```
+
+#### Option 2: Using Python venv
 
 1. **Clone and Setup Environment**
 ```bash
@@ -87,6 +112,8 @@ FLASK_DEBUG=true
 FLASK_HOST=0.0.0.0
 FLASK_PORT=5000
 ```
+
+**Note**: When using conda, all dependencies are managed through `environment.yml`. The environment includes development tools like pytest, black, flake8, and coverage for a complete development experience.
 
 4. **Initialize Database**
 ```bash
@@ -312,13 +339,65 @@ Configure your router to forward port 443 (HTTPS) to your Raspberry Pi for exter
 
 ## 🔧 Development
 
+### Development Environment
+
+#### Conda Environment (environment.yml)
+The project includes a complete conda environment specification in `environment.yml`:
+
+```yaml
+name: stecher_tennis
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Core dependencies
+  - python=3.12
+  - flask
+  - flask-cors
+  - python-dotenv
+  - flask-socketio
+  - eventlet
+  # Development tools
+  - pytest
+  - black
+  - flake8
+  - coverage
+  - flask-debugtoolbar
+  # Production tools
+  - gunicorn
+  - watchdog
+```
+
+#### Development Workflow
+```bash
+# Activate conda environment
+conda activate stecher_tennis
+
+# Start development server with auto-reload
+python app.py
+
+# Code formatting
+black app.py
+
+# Linting
+flake8 app.py
+
+# Run tests
+pytest
+
+# Check coverage
+coverage run -m pytest
+coverage report
+```
+
 ### Project Structure
 ```
 tennis-ranking-app/
 ├── app.py                 # Main Flask application
 ├── schema.sql            # Database schema
 ├── initial_players.json  # Default player data
-├── requirements.txt      # Python dependencies
+├── environment.yml       # Conda environment specification
+├── requirements.txt      # Python dependencies (pip)
 ├── .env                  # Environment configuration
 ├── templates/            # HTML templates
 │   ├── index.html       # Main ranking display
@@ -412,6 +491,7 @@ Here's the complete breakdown of code lines in your tennis ranking project:
 - **app.py**: 1,444 lines (Main Flask application with all backend logic)
 - **initial_players.json**: 40 lines (Initial player data)
 - **schema.sql**: 56 lines (Database schema)
+- **environment.yml**: 24 lines (Conda environment specification)
 
 ### HTML Template Files
 - **admin.html**: 485 lines (Administration interface with extensive CSS/JS)
@@ -420,17 +500,18 @@ Here's the complete breakdown of code lines in your tennis ranking project:
 - **error.html**: 21 lines (Simple error page)
 
 ### Project Summary
-- **Total Lines**: 3,198
+- **Total Lines**: 3,222
 - **By Category**:
-  - Core files (Python/JSON/SQL): 1,540 lines
+  - Core files (Python/JSON/SQL/YAML): 1,564 lines
   - HTML templates: 1,658 lines
 - **By Technology**:
-  - Python (Flask/Backend): 1,444 lines (45.2%)
-  - HTML/CSS/JavaScript: 1,658 lines (51.8%)
-  - SQL (Database Schema): 56 lines (1.8%)
-  - JSON (Initial Data): 40 lines (1.3%)
+  - Python (Flask/Backend): 1,444 lines (44.8%)
+  - HTML/CSS/JavaScript: 1,658 lines (51.4%)
+  - SQL (Database Schema): 56 lines (1.7%)
+  - JSON (Initial Data): 40 lines (1.2%)
+  - YAML (Environment Config): 24 lines (0.7%)
 
-This is a substantial project with over 3,000 lines of code! The distribution shows it's well-balanced between backend logic (Python) and frontend presentation (HTML/CSS/JavaScript), which makes sense for a full-stack web application with rich user interfaces like your pyramid visualization and real-time updates.
+This is a substantial project with over 3,200 lines of code! The distribution shows it's well-balanced between backend logic (Python) and frontend presentation (HTML/CSS/JavaScript), which makes sense for a full-stack web application with rich user interfaces like your pyramid visualization and real-time updates. The project includes comprehensive development tooling through conda environment management.
 
 ---
 
