@@ -194,4 +194,52 @@ sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00"
 # Show logs between specific times
 sudo journalctl -u stecher-tennis.service --since="2025-03-11 08:00:00" --until="2025-03-11 09:00:00"
 
+##########################################
+## Caddy
+##########################################
+
+FritzBox:
+client: stechertennis 192.168.1.213 portfreigaben
+        Rule 1: HTTPS Traffic
+                Application/Protocol: TCP
+                From external port: 10443
+                To device: Raspberry Pi (192.168.1.213)
+                To internal port: 443
+
+        Rule 2: HTTP to HTTPS Redirect (Good practice)
+                Application/Protocol: TCP
+                From external port: 80
+                To device: Raspberry Pi (192.168.1.213)
+                To internal port: 80
+
+1) Configure Caddy to handle HTTPS and proxy traffic
+
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+ sudo apt install caddy
+   
+sudo nano /etc/caddy/Caddyfile
+# Your DuckDNS domain
+tc-breakpoint-forderung.duckdns.org {
+    # Enable secure transport layer security (HTTPS)
+    tls otto.kuegerl@gmail.com
+
+    # Log errors for troubleshooting
+    log {
+        output file /var/log/caddy/tc-breakpoint.log
+        level ERROR
+    }
+
+    # Reverse proxy requests to your Gunicorn app
+    reverse_proxy localhost:8000
+}
+
+sudo systemctl reload caddy
+
+##########################################
+https://tc-breakpoint-forderung.duckdns.org:10443
+##########################################
+
 

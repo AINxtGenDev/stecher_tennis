@@ -1,22 +1,11 @@
 #######################################################################
-Miniconda
+on Ubuntu system - Miniconda
 #######################################################################
-1) First, download Miniconda installer
+1) First, download and install Miniconda
    cd ~/Downloads
    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
-   raspberry
-   wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh
-   
-   chmod +x Miniconda3-latest-Linux-aarch64.sh
-
-2) Run the installer
-   ./Miniconda3-latest-Linux-aarch64.sh
-
-3) Restart your terminal or reload bash profile
-   source ~/.bashrc
-
-4) Configure conda for best practices
+2) Configure conda for best practices
    # Set strict channel priority
    conda config --set channel_priority strict
 
@@ -45,7 +34,6 @@ Create and activate environment on behalf environment.yml
    conda env list    # Shows all environments, with * next to the active one
    python --version  # Should show Python 3.12
    flask --version   # Should show Flask is installed
-
 
 *) Best Practices for Environment Management and create "environment.yml" for reproducibility
    name: stecher_tennis
@@ -94,34 +82,7 @@ Common useful commands
 ---> use conda install instead of pip when possible <---
 
 #######################################################################
-date time testing
-#######################################################################
-All calls to get the current time now go through the get_current_time() function.
-This function checks for a TEST_DATE environment variable (formatted as YYYY-MM-DD-HH-MM-SS)
-to allow testing with a simulated date.
-If it isn’t set or is invalid, it falls back to datetime.now().
-
-# NEW: Centralized current time function
-def get_current_time():
-    """
-    Returns the current datetime.
-    If the environment variable TEST_DATE is set (in format YYYY-MM-DD-HH-MM-SS),
-    it parses and returns that value. This enables testing by simulating a future/past date.
-    """
-    test_date_str = os.environ.get("TEST_DATE")
-    if test_date_str:
-        try:
-            # Expected format: "2025-03-13-21-13-23"
-            return datetime.strptime(test_date_str, "%Y-%m-%d-%H-%M-%S")
-        except Exception as e:
-            logger.exception("Invalid TEST_DATE format: %s. Falling back to system time.", test_date_str)
-    return datetime.now()
-
-1) export TEST_DATE=2025-03-13-21-13-23
-2) conda activate stecher_tennis
-   (source ./bin/activate)
-3) python3 app.py --host=0.0.0.0 --port=5000
-
+## git 
 #######################################################################
 git status
 git add .
@@ -129,22 +90,16 @@ git commit -m "Initial commit"
 git push -u origin main
 git push
 
-backup repository
-git clone --mirror https://github.com/AINxtGenDev/stecher_tennis.git stecher_tennis_backup.git
-
-to check how many byte the directory including subdirectories has
-du -sh .
 #######################################################################
-
+date time testing
 #######################################################################
-aider-composer
-#######################################################################
-https://github.com/lee88688/aider-composer
-cd /home/werner/development/stecher_tennis
-conda activate stecher_tennis
-pip install aider-chat flask
-code .
-Extension aider-composer
+All calls to get the current time now go through the get_current_time() function.
+This function checks for a TEST_DATE environment variable (formatted as YYYY-MM-DD-HH-MM-SS)
+to allow testing with a simulated date.
+If it isn’t set or is invalid, it falls back to datetime.now().
 
-
+1) export TEST_DATE=2025-03-13-21-13-23
+2) conda activate stecher_tennis
+   (source ./bin/activate)
+3) python3 app.py --host=0.0.0.0 --port=5000
 
