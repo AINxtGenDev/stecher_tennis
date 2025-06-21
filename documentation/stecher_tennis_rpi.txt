@@ -187,11 +187,8 @@ sudo systemctl status stecher-tennis.service
       Tasks: 5 (limit: 3927)
         CPU: 4.796s
      CGroup: /system.slice/stecher-tennis.service
-             ├─3126 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
-             ├─3127 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
-             ├─3128 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
-             ├─3129 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
-             └─3130 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 4 --worker-class e>
+             ├─3126 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 1 --worker-class e>
+             ├─3127 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 1 --worker-class e>
 
 Jun 20 11:10:33 stechertennis systemd[1]: Started stecher-tennis.service - Gunicorn instance for Stecher Tennis App.
 Jun 20 11:10:34 stechertennis stecher-tennis[3126]: [2025-06-20 11:10:34 +0200] [3126] [INFO] Starting gunicorn 23.0.0
