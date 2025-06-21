@@ -116,6 +116,11 @@ sudo nano /home/stecher/stecher_tennis/.env
 # /home/stecher/stecher_tennis/.env
 SECRET_KEY=8376579c-7d1d-486e-9eb6-0f6b42f531cd
 CORS_ALLOWED_ORIGINS=https://tc-breakpoint-forderung.duckdns.org:10443
+# to enable development mode
+# FLASK_DEBUG=true
+# INFO:__main__:App is running in DEBUG mode. Adding local development origins to CORS.
+# for production:
+FLASK_DEBUG=false
 
 short test if app is working fine:
 *) python3 app.py

@@ -9,6 +9,9 @@ Database: SQLite
 JSON data for initializing the players (initial_players.json)
 
 ###############################################
+
+please formulate more beautifully:
+
 Please focus on the new initial_players.json file when applying your changes.
 When the app starts from a fresh state with this JSON, every one of the 45 players
 must appear in the pyramid on index.html. Any player whose entry contains "is_available": false

@@ -1018,8 +1018,10 @@
           const challengerIds = new Set(active_challenges.map(c => c.challenger_id));
           const opponentIds = new Set(active_challenges.map(c => c.opponent_id));
 
-          pyramidData.forEach(row => {
+          pyramidData.forEach((row, rowIndex) => {
               const $rowDiv = $('<div class="row"></div>');
+              const isRowEmpty = !row.some(p => p !== null);
+
               row.forEach(player => {
                   if (player) {
                       let playerClass = 'player';
@@ -1039,6 +1041,12 @@
                       $rowDiv.append('<div class="player missing" style="background: #eee; border-color: #ccc; color: #888; cursor: default;"><div class="player-info">Leer</div></div>');
                   }
               });
+
+              // Conditionally hide the last row if it is empty
+              if (rowIndex === pyramidData.length - 1 && isRowEmpty) {
+                  $rowDiv.hide();
+              }
+
               $rankingList.append($rowDiv);
           });
       }
@@ -1447,7 +1455,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 2.09-prod-opt  •  20. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 2.10-prod  •  21. Juni 2025</small> <!-- Version Bump -->
       </div>
     </div>
     
