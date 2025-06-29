@@ -947,6 +947,7 @@ def get_players():
                     "rank": p["rank"],
                     "available": bool(p["available"]),
                     "unavailable_since": unavailable_since_str,
+                    "unavailability_reason": p.get("unavailability_reason"),
                     "block_challenger": block_challenger,
                     "block_opponent": block_opponent,
                     "block_challenger_until": block_challenger_until_str,
@@ -1171,8 +1172,22 @@ def challenge():
 @app.route("/toggle_availability", methods=["POST"])
 def toggle_availability():
     player_id = request.form.get("player_id")
+    reason = request.form.get("reason")  # This will be None if not provided
+
     if not player_id:
         return jsonify({"success": False, "message": "No player_id provided."}), 400
+
+    if reason and len(reason) > 25:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Grund darf maximal 25 Zeichen lang sein.",
+                }
+            ),
+            400,
+        )
+
     db = get_db()
     try:
         cur = db.execute("SELECT * FROM players WHERE id = ?", (player_id,))
@@ -1193,26 +1208,27 @@ def toggle_availability():
         new_availability = 0 if player["available"] == 1 else 1
         now_dt = get_current_time()
         with db:
-            if new_availability == 0:
+            if new_availability == 0:  # Becoming unavailable
                 db.execute(
-                    "UPDATE players SET available = ?, unavailable_since = ? WHERE id = ?",
-                    (new_availability, now_dt, player_id),
+                    "UPDATE players SET available = ?, unavailable_since = ?, unavailability_reason = ? WHERE id = ?",
+                    (new_availability, now_dt, reason, player_id),
                 )
                 block_challenger_until_fmt = None
-            else:
+            else:  # Becoming available
                 block_challenger_until = now_dt + timedelta(days=3)
                 db.execute(
-                    "UPDATE players SET available = ?, unavailable_since = NULL, block_challenger_until = ? WHERE id = ?",
+                    "UPDATE players SET available = ?, unavailable_since = NULL, unavailability_reason = NULL, block_challenger_until = ? WHERE id = ?",
                     (new_availability, block_challenger_until, player_id),
                 )
                 block_challenger_until_fmt = block_challenger_until.strftime(
                     "%Y-%m-%d %H:%M"
                 )
         logger.info(
-            "Toggled availability for player %s (%s) to %s",
+            "Toggled availability for player %s (%s) to %s. Reason: %s",
             player_id,
             player["name"],
             new_availability,
+            reason if new_availability == 0 else "N/A",
         )
         emit_data_update("availability_toggled", {"player_id": player_id})
         return jsonify(

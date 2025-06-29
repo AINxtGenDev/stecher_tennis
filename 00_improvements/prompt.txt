@@ -23,6 +23,53 @@ This is extremely important for our code review process.
 At the end of this process, the tennis ranking app must be fully functional and production-ready.
 
 ###############################################
+###############################################
+The Tennis Ranking List web application is used to manage tennis players and organize challenges between them.
+In addition to displaying the current ranking list, the application offers functions for dynamically updating
+the ranking positions and for managing player blocking and availability.
+
+Backend: Python with the Flask framework
+Real-time communication: Flask-SocketIO
+Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
+Database: SQLite
+JSON data for initializing the players (initial_players.json)
+
+Please focus on index.html and to implement following new task.
+Task: Implement an availability change feature with confirmation dialog and reason input.
+Trigger Event:
+When player wants to change from "available" to "not available"
+
+Confirmation Dialog:
+Modal/Popup with text: "Please confirm that you want to be shown as not available!"
+Two buttons: "YES" and "NO"
+Dialog should block the rest of the page (modal)
+
+User Flow:
+On "NO":
+Close dialog
+No changes made
+Status remains "available"
+
+On "YES":
+Second dialog/input field appears
+Text field for reason (Placeholder: "e.g., Vacation until 15. Sep.")
+Validation: maximum 25 characters
+Confirm button
+Database Operations:
+Everything must be stored in the database
+
+When modifying database:
+- Provide an easy to handle migration script
+- Consider data integrity
+- Document schema changes
+
+It is extremely important to apply all changes step by step, and to do so very carefully.
+Additionally, please always provide the complete, entire code for each file you modify.
+This is extremely important for our code review process.
+At the end of this process, the tennis ranking app must be fully functional and production-ready.
+
+
+###############################################
 
 Please focus on the new initial_players.json file when applying your changes.
 When the app starts from a fresh state with this JSON, every one of the 45 players

@@ -12,6 +12,7 @@ CREATE TABLE players (
     available INTEGER NOT NULL DEFAULT 1,
     rank INTEGER NOT NULL,
     unavailable_since DATETIME,
+    unavailability_reason TEXT, -- NEW: reason for unavailability
     block_challenger_until DATETIME,
     block_opponent_until DATETIME,
     is_new INTEGER NOT NULL DEFAULT 0
