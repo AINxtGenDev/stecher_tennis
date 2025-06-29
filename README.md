@@ -479,7 +479,7 @@ tail -f /var/log/caddy/access.log
 
 For support or questions:
 - **Email**: matthias.stecher@hpe.com
-- **Mobile**: 0664 105 25 56
+- **Mobile**: 0043 664 105 25 56
 
 ---
 
