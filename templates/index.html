@@ -615,25 +615,49 @@
     /* --- MOBILE OPTIMIZATION START --- */
     /* Further adjustments for very small screens (Phones) */
     @media (max-width: 480px) {
-      h2 { font-size: 1.6rem; }
+      h2 { font-size: 1.1rem; }
 
       .ranking-list .row {
          margin: 2px 0; /* Tighter vertical spacing */
       }
 
-      /* Make pyramid smaller on phones */
+      /* Make pyramid smaller on phones, with responsive sizing for readability */
       .ranking-list .player {
-        width: 32px; /* Significantly smaller player boxes */
-        height: 32px;
-        font-size: 0.2rem; /* Smaller font */
-        margin: 1px; /* Tighter horizontal spacing */
-        border-radius: 4px; /* Smaller radius */
-        border-width: 1px; /* Thinner border */
+        width: 12vw; /* Use viewport-based units for responsive sizing */
+        height: 12vw;
+        min-width: 28px; /* Ensure a minimum tappable and readable size */
+        min-height: 28px;
+        max-width: 36px; /* Cap the size on wider small screens */
+        max-height: 36px;        
+        
+        /* MODIFIED: Dynamically adjust font size for legibility */
+        /* font-size: clamp(0.2rem, 1.5vw, 0.4rem); */ 
+        /* line-height: 1.1; */
+        /* Ensure text fits without overlapping */        
+
+        /* EVEN SMALLER FONT for mobile */
+        /* Very small fixed size - approximately 2.4px */
+        /* font-size: 0.15rem; */
+        
+        font-size: 0.25rem;
+        line-height: 1.0; /* Tighter line height */
+        letter-spacing: -0.02em; /* Slightly compress letters */
+
+        /* Add padding adjustment for better text positioning */
+        padding: 1px;
+
+        /* Ensure text doesn't overflow */
+        overflow: hidden;
+        text-overflow: ellipsis;
+        
+        margin: 1px;
+        border-radius: 4px;
+        border-width: 1px;
       }
       .availability-toggle {
-        width: 8px; /* Smaller toggle */
-        height: 8px;
-        top: 2px; /* Adjust position */
+        width: 10px;
+        height: 10px;
+        top: 2px;
         right: 2px;
         border-width: 1px;
       }
@@ -934,11 +958,11 @@
         <div class="modal-body">
           <!-- Step 1: Confirmation -->
           <div id="availability-step-1">
-            <p>Möchten Sie sich wirklich als "nicht verfügbar" melden?</p>
+            <p>Willst Du Dich wirklich als "nicht verfügbar" melden?</p>
           </div>
           <!-- Step 2: Reason -->
           <div id="availability-step-2" style="display: none;">
-            <p>Bitte geben Sie einen kurzen Grund an (max. 25 Zeichen).</p>
+            <p>Bitte um eine kurze Begründung - max. 25 Zeichen).</p>
             <div class="mb-3">
               <input type="text" class="form-control" id="unavailability-reason" placeholder="z.B. Urlaub bis 15. Sep." maxlength="25">
               <div id="char-count" class="form-text text-end">0 / 25</div>
