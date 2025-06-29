@@ -393,7 +393,7 @@ coverage report
 ### Project Structure
 ```
 tennis-ranking-app/
-├── app.py                 # Main Flask application
+├── app.py                # Main Flask application
 ├── schema.sql            # Database schema
 ├── initial_players.json  # Default player data
 ├── environment.yml       # Conda environment specification
