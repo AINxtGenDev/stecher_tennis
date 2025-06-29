@@ -93,7 +93,14 @@ On my Ubuntu machine:
    sudo apt-get install python3-pip python3-venv -y
 
    # Install build dependencies for scientific packages like numpy and scipy
-   sudo apt-get install libatlas-base-dev libsqlite3-dev -y
+   sudo apt-get install libatlas-base-dev libsqlite3-dev sqlite3 -y
+
+   sqlite3 --version
+   3.40.1 2022-12-28 14:03:47 df5c253c0b3dd24916e4ec7cf77d3db5294cc9fd45ae7b9c5e82ad8197f3alt1
+
+   sqlite3 tennis.db ".tables"
+   challenges                 players                  
+   completed_challenges_view
 
    pwd
    /home/stecher
