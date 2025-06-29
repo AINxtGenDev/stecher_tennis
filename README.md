@@ -517,3 +517,25 @@ This is a substantial project with over 3,200 lines of code! The distribution sh
 
 **Version**: 2.09-prod-opt  
 **Last Updated**: June 20, 2025
+
+---
+
+## ✨ Development Settings
+
+Here are the important development settings:
+
+### Core settings are:
+- **.env**: # to enable development mode
+  - FLASK_DEBUG=true
+- **activate conda environment**: # to enable python environment
+  - conda activate stecher_tennis
+- **check git status**: # expectation is that there are no changes
+  - git status
+- **do your development work**
+  - code .
+  - run tests
+- **sync with git**: # sync with github repository https://github.com/AINxtGenDev/stecher_tennis
+  - git add .
+  - git commit -m "commit message"
+  - git push
+  - git status
