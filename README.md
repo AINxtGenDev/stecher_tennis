@@ -400,13 +400,13 @@ tennis-ranking-app/
 ├── requirements.txt      # Python dependencies (pip)
 ├── .env                  # Environment configuration
 ├── templates/            # HTML templates
-│   ├── index.html       # Main ranking display
-│   ├── admin.html       # Admin interface
-│   ├── db_settings.html # Database management
-│   └── error.html       # Error pages
-├── static/              # Static assets
+│   ├── index.html        # Main ranking display
+│   ├── admin.html        # Admin interface
+│   ├── db_settings.html  # Database management
+│   └── error.html        # Error pages
+├── static/               # Static assets
 │   └── images/
-└── tennis.db           # SQLite database (auto-created)
+└── tennis.db             # SQLite database (auto-created)
 ```
 
 ### Key Components
