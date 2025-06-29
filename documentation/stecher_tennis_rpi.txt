@@ -308,9 +308,8 @@ https://tc-breakpoint-forderung.duckdns.org:10443
 ##########################################
 # backup tennis.db on behalf crontab 
 ##########################################
-# every fourth hour (00:00, 04:00, 08:00, 12:00, 16:00, 20:00) and every day
-0 */4 * * * /home/stecher/stecher_tennis/backup_tennis_db.sh >/dev/null 2>&1
-
-
+crontab -e
+# every three hours and every day
+0 */3 * * * /home/stecher/stecher_tennis/backup_tennis_db.sh >/dev/null 2>&1
 
 
