@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Rankings - Login</title>
+    <style>
+        /* Global Styles using lemon yellow/grey theme with 3D effects */
+        :root {
+            --primary-color: #f8e473; /* Lemon Yellow - Used for the button background */
+            --primary-dark: #e6d661; /* Darker yellow for hover */
+            --bg-color: #f2f2f2;
+            --container-bg: #fff;
+            --text-color: #333;
+            --border-color: #ccc;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --highlight-shadow: rgba(248, 228, 115, 0.4);
+            --error-color: #dc3545;
+            --success-color: #28a745;
+            --input-bg: #f7f7f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-color);
+            perspective: 1000px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            transform-style: preserve-3d;
+        }
+
+        .auth-card {
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 15px 25px var(--shadow-color);
+            transition: all 0.4s ease;
+            transform: translateZ(10px);
+            position: relative;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .auth-card:hover {
+            transform: translateZ(25px) translateY(-5px);
+            box-shadow: 0 25px 40px var(--shadow-color);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) translateZ(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) translateZ(10px);
+            }
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+            background-color: var(--primary-color);
+            padding: 20px;
+            border-radius: 10px;
+            transform: translateZ(5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .auth-header:hover {
+            transform: translateZ(15px) rotateX(2deg);
+        }
+
+        .auth-header h1 {
+            color: #000;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
+        }
+
+        .auth-header p {
+            color: #000;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            outline: none;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-container input[type="password"],
+        .password-container input[type="text"] {
+            padding-right: 50px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            padding: 4px;
+            color: #6b7280;
+            transition: color 0.3s ease;
+            user-select: none;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary-dark);
+        }
+
+        .password-toggle svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-dark);
+            background-color: white;
+            box-shadow: 0 0 0 2px var(--highlight-shadow);
+        }
+
+        .form-group input.error {
+            border-color: var(--error-color);
+            background-color: #fef2f2;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--primary-color);
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            transform: translateZ(5px);
+            position: relative;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateZ(8px) translateY(-1px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateZ(2px) translateY(0px);
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #e0e0e0;
+            color: #999;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .message.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: var(--error-color);
+        }
+
+        .message.success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: var(--success-color);
+        }
+
+        .main-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        /* Custom scrollbar for modern touch */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; box-shadow: inset 0 0 5px var(--shadow-color); }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                perspective: none;
+            }
+
+            .auth-card {
+                padding: 30px;
+                transform: none !important;
+                box-shadow: 0 8px 15px var(--shadow-color);
+            }
+
+            .auth-card:hover {
+                transform: none !important;
+                box-shadow: 0 12px 20px var(--shadow-color);
+            }
+
+            .auth-header {
+                padding: 15px;
+                transform: none !important;
+                box-shadow: 0 5px 15px var(--shadow-color);
+            }
+
+            .auth-header:hover {
+                transform: none !important;
+            }
+
+            .auth-header h1 {
+                font-size: 2rem;
+            }
+
+            .btn-primary {
+                transform: none !important;
+                box-shadow: 0 2px 4px var(--shadow-color);
+            }
+
+            .btn-primary:hover:not(:disabled) {
+                transform: none !important;
+                box-shadow: 0 4px 8px var(--shadow-color);
+            }
+
+            .btn-primary:active:not(:disabled) {
+                transform: none !important;
+                box-shadow: 0 1px 2px var(--shadow-color);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 20px;
+            }
+
+            .auth-header h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-group label,
+            .btn-primary {
+                font-size: 14px;
+            }
+
+            .form-group input[type="text"],
+            .form-group input[type="password"] {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            .password-container input[type="password"],
+            .password-container input[type="text"] {
+                padding-right: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>🎾 Tennis Rankings</h1>
+                <p>Anmelden für Ihr Ranking</p>
+            </div>
+
+            <div id="message" style="display: none;"></div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Benutzer</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required 
+                        placeholder="Benutzername eingeben"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Passwort</label>
+                    <div class="password-container">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            placeholder="Passwort eingeben"
+                        >
+                        <span class="password-toggle" id="passwordToggle">
+                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="main-buttons">
+                    <button type="button" class="btn-primary" id="forderungenBtn">
+                        Forderungen
+                    </button>
+                    <button type="button" class="btn-primary" id="ausstehendeBtn">
+                        ausstehende Forderungen
+                    </button>
+                    <button type="button" class="btn-primary" id="datenbankBtn">
+                        Datenbank
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Brute force protection variables
+        let failedAttempts = 0;
+        let lockoutEndTime = null;
+        let countdownInterval = null;
+        const MAX_ATTEMPTS = 5;
+        const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+        function showMessage(text, type) {
+            const msgEl = document.getElementById('message');
+            msgEl.textContent = text;
+            msgEl.className = `message ${type}`;
+            msgEl.style.display = 'block';
+        }
+
+        function hideMessage() {
+            document.getElementById('message').style.display = 'none';
+        }
+
+        function validateLogin(username, password) {
+            // Valid credentials
+            const validUsers = {
+                'testuser': 'Password123!'
+            };
+
+            if (validUsers[username] && validUsers[username] === password) {
+                return { success: true, message: 'Anmeldung erfolgreich!' };
+            } else {
+                return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
+            }
+        }
+
+        function isLockedOut() {
+            if (lockoutEndTime && Date.now() < lockoutEndTime) {
+                return true;
+            }
+            if (lockoutEndTime && Date.now() >= lockoutEndTime) {
+                // Lockout period has ended, reset everything
+                resetLockout();
+            }
+            return false;
+        }
+
+        function resetLockout() {
+            failedAttempts = 0;
+            lockoutEndTime = null;
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            enableButtons();
+        }
+
+        function startLockout() {
+            lockoutEndTime = Date.now() + LOCKOUT_DURATION;
+            disableButtons();
+            startCountdown();
+        }
+
+        function disableButtons() {
+            document.getElementById('forderungenBtn').disabled = true;
+            document.getElementById('ausstehendeBtn').disabled = true;
+            document.getElementById('datenbankBtn').disabled = true;
+        }
+
+        function enableButtons() {
+            document.getElementById('forderungenBtn').disabled = false;
+            document.getElementById('ausstehendeBtn').disabled = false;
+            document.getElementById('datenbankBtn').disabled = false;
+        }
+
+        function startCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            countdownInterval = setInterval(() => {
+                const remainingTime = lockoutEndTime - Date.now();
+                
+                if (remainingTime <= 0) {
+                    resetLockout();
+                    hideMessage();
+                    return;
+                }
+                
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                showMessage(`🔒 Konto gesperrt wegen zu vieler fehlgeschlagener Versuche. Versuchen Sie es erneut in: ${timeString}`, 'error');
+            }, 1000);
+        }
+
+        function handleButtonClick(buttonName) {
+            hideMessage();
+            
+            // Check if currently locked out
+            if (isLockedOut()) {
+                const remainingTime = lockoutEndTime - Date.now();
+                const minutes = Math.floor(remainingTime / 60000);
+                const seconds = Math.floor((remainingTime % 60000) / 1000);
+                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                showMessage(`🔒 Konto gesperrt. Versuchen Sie es erneut in: ${timeString}`, 'error');
+                startCountdown(); // Ensure countdown is running
+                return;
+            }
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showMessage('Bitte füllen Sie beide Felder aus', 'error');
+                return;
+            }
+
+            const result = validateLogin(username, password);
+            
+            if (result.success) {
+                // Reset failed attempts on successful login
+                resetLockout();
+                
+                showMessage(`🎉 Anmeldung erfolgreich! Navigation zu ${buttonName}...`, 'success');
+                
+                // Clear the input fields after successful login
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                
+                // In a real app, redirect here based on button clicked
+                setTimeout(() => {
+                    showMessage(`🔄 Weiterleitung zu ${buttonName}...`, 'success');
+                }, 1500);
+            } else {
+                // Increment failed attempts
+                failedAttempts++;
+                
+                if (failedAttempts >= MAX_ATTEMPTS) {
+                    startLockout();
+                    showMessage(`🔒 Konto nach ${MAX_ATTEMPTS} fehlgeschlagenen Versuchen für 5 Minuten gesperrt.`, 'error');
+                } else {
+                    const remainingAttempts = MAX_ATTEMPTS - failedAttempts;
+                    showMessage(`${result.message} (${remainingAttempts} Versuche verbleibend)`, 'error');
+                }
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                // Change to "eye-off" icon
+                eyeIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `;
+            } else {
+                passwordInput.type = 'password';
+                // Change back to "eye" icon
+                eyeIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            }
+        }
+
+        // Add event listeners for the three main buttons
+        document.getElementById('forderungenBtn').addEventListener('click', function() {
+            handleButtonClick('Forderungen');
+        });
+
+        document.getElementById('ausstehendeBtn').addEventListener('click', function() {
+            handleButtonClick('ausstehende Forderungen');
+        });
+
+        document.getElementById('datenbankBtn').addEventListener('click', function() {
+            handleButtonClick('Datenbank');
+        });
+
+        // Add event listener for password toggle
+        document.getElementById('passwordToggle').addEventListener('click', togglePasswordVisibility);
+    </script>
+</body>
+</html>
