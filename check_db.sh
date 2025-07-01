@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "=== Tennis Database Health Check ==="
+echo "1. Integrity Check:"
+sqlite3 tennis.db "PRAGMA integrity_check;"
+echo ""
+echo "2. Quick Check:"
+sqlite3 tennis.db "PRAGMA quick_check;"
+echo ""
+echo "3. Foreign Key Check:"
+sqlite3 tennis.db "PRAGMA foreign_key_check;"
+echo ""
+echo "4. Database Info:"
+sqlite3 tennis.db "PRAGMA database_list;"
