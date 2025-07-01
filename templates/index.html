@@ -947,7 +947,7 @@
     <div class="animation-text">... viel Spass beim Herausfordern!</div>
   </div>
 
-  <!-- Availability Change Modal -->
+  <!-- Availability Change Modal (for becoming unavailable) -->
   <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -985,6 +985,26 @@
     </div>
   </div>
 
+  <!-- Become Available Confirmation Modal -->
+  <div class="modal fade" id="becomeAvailableModal" tabindex="-1" aria-labelledby="becomeAvailableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="becomeAvailableModalLabel">Verfügbarkeit ändern</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Bitte bestätige dass du wieder als "verfügbar" angezeigt werden möchtest?</p>
+          <p class="small text-muted">Hinweis: Du wirst für 3 Tage für das Herausfordern von Spielern gesperrt, die in der Rangliste über dir stehen.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nein</button>
+          <button type="button" class="btn btn-success" id="confirm-become-available">Ja, verfügbar melden</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Load Socket.IO client -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
   <!-- Load Bootstrap JS Bundle for Modal functionality -->
@@ -997,6 +1017,7 @@
       let tempNewPlayerOpponentId = null;
       let availabilityPlayerId = null;
       const availabilityModal = new bootstrap.Modal(document.getElementById('availabilityModal'));
+      const becomeAvailableModal = new bootstrap.Modal(document.getElementById('becomeAvailableModal'));
 
       // Toggle dropdown functionality
       $(document).on("click", ".custom-card-header", function(event) {
@@ -1378,7 +1399,8 @@
         $("#challengeButton").prop("disabled", !(tempChallengerId && tempOpponentId));
       });
 
-      // --- NEW AVAILABILITY TOGGLE LOGIC ---
+      // --- AVAILABILITY TOGGLE LOGIC ---
+      // Reset state when the 'become unavailable' modal is hidden
       $('#availabilityModal').on('hidden.bs.modal', function () {
           $('#availability-step-1, #availability-footer-1').show();
           $('#availability-step-2, #availability-footer-2').hide();
@@ -1387,11 +1409,18 @@
           availabilityPlayerId = null;
       });
 
+      // Reset state when the 'become available' modal is hidden
+      $('#becomeAvailableModal').on('hidden.bs.modal', function () {
+          availabilityPlayerId = null;
+      });
+
+      // Character counter for the reason input
       $('#unavailability-reason').on('input', function() {
           const len = $(this).val().length;
           $('#char-count').text(len + ' / 25');
       });
 
+      // Main click handler for the availability toggle icon
       $(document).on("click", ".availability-toggle", function (e) {
           e.stopPropagation();
           const $toggle = $(this);
@@ -1399,26 +1428,25 @@
 
           const playerId = $toggle.data("player-id");
           const isAvailable = $toggle.hasClass('available');
+          
+          availabilityPlayerId = playerId; // Set the player ID for the modal to use
 
           if (isAvailable) {
-              // Player is available, wants to become unavailable -> show modal
-              availabilityPlayerId = playerId;
+              // Player is available, wants to become unavailable -> show the two-step modal
               availabilityModal.show();
           } else {
-              // Player is unavailable, wants to become available -> direct action
-              $toggle.addClass('processing');
-              $.post("/toggle_availability", { player_id: playerId })
-                .fail(function (xhr) { alert("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); })
-                .always(() => setTimeout(() => $toggle.removeClass('processing'), 200));
-              // UI will update via socket
+              // Player is unavailable, wants to become available -> show the new one-step confirmation modal
+              becomeAvailableModal.show();
           }
       });
 
+      // Handler for the first step of becoming unavailable (clicking 'Yes')
       $('#confirm-availability-yes').on('click', function() {
           $('#availability-step-1, #availability-footer-1').hide();
           $('#availability-step-2, #availability-footer-2').show();
       });
 
+      // Handler for submitting the reason for becoming unavailable
       $('#submit-unavailability').on('click', function() {
           const reason = $('#unavailability-reason').val().trim();
           if (reason.length > 25) {
@@ -1436,7 +1464,23 @@
           availabilityModal.hide();
           // UI will update via socket
       });
-      // --- END NEW AVAILABILITY TOGGLE LOGIC ---
+
+      // Handler for confirming to become available again
+      $('#confirm-become-available').on('click', function() {
+          if (!availabilityPlayerId) return;
+
+          const $toggle = $(`.availability-toggle[data-player-id="${availabilityPlayerId}"]`);
+          $toggle.addClass('processing');
+
+          // No reason is sent when becoming available
+          $.post("/toggle_availability", { player_id: availabilityPlayerId })
+            .fail(function (xhr) { alert("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); })
+            .always(() => setTimeout(() => $toggle.removeClass('processing'), 200));
+          
+          becomeAvailableModal.hide();
+          // UI will update via socket
+      });
+      // --- END AVAILABILITY TOGGLE LOGIC ---
 
       // UPDATED: Event handler for both date and time dropdowns
       $(document).on("change", ".scheduled-date-dropdown, .scheduled-time-dropdown", function () {
@@ -1573,7 +1617,7 @@
     </div>
     <div class="row">
       <div class="col-12 text-center mt-3">
-        <small>Version: 2.11-prod  •  29. Juni 2025</small> <!-- Version Bump -->
+        <small>Version: 2.12-prod  •  01. Juli 2025</small> <!-- Version Bump -->
       </div>
     </div>
     

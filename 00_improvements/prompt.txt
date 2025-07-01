@@ -37,7 +37,7 @@ JSON data for initializing the players (initial_players.json)
 Please focus on index.html and to implement following new task.
 Task: Implement an availability change feature with confirmation dialog and reason input.
 Trigger Event:
-When player wants to change from "available" to "not available"
+When player wants to change from "not available" to "available"
 
 Confirmation Dialog:
 Modal/Popup with text: "Please confirm that you want to be shown as not available!"
