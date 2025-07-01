@@ -304,12 +304,82 @@ Jun 20 10:59:01 stechertennis caddy[2563]: {"level":"warn","ts":1750409941.23881
 https://tc-breakpoint-forderung.duckdns.org:10443
 ##########################################
 
-
 ##########################################
 # backup tennis.db on behalf crontab 
 ##########################################
 crontab -e
 # every three hours and every day
 0 */3 * * * /home/stecher/stecher_tennis/backup_tennis_db.sh >/dev/null 2>&1
+
+
+##########################################
+# ---> housekeeping <---
+##########################################
+# reboot every Sunday 4am
+# activate unattended upgrades
+##########################################
+sudo crontab -e
+# Reboot every Sunday at 04:00 local time
+0 4 * * 0  /usr/bin/logger -t weekly-reboot "Cron-triggered reboot"; /usr/sbin/shutdown -r now
+
+*) Avoid simultaneous apt-upgrade + reboot
+   Put any unattended-upgrade job either before 03:30 or after 04:30 so the cron windows don’t overlap.
+
+*) Keep NTP active
+   sudo systemctl enable --now systemd-timesyncd
+   systemd-timesyncd is the lightweight NTP client
+
+### activate unattended upgrades
+
+*) sudo apt update
+   sudo apt install unattended-upgrades apt-listchanges
+   sudo dpkg-reconfigure --priority=low unattended-upgrades   # enables 20auto-upgrades
+   
+   ---> dpkg-reconfigure writes /etc/apt/apt.conf.d/20auto-upgrades with
+   
+        APT::Periodic::Update-Package-Lists "1";
+        APT::Periodic::Unattended-Upgrade "1";
+        
+        and leaves the heavy lifting to two timers that already exist:
+        apt-daily.timer (metadata refresh) and apt-daily-upgrade.timer (unattended-upgrade run)
+
+   *) Verify timers are active
+      systemctl list-timers --all | grep apt
+
+   *) Pin the upgrade to 03:30 Sunday so it finishes before your 04:00 reboot
+      sudo mkdir -p /etc/systemd/system/apt-daily-upgrade.timer.d
+
+      sudoedit /etc/systemd/system/apt-daily-upgrade.timer.d/override.conf
+      
+      [Timer]
+      OnCalendar=
+      OnCalendar=Sun *-*-* 03:30:00
+      RandomizedDelaySec=0
+
+   *) Reload & check:
+      sudo systemctl daemon-reload
+      sudo systemctl restart apt-daily-upgrade.timer
+      systemctl list-timers apt-daily-upgrade.timer
+
+   *) Tune unattended-upgrades
+      sudo nano /etc/apt/apt.conf.d/50unattended-upgrades
+      
+      // Remove unused automatically installed kernel-related packages
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      
+      // Do automatic removal of newly unused dependencies after the upgrade
+      Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+      
+      // Don’t let it auto-reboot; you already reboot every week
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+   *) Inspect logs & test
+   
+      /var/log/unattended-upgrades/unattended-upgrades.log
+
+     sudo unattended-upgrade --dry-run --debug
+     
+     Confirm Sunday night:     
+     journalctl -u unattended-upgrades --since "2025-06-30 03:00"
 
 
