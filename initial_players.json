@@ -31,7 +31,7 @@
       "id": 9, "name": "M. Stecher", "username": "MStecher", "password": "SuperSecretDevPassword!", "privilege_level": "superadmin", "is_ranked_player": 1, "is_available": true, "rank": 10
     },
     {
-      "id": 10, "name": "H. Novak", "username": "HNovak", "password": "SuperSecretDevPassword!", "privilege_level": "superadmin", "is_ranked_player": 1, "is_available": true, "rank": 11
+      "id": 10, "name": "H. Novak", "username": "HNovak", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 11
     },
     {
       "id": 11, "name": "Ch. Bartsch", "username": "ChBartsch", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 12
@@ -61,7 +61,7 @@
       "id": 19, "name": "A. Kornberger", "username": "AKornberger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 20
     },
     {
-      "id": 20, "name": "M. Nechvatal", "username": "MNechvatal", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 21
+      "id": 20, "name": "M. Nechvatal", "username": "MNechvatal", "password": "SuperSecretDevPassword!", "privilege_level": "superadmin", "is_ranked_player": 1, "is_available": true, "rank": 21
     },
     {
       "id": 21, "name": "W. Knotek", "username": "WKnotek", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 22
