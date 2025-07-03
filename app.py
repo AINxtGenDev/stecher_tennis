@@ -16,6 +16,23 @@ from flask_socketio import (
 )
 from threading import Lock
 
+# --- NEW: Imports for Authentication and Security ---
+import bcrypt
+from functools import wraps
+from flask_wtf.csrf import CSRFProtect
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    login_user,
+    logout_user,
+    login_required,
+    current_user,
+)
+
+# --- MODIFIED: Import ProxyFix, it's still best practice ---
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+
 load_dotenv()
 
 # Determine run mode early to use it in configurations
@@ -53,33 +70,127 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "2.10-prod"
+APP_VERSION = "3.38"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
 
-app.secret_key = os.environ.get("SECRET_KEY", "default-dev-key-for-testing-only")
-if app.secret_key == "default-dev-key-for-testing-only":
+# --- MODIFIED: Keep ProxyFix for general proxy awareness (like correct IP logging) ---
+# It's still good practice to have this so Flask knows it's behind a proxy.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+
+app.secret_key = os.environ.get(
+    "SECRET_KEY", "a-very-long-and-super-secret-key-for-dev"
+)
+if app.secret_key == "a-very-long-and-super-secret-key-for-dev":
     logger.warning(
         "SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production."
     )
 
 app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
 
+# --- NEW/CRITICAL: Explicit configuration for CSRF protection behind a proxy ---
+# This is the definitive fix for the "referrer does not match host" error.
+prod_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS")
+if not debug_mode and prod_origins_str:
+    # 1. Disable strict SSL referrer checking. This is often problematic with
+    #    complex proxy setups, even when they are correctly configured.
+    app.config["WTF_CSRF_SSL_STRICT"] = False
+
+    # 2. Explicitly tell Flask-WTF which origins are trusted. This creates a
+    #    whitelist and is the most secure way to solve the referrer issue.
+    #    We derive it from the existing CORS_ALLOWED_ORIGINS env var.
+    trusted_origins = [origin.strip() for origin in prod_origins_str.split(",")]
+    app.config["WTF_CSRF_TRUSTED_ORIGINS"] = trusted_origins
+    logger.info(f"Production CSRF trusted origins set to: {trusted_origins}")
+
+
 if CustomJSONProvider:
     app.json = CustomJSONProvider(app)
 else:
     app.json_encoder = CustomJSONEncoder
 
+# --- NEW: CSRF Protection ---
+csrf = CSRFProtect(app)
+
+# --- NEW: Flask-Login Configuration ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+login_manager.login_message = (
+    "Bitte melden Sie sich an, um auf diese Seite zuzugreifen."
+)
+login_manager.login_message_category = "warning"
+
+# --- NEW: Rate Limiting for Login ---
+login_attempts = {}
+login_attempts_lock = Lock()
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_LOCKOUT_TIME = timedelta(minutes=5)
+
+
+# --- NEW: User Model for Flask-Login ---
+class User(UserMixin):
+    def __init__(self, id, username, privilege_level):
+        self.id = id
+        self.username = username
+        self.privilege_level = privilege_level
+
+
+# --- NEW: User Loader for Flask-Login ---
+@login_manager.user_loader
+def load_user(user_id):
+    db = get_db()
+    user_data = db.execute(
+        "SELECT id, username, privilege_level FROM players WHERE id = ?", (user_id,)
+    ).fetchone()
+    if user_data:
+        return User(
+            id=user_data["id"],
+            username=user_data["username"],
+            privilege_level=user_data["privilege_level"],
+        )
+    return None
+
+
+# --- NEW: Authorization Decorators ---
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.privilege_level not in [
+            "admin",
+            "superadmin",
+        ]:
+            flash(
+                "Sie haben keine Berechtigung, auf diese Seite zuzugreifen.", "danger"
+            )
+            return redirect(url_for("index"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def superadmin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if (
+            not current_user.is_authenticated
+            or current_user.privilege_level != "superadmin"
+        ):
+            flash("Nur Super-Admins haben Zugriff auf diese Funktion.", "danger")
+            return redirect(url_for("admin"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 # --- Socket.IO and CORS Configuration ---
-# Read production origins from .env file. Can be a single origin or comma-separated.
-prod_origins_str = os.environ.get("CORS_ALLOWED_ORIGINS")
 allowed_origins = []
 
 if prod_origins_str:
     allowed_origins.extend([origin.strip() for origin in prod_origins_str.split(",")])
 
-# If in debug mode, add common local development origins
 if debug_mode:
     logger.info(
         "App is running in DEBUG mode. Adding local development origins to CORS."
@@ -89,7 +200,6 @@ if debug_mode:
         if origin not in allowed_origins:
             allowed_origins.append(origin)
 
-# If the list is still empty after checking .env and debug mode, default to wildcard.
 if not allowed_origins:
     logger.warning(
         "CORS_ALLOWED_ORIGINS not set and not in debug mode. Defaulting to '*'"
@@ -102,14 +212,13 @@ socketio_kwargs = {
     "ping_timeout": 60,
     "ping_interval": 25,
     "logger": True,
-    "engineio_logger": debug_mode,  # Log engineio details only in debug mode
+    "engineio_logger": debug_mode,
 }
 if CustomJSONEncoder:
     socketio_kwargs["json"] = CustomJSONEncoder
 
 socketio = SocketIO(app, **socketio_kwargs)
 
-# Log the final CORS configuration for clarity
 logger.info(
     f"CORS allowed origins configured for: {socketio.server_options.get('cors_allowed_origins')}"
 )
@@ -293,60 +402,46 @@ def init_db():
         )
         table_exists = cur.fetchone()
         if not table_exists:
-            logger.info("Database tables not found. Initializing schema...")
-            try:
-                schema_path = os.path.join(app.root_path, "schema.sql")
-                with app.open_resource(schema_path) as f:
-                    db.executescript(f.read().decode("utf8"))
-                db.commit()
-                logger.info("Database schema initialized.")
-            except Exception as e:
-                logger.exception("Error initializing the database schema.")
-                db.rollback()
-                raise e
-            cur_check = db.execute("SELECT COUNT(*) as count FROM players")
-            count_after_init = cur_check.fetchone()["count"]
-            logger.info("Players count after schema init: %s", count_after_init)
-            if count_after_init == 0:
-                try:
-                    json_path = os.path.join(app.root_path, "initial_players.json")
-                    with open(json_path, encoding="utf8") as json_file:
-                        data = json.load(json_file)
-                        for player in data["players"]:
-                            try:
-                                db.execute(
-                                    "INSERT INTO players (id, name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?, ?)",
-                                    (
-                                        player["id"],
-                                        player["name"],
-                                        int(player["is_available"]),
-                                        player["rank"],
-                                        None,
-                                        0,
-                                    ),
-                                )
-                            except sqlite3.IntegrityError:
-                                logger.warning(
-                                    f"Initial player name '{player['name']}' might already exist (should not happen on fresh init). Skipping."
-                                )
-                    db.commit()
-                    logger.info("Loaded initial players from JSON.")
-                except Exception as e:
-                    logger.exception("Error loading initial players from JSON.")
-                    db.rollback()
-            else:
-                logger.info(
-                    "Initial players already exist or schema init failed to create table. Skipping initial data load."
-                )
-        else:
             logger.info(
-                "Database tables already exist. Skipping schema initialization and initial data load."
+                "Database tables not found. Initializing schema and seeding data..."
             )
+            schema_path = os.path.join(app.root_path, "schema.sql")
+            with app.open_resource(schema_path) as f:
+                db.executescript(f.read().decode("utf8"))
+
+            json_path = os.path.join(app.root_path, "initial_players.json")
+            with open(json_path, encoding="utf8") as json_file:
+                data = json.load(json_file)
+                for player in data["players"]:
+                    plaintext_password = player["password"].encode("utf-8")
+                    hashed_password = bcrypt.hashpw(
+                        plaintext_password, bcrypt.gensalt()
+                    )
+
+                    db.execute(
+                        """INSERT INTO players (id, name, username, password_hash, privilege_level, is_ranked_player, available, rank, is_new) 
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            player["id"],
+                            player["name"],
+                            player["username"],
+                            hashed_password.decode("utf-8"),
+                            player.get("privilege_level", "player"),
+                            int(player["is_ranked_player"]),
+                            int(player["is_available"]),
+                            player["rank"],
+                            0,
+                        ),
+                    )
+            db.commit()
+            logger.info("Database initialized and seeded with initial players.")
+        else:
+            logger.info("Database tables already exist. Skipping initialization.")
             db.execute("PRAGMA foreign_keys = ON")
-    except sqlite3.Error as e:
-        logger.exception("SQLite error during init_db check/setup.")
     except Exception as e:
-        logger.exception("Unexpected error during init_db.")
+        logger.exception("Error during database initialization.")
+        db.rollback()
+        raise e
 
 
 def create_pyramid(players):
@@ -694,6 +789,7 @@ def get_realtime_data():
                   ) THEN 1 ELSE 0
                 END as in_challenge
             FROM players p
+            WHERE p.is_ranked_player = 1
             ORDER BY rank ASC
         """,
             (now_str,),
@@ -787,13 +883,146 @@ def emit_data_update(update_type="general", specific_data=None):
         logger.exception(f"Error in emit_data_update: {e}")
 
 
+# --- NEW: Helper function for username generation ---
+def generate_username(full_name, db):
+    """Generates a unique username based on the player's full name."""
+    # Normalize name: "J.   Doe" -> "J. Doe"
+    full_name = re.sub(r"\s+", " ", full_name).strip()
+    parts = full_name.split(" ")
+
+    if not parts:
+        # Fallback for empty name
+        base_username = "newplayer"
+    elif len(parts) > 1:
+        # "P. Krauskopf" -> initial="P", last_name="Krauskopf"
+        # "Ch. Kramer" -> initial="Ch", last_name="Kramer"
+        # "John Doe" -> initial="J", last_name="Doe"
+        first_part = parts[0]
+        if "." in first_part:
+            initial = first_part.split(".")[0]
+        else:
+            initial = first_part[0]
+
+        last_name = parts[-1]
+        base_username = f"{initial}{last_name}"
+    else:
+        # Single name like "Cher"
+        base_username = parts[0]
+
+    # Sanitize to alphanumeric
+    base_username = re.sub(r"[^a-zA-Z0-9]", "", base_username)
+    if not base_username:  # If sanitization removed everything
+        base_username = "player"
+
+    # Ensure uniqueness
+    username = base_username
+    counter = 1
+    while True:
+        cur = db.execute("SELECT id FROM players WHERE username = ?", (username,))
+        if not cur.fetchone():
+            return username
+        # If username exists, append a number and check again
+        username = f"{base_username}{counter}"
+        counter += 1
+
+
 # --- ROUTES ---
+
+
 @app.route("/")
 def home():
-    return redirect(url_for("stecher_start"))
+    return redirect(url_for("login"))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("index"))
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # --- RATE LIMITING CHECK ---
+        with login_attempts_lock:
+            if username:
+                attempts, last_attempt_time = login_attempts.get(username, (0, None))
+                if attempts >= MAX_LOGIN_ATTEMPTS and last_attempt_time:
+                    time_since_last_attempt = datetime.now() - last_attempt_time
+                    if time_since_last_attempt < LOGIN_LOCKOUT_TIME:
+                        wait_time = LOGIN_LOCKOUT_TIME - time_since_last_attempt
+                        wait_minutes = int(wait_time.total_seconds() / 60) + 1
+                        flash(
+                            f"Zu viele fehlgeschlagene Anmeldeversuche. Bitte warten Sie {wait_minutes} Minute(n).",
+                            "danger",
+                        )
+                        return redirect(url_for("login"))
+                    else:
+                        # Lockout expired, reset attempts
+                        login_attempts.pop(username, None)
+        # --- END RATE LIMITING CHECK ---
+
+        db = get_db()
+        player_record = (
+            db.execute(
+                "SELECT * FROM players WHERE username = ?", (username,)
+            ).fetchone()
+            if username
+            else None
+        )
+
+        login_successful = False
+        if (
+            player_record
+            and password
+            and bcrypt.checkpw(
+                password.encode("utf-8"), player_record["password_hash"].encode("utf-8")
+            )
+        ):
+            login_successful = True
+
+        if login_successful:
+            # --- SUCCESSFUL LOGIN ---
+            with login_attempts_lock:
+                login_attempts.pop(username, None)  # Clear attempts on success
+
+            user = User(
+                id=player_record["id"],
+                username=player_record["username"],
+                privilege_level=player_record["privilege_level"],
+            )
+            login_user(user)
+            flash("Anmeldung erfolgreich!", "success")
+
+            next_page = request.args.get("next")
+            if next_page:
+                return redirect(next_page)
+
+            # MODIFIED: All users are redirected to the index page.
+            return redirect(url_for("index"))
+        else:
+            # --- FAILED LOGIN ---
+            if username:
+                with login_attempts_lock:
+                    attempts, _ = login_attempts.get(username, (0, None))
+                    login_attempts[username] = (attempts + 1, datetime.now())
+
+            flash("Ungültiger Benutzername oder Passwort.", "danger")
+            return redirect(url_for("login"))
+
+    return render_template("login_tennis.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("Sie wurden erfolgreich abgemeldet.", "info")
+    return redirect(url_for("login"))
 
 
 @app.route("/api/realtime_data")
+@login_required
 def api_realtime_data():
     try:
         data = get_realtime_data_cached()
@@ -806,12 +1035,8 @@ def api_realtime_data():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@app.route("/stecher_start")
-def stecher_start():
-    return render_template("stecher_start.html")
-
-
 @app.route("/index")
+@login_required
 def index():
     try:
         all_data = get_realtime_data_cached()
@@ -847,6 +1072,7 @@ def index():
 
 
 @app.route("/admin")
+@login_required
 def admin():
     db = get_db()
     try:
@@ -884,6 +1110,7 @@ def admin():
 
 
 @app.route("/get_players")
+@login_required
 def get_players():
     db = get_db()
     try:
@@ -965,6 +1192,7 @@ def get_players():
 
 
 @app.route("/eligible_opponents", methods=["POST"])
+@login_required
 def eligible_opponents():
     challenger_id = request.form.get("challenger_id")
     if not challenger_id:
@@ -1040,6 +1268,7 @@ def eligible_opponents():
 
 
 @app.route("/challenge", methods=["POST"])
+@login_required
 def challenge():
     challenger_id = request.form.get("challenger")
     opponent_id = request.form.get("opponent")
@@ -1170,9 +1399,10 @@ def challenge():
 
 
 @app.route("/toggle_availability", methods=["POST"])
+@login_required
 def toggle_availability():
     player_id = request.form.get("player_id")
-    reason = request.form.get("reason")  # This will be None if not provided
+    reason = request.form.get("reason")
 
     if not player_id:
         return jsonify({"success": False, "message": "No player_id provided."}), 400
@@ -1208,13 +1438,13 @@ def toggle_availability():
         new_availability = 0 if player["available"] == 1 else 1
         now_dt = get_current_time()
         with db:
-            if new_availability == 0:  # Becoming unavailable
+            if new_availability == 0:
                 db.execute(
                     "UPDATE players SET available = ?, unavailable_since = ?, unavailability_reason = ? WHERE id = ?",
                     (new_availability, now_dt, reason, player_id),
                 )
                 block_challenger_until_fmt = None
-            else:  # Becoming available
+            else:
                 block_challenger_until = now_dt + timedelta(days=3)
                 db.execute(
                     "UPDATE players SET available = ?, unavailable_since = NULL, unavailability_reason = NULL, block_challenger_until = ? WHERE id = ?",
@@ -1253,6 +1483,7 @@ def toggle_availability():
 
 
 @app.route("/submit_result", methods=["POST"])
+@login_required
 def submit_result():
     challenge_id = request.form.get("challenge_id")
     result = request.form.get("result")
@@ -1263,40 +1494,7 @@ def submit_result():
     if not challenge_id or not result:
         flash("Invalid submission: Missing challenge ID or result type.", "danger")
         return redirect(url_for("admin"))
-    score_details = None
-    if result == "not_happened":
-        score_details = "Nicht stattgefunden"
-    elif special_result in ["Aufgabe", "Disqualifikation"]:
-        score_details = special_result
-    else:
-        if set1_score and set2_score:
-            if (
-                ":" in set1_score
-                and ":" in set2_score
-                and (not set3_score or ":" in set3_score)
-            ):
-                sets = [set1_score, set2_score]
-                if set3_score:
-                    sets.append(set3_score)
-                score_details = " ".join(sets)
-            else:
-                flash(
-                    "Invalid submission: Score format seems incorrect (e.g., use '6:4').",
-                    "danger",
-                )
-                return redirect(url_for("admin"))
-        elif result != "not_happened":
-            flash(
-                "Invalid submission: Score for Set 1 and Set 2 is required unless 'Aufgabe' or 'Disqualifikation' is selected.",
-                "danger",
-            )
-            return redirect(url_for("admin"))
-    if result in ["challenger_wins", "opponent_wins"] and not score_details:
-        flash(
-            "Invalid submission: Score details are missing or invalid for the selected result.",
-            "danger",
-        )
-        return redirect(url_for("admin"))
+
     db = get_db()
     try:
         cur = db.execute(
@@ -1306,6 +1504,46 @@ def submit_result():
         if not challenge_record:
             flash("Challenge not found or already resolved.", "danger")
             return redirect(url_for("admin"))
+
+        # --- MODIFIED: Authorization check removed as per requirement. ---
+        # The new requirement is that any logged-in player can submit a result from the admin page.
+        # The @login_required decorator already ensures the user is authenticated.
+
+        score_details = None
+        if result == "not_happened":
+            score_details = "Nicht stattgefunden"
+        elif special_result in ["Aufgabe", "Disqualifikation"]:
+            score_details = special_result
+        else:
+            if set1_score and set2_score:
+                if (
+                    ":" in set1_score
+                    and ":" in set2_score
+                    and (not set3_score or ":" in set3_score)
+                ):
+                    sets = [set1_score, set2_score]
+                    if set3_score:
+                        sets.append(set3_score)
+                    score_details = " ".join(sets)
+                else:
+                    flash(
+                        "Invalid submission: Score format seems incorrect (e.g., use '6:4').",
+                        "danger",
+                    )
+                    return redirect(url_for("admin"))
+            elif result != "not_happened":
+                flash(
+                    "Invalid submission: Score for Set 1 and Set 2 is required unless 'Aufgabe' or 'Disqualifikation' is selected.",
+                    "danger",
+                )
+                return redirect(url_for("admin"))
+        if result in ["challenger_wins", "opponent_wins"] and not score_details:
+            flash(
+                "Invalid submission: Score details are missing or invalid for the selected result.",
+                "danger",
+            )
+            return redirect(url_for("admin"))
+
         resolved_at = get_current_time()
         db.execute(
             "UPDATE challenges SET resolved = 1, result = ?, resolved_at = ?, score_details = ? WHERE id = ?",
@@ -1434,6 +1672,7 @@ def submit_result():
 
 
 @app.route("/newplayer_challenge", methods=["POST"])
+@login_required
 def newplayer_challenge():
     newplayer_name = request.form.get("newplayer_name", "").strip()
     opponent_id_str = request.form.get("opponent_id")
@@ -1525,9 +1764,16 @@ def newplayer_challenge():
         timestamp = get_current_time()
         newplayer_id = None
         with db:
+            # MODIFIED: Use new username generation and default password
+            generated_username = generate_username(newplayer_name, db)
+            default_password = "DefaultPassword1!".encode("utf-8")
+            hashed_password = bcrypt.hashpw(default_password, bcrypt.gensalt()).decode(
+                "utf-8"
+            )
+
             cursor = db.execute(
-                "INSERT INTO players (name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?)",
-                (newplayer_name, 1, 99, None, 1),
+                "INSERT INTO players (name, username, password_hash, available, rank, is_new, is_ranked_player) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (newplayer_name, generated_username, hashed_password, 1, 99, 1, 1),
             )
             newplayer_id = cursor.lastrowid
             if not newplayer_id:
@@ -1592,8 +1838,14 @@ def newplayer_challenge():
             opponent_id,
             opponent_new_rank,
         )
+        # MODIFIED: Return username and password for modal display
         return jsonify(
-            {"message": message, "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S")}
+            {
+                "message": message,
+                "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                "new_player_username": generated_username,
+                "new_player_password": "DefaultPassword1!",
+            }
         )
     except sqlite3.IntegrityError as e:
         error_string = str(e).lower()
@@ -1653,6 +1905,7 @@ def newplayer_challenge():
 
 
 @app.route("/update_scheduled_date", methods=["POST"])
+@login_required
 def update_scheduled_date():
     challenge_id_str = request.form.get("challenge_id")
     selected_date_str = request.form.get("selected_date")
@@ -1725,6 +1978,7 @@ def update_scheduled_date():
 
 # --- Admin Player Management Routes ---
 @app.route("/add_player", methods=["POST"])
+@admin_required
 def add_player():
     data = request.get_json()
     if not data or "name" not in data or "rank" not in data:
@@ -1762,9 +2016,15 @@ def add_player():
                 400,
             )
         with db:
+            temp_username = new_name.replace(" ", "") + str(int(time.time()))
+            temp_password = "PasswordForNewPlayer123!".encode("utf-8")
+            temp_hashed_password = bcrypt.hashpw(
+                temp_password, bcrypt.gensalt()
+            ).decode("utf-8")
+
             db.execute(
-                "INSERT INTO players (name, available, rank, is_new) VALUES (?, ?, ?, ?)",
-                (new_name, 1, new_rank, 0),
+                "INSERT INTO players (name, username, password_hash, available, rank, is_new, is_ranked_player) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (new_name, temp_username, temp_hashed_password, 1, new_rank, 0, 1),
             )
             logger.info(
                 f"Admin added player '{new_name}' with initial rank {new_rank}."
@@ -1814,6 +2074,7 @@ def add_player():
 
 
 @app.route("/update_player", methods=["POST"])
+@admin_required
 def update_player():
     data = request.get_json()
     if not data or "id" not in data or "name" not in data or "rank" not in data:
@@ -1912,6 +2173,7 @@ def update_player():
 
 
 @app.route("/delete_player", methods=["POST"])
+@admin_required
 def delete_player():
     data = request.get_json()
     if not data or "id" not in data:
@@ -1963,6 +2225,7 @@ def delete_player():
 
 
 @app.route("/set_player_block_status", methods=["POST"])
+@admin_required
 def set_player_block_status():
     data = request.get_json()
     if not data or "player_id" not in data or "block_type" not in data:
@@ -1990,19 +2253,19 @@ def set_player_block_status():
                     "UPDATE players SET block_challenger_until = NULL, block_opponent_until = NULL WHERE id = ?",
                     (player_id,),
                 )
-                log_msg = f"Admin cleared block status for player {player_id} ({player_name})."
+                log_msg = f"Admin {current_user.username} cleared block status for player {player_id} ({player_name})."
             elif block_type == "challenger":
                 db.execute(
                     "UPDATE players SET block_challenger_until = ?, block_opponent_until = NULL WHERE id = ?",
                     (block_until, player_id),
                 )
-                log_msg = f"Admin set player {player_id} ({player_name}) as blocked challenger until {block_until}."
+                log_msg = f"Admin {current_user.username} set player {player_id} ({player_name}) as blocked challenger until {block_until}."
             elif block_type == "opponent":
                 db.execute(
                     "UPDATE players SET block_opponent_until = ?, block_challenger_until = NULL WHERE id = ?",
                     (block_until, player_id),
                 )
-                log_msg = f"Admin set player {player_id} ({player_name}) as blocked opponent until {block_until}."
+                log_msg = f"Admin {current_user.username} set player {player_id} ({player_name}) as blocked opponent until {block_until}."
         logger.info(log_msg)
         emit_data_update("block_status_updated", {"player_id": player_id})
         return jsonify(
@@ -2023,43 +2286,83 @@ def set_player_block_status():
         )
 
 
+@app.route("/change_password", methods=["POST"])
+@admin_required
+def change_password():
+    data = request.get_json()
+    if not data or "player_id" not in data or "new_password" not in data:
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+
+    player_id = data["player_id"]
+    new_password = data["new_password"]
+
+    if len(new_password) < 8:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Password must be at least 8 characters long.",
+                }
+            ),
+            400,
+        )
+
+    db = get_db()
+    try:
+        cur = db.execute("SELECT name FROM players WHERE id = ?", (player_id,))
+        player = cur.fetchone()
+        if not player:
+            return jsonify({"success": False, "message": "Player not found."}), 404
+
+        hashed_password = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt())
+
+        with db:
+            db.execute(
+                "UPDATE players SET password_hash = ? WHERE id = ?",
+                (hashed_password.decode("utf-8"), player_id),
+            )
+
+        logger.info(
+            f"Admin '{current_user.username}' successfully changed password for player ID {player_id} ({player['name']})."
+        )
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Password for {player['name']} has been updated.",
+            }
+        )
+
+    except sqlite3.Error as e:
+        logger.exception(
+            f"Database error changing password for player {player_id}: {e}"
+        )
+        return jsonify({"success": False, "message": "Database error."}), 500
+    except Exception as e:
+        logger.exception(
+            f"Unexpected error changing password for player {player_id}: {e}"
+        )
+        return (
+            jsonify({"success": False, "message": "An unexpected error occurred."}),
+            500,
+        )
+
+
 @app.route("/reset_database", methods=["POST"])
+@superadmin_required
 def reset_database():
     db = get_db()
     try:
         with db:
-            logger.warning("Attempting database reset...")
+            logger.warning(
+                f"Attempting database reset by superadmin {current_user.username}..."
+            )
             db.execute("DROP VIEW IF EXISTS completed_challenges_view;")
             db.execute("DROP TABLE IF EXISTS challenges;")
             db.execute("DROP TABLE IF EXISTS players;")
-            logger.info("Existing tables dropped.")
-            logger.info("Re-initializing schema...")
-            schema_path = os.path.join(app.root_path, "schema.sql")
-            with app.open_resource(schema_path) as f:
-                db.executescript(f.read().decode("utf8"))
-            logger.info("Database schema re-initialized.")
-            logger.info("Loading initial players...")
-            json_path = os.path.join(app.root_path, "initial_players.json")
-            with open(json_path, encoding="utf8") as json_file:
-                data = json.load(json_file)
-                for player in data["players"]:
-                    try:
-                        db.execute(
-                            "INSERT INTO players (id, name, available, rank, unavailable_since, is_new) VALUES (?, ?, ?, ?, ?, ?)",
-                            (
-                                player["id"],
-                                player["name"],
-                                int(player["is_available"]),
-                                player["rank"],
-                                None,
-                                0,
-                            ),
-                        )
-                    except sqlite3.IntegrityError:
-                        logger.warning(
-                            f"Initial player name '{player['name']}' might already exist during reset. Skipping."
-                        )
-            logger.info("Loaded initial players from JSON during reset.")
+            logger.info("Existing tables and views dropped.")
+
+            init_db()
+
         logger.info("Database reset successful.")
         emit_data_update("database_reset")
         return jsonify(
@@ -2088,11 +2391,13 @@ def reset_database():
 
 # --- Other Routes ---
 @app.route("/db_settings")
+@superadmin_required
 def db_settings():
     return render_template("db_settings.html")
 
 
 @app.route("/initial_players")
+@superadmin_required
 def initial_players():
     return render_template("initial_players.html")
 
@@ -2100,7 +2405,15 @@ def initial_players():
 # --- SocketIO Event Handlers ---
 @socketio.on("connect")
 def handle_connect():
-    logger.info(f"Client connected: {request.sid}")
+    if not current_user.is_authenticated:
+        logger.warning(
+            f"Unauthenticated client tried to connect: {request.sid}. Disconnecting."
+        )
+        return False
+
+    logger.info(
+        f"Authenticated client connected: {current_user.username} ({request.sid})"
+    )
     join_room("tennis_updates")
     try:
         data = get_realtime_data_cached()
@@ -2117,21 +2430,21 @@ def handle_connect():
     )
 
 
-# --- DEFINITIVE FIX: Remove the disconnect handler entirely ---
-# The default handler is sufficient and this removes the source of the error.
-# @socketio.on("disconnect")
-# def handle_disconnect():
-#     logger.info(f"Client disconnected: {request.sid}")
-#     leave_room("tennis_updates")
+@socketio.on("disconnect")
+def handle_disconnect():
+    logger.info(f"Client disconnected: {request.sid}")
+    leave_room("tennis_updates")
 
 
 @socketio.on("request_full_update")
+@login_required
 def handle_request_full_update():
     logger.info(f"Client {request.sid} requested a full data update.")
     emit_data_update("full_update_requested")
 
 
 @socketio.on("ping")
+@login_required
 def handle_ping():
     emit("pong", {"timestamp": get_current_time().strftime("%Y-%m-%d %H:%M:%S")})
 
@@ -2148,5 +2461,4 @@ if __name__ == "__main__":
     logger.info("Starting Flask-SocketIO server with eventlet...")
     host = os.environ.get("FLASK_HOST", "0.0.0.0")
     port = int(os.environ.get("FLASK_PORT", 5000))
-    # The 'debug_mode' variable is now defined at the top of the script
     socketio.run(app, host=host, port=port, debug=debug_mode, use_reloader=debug_mode)

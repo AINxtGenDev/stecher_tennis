@@ -4,259 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spieler- und Datenbankverwaltung</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
     <style>
-    /* Global Styles from admin.html with additions for db_settings */
-    :root {
-      --primary-color: #f8e473; /* Lemon Yellow */
-      --primary-dark: #e6d661; /* Darker yellow for hover */
-      --bg-color: #f2f2f2;
-      --container-bg: #fff;
-      --text-color: #333;
-      --border-color: #ccc;
-      --shadow-color: rgba(0, 0, 0, 0.2);
-      --highlight-shadow: rgba(248, 228, 115, 0.4);
-      --challenger-color: #28a745; /* Green */
-      --opponent-color: #dc3545; /* Red */
-      --neutral-color: #6c757d; /* Grey */
-      --error-color: #dc3545; /* Red for errors/special results */
-    }
-
-    body {
-      background-color: var(--bg-color);
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      color: var(--text-color);
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-      background-color: var(--primary-color);
-      padding: 20px;
-      border-bottom: 3px solid var(--border-color);
-      box-shadow: 0 10px 25px var(--shadow-color);
-      border-radius: 10px;
-      position: relative;
-    }
-
-    header h1 {
-      font-size: 3rem;
-      margin: 0;
-      color: #000;
-      text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .challenge-container {
-      background-color: var(--container-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-      box-shadow: 0 15px 25px var(--shadow-color);
-      transition: all 0.4s ease;
-      position: relative;
-    }
-    .challenge-container:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 25px 40px var(--shadow-color);
-    }
-    
-    .challenge-container h2 {
-        margin: -20px -20px 20px -20px;
-        padding: 15px 20px;
-        border-bottom: 1px solid var(--border-color);
-        font-size: 1.8rem;
-        color: var(--text-color);
-    }
-
-    /* Table Styles */
-    .table-responsive {
-        overflow-x: auto;
-        margin-top: 1.5rem;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-        box-shadow: 0 2px 5px var(--shadow-color);
-    }
-    th, td {
-        padding: 12px 15px;
-        border: 1px solid var(--border-color);
-        text-align: left;
-        vertical-align: middle;
-    }
-    th {
-        background-color: #f2f2f2;
-        font-weight: bold;
-    }
-    tbody tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    tbody tr:hover {
-        background-color: #f1f1f1;
-    }
-    
-    /* Form & Input Styles */
-    input[type="text"], input[type="number"], select {
-        font-size: 1rem;
-        padding: 8px 12px;
-        border: 1px solid var(--border-color);
-        border-radius: 6px;
-        background-color: #f7f7f7;
-        color: var(--text-color);
-        outline: none;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    input:focus, select:focus {
-        border-color: var(--primary-dark);
-        box-shadow: 0 0 0 2px var(--highlight-shadow);
-    }
-    
-    /* Button Styles */
-    .btn {
-        padding: 10px 18px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 1rem;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px var(--shadow-color);
-        font-weight: bold;
-        text-align: center;
-    }
-    .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px var(--shadow-color);
-    }
-    .btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px var(--shadow-color);
-    }
-    .btn:disabled {
-        background-color: #e0e0e0;
-        color: #999;
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-    }
-
-    .btn-primary { background-color: var(--primary-color); color: #000; }
-    .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
-    
-    /* Specific button styles for the table actions */
-    .action-buttons .btn {
-        padding: 5px 10px;
-        font-size: 0.8rem;
-        margin-right: 5px;
-    }
-    .btn-danger { background-color: var(--error-color); color: #fff; }
-    .btn-danger:hover:not(:disabled) { background-color: #a71d2a; }
-    .btn-success { background-color: var(--challenger-color); color: #fff; }
-    .btn-success:hover:not(:disabled) { background-color: #218838; }
-    .btn-secondary { background-color: var(--neutral-color); color: #fff; }
-    .btn-secondary:hover:not(:disabled) { background-color: #5a6268; }
-
-    /* Danger Zone Section Styling */
-    .danger-zone {
-        background-color: var(--error-color);
-        color: white;
-        border-color: #a71d2a;
-    }
-    .danger-zone h2 {
-        color: white;
-        border-bottom-color: rgba(255, 255, 255, 0.5);
-    }
-    .danger-zone p, .danger-zone strong {
-        color: white;
-    }
-    .danger-zone .btn-danger {
-        background-color: #fff;
-        color: var(--error-color);
-        border: 1px solid var(--error-color);
-    }
-    .danger-zone .btn-danger:hover {
-        background-color: #f2f2f2;
-        color: #a71d2a;
-    }
-
-    /* Alert Box */
-    .alert {
-        display: none;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        color: #fff;
-        font-size: 1.1rem;
-    }
-    .alert-success { background-color: var(--challenger-color); }
-    .alert-danger { background-color: var(--error-color); }
-    .alert-warning { background-color: #f8e473; color: #000; }
-
-    /* Helper classes from original file logic */
-    .d-none { display: none !important; }
-    .form-control.inline-edit, .form-select.inline-edit {
-        display: inline-block;
-        width: auto;
-        vertical-align: middle;
-    }
-    .player-name-static, .player-rank-static {
-        padding: 0.375rem 0.75rem;
-        display: inline-block;
-    }
-
-    /* Responsive Styles */
-    @media (max-width: 768px) {
-        body { padding: 10px; }
-        header { padding: 15px; margin-bottom: 20px; }
-        header h1 { font-size: 2rem; }
-        .challenge-container { padding: 15px; }
-        .challenge-container h2 { font-size: 1.5rem; margin: -15px -15px 15px -15px; padding: 10px 15px;}
-    }
+      :root { --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2; --container-bg: #fff; --text-color: #333; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4); --challenger-color: #28a745; --opponent-color: #dc3545; --neutral-color: #6c757d; --error-color: #dc3545; --warning-color: #ffc107; }
+      body { background-color: var(--bg-color); font-family: Arial, sans-serif; margin: 0; padding: 20px; color: var(--text-color); }
+      header { text-align: center; margin-bottom: 30px; background-color: var(--primary-color); padding: 20px; border-bottom: 3px solid var(--border-color); box-shadow: 0 10px 25px var(--shadow-color); border-radius: 10px; position: relative; }
+      header h1 { font-size: 3rem; margin: 0; color: #000; text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow); }
+      main { max-width: 1200px; margin: 0 auto; }
+      .challenge-container { background-color: var(--container-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 15px 25px var(--shadow-color); transition: all 0.4s ease; position: relative; }
+      .challenge-container:hover { transform: translateY(-5px); box-shadow: 0 25px 40px var(--shadow-color); }
+      .challenge-container h2 { margin: -20px -20px 20px -20px; padding: 15px 20px; border-bottom: 1px solid var(--border-color); font-size: 1.8rem; color: var(--text-color); }
+      .table-responsive { overflow-x: auto; margin-top: 1.5rem; }
+      table { width: 100%; border-collapse: collapse; margin-top: 1rem; box-shadow: 0 2px 5px var(--shadow-color); }
+      th, td { padding: 12px 15px; border: 1px solid var(--border-color); text-align: left; vertical-align: middle; }
+      th { background-color: #f2f2f2; font-weight: bold; }
+      tbody tr:nth-child(even) { background-color: #f9f9f9; }
+      tbody tr:hover { background-color: #f1f1f1; }
+      input[type="text"], input[type="number"], input[type="password"], select { font-size: 1rem; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background-color: #f7f7f7; color: var(--text-color); outline: none; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s ease; width: 100%; box-sizing: border-box; }
+      input:focus, select:focus { border-color: var(--primary-dark); box-shadow: 0 0 0 2px var(--highlight-shadow); }
+      .btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: all 0.2s ease; box-shadow: 0 2px 4px var(--shadow-color); font-weight: bold; text-align: center; }
+      .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color); }
+      .btn:active { transform: translateY(0); box-shadow: 0 2px 4px var(--shadow-color); }
+      .btn:disabled { background-color: #e0e0e0; color: #999; cursor: not-allowed; box-shadow: none; transform: none; }
+      .btn-primary { background-color: var(--primary-color); color: #000; }
+      .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
+      .action-buttons .btn { padding: 5px 10px; font-size: 0.8rem; margin-right: 5px; }
+      .btn-danger { background-color: var(--error-color); color: #fff; }
+      .btn-danger:hover:not(:disabled) { background-color: #a71d2a; }
+      .btn-success { background-color: var(--challenger-color); color: #fff; }
+      .btn-success:hover:not(:disabled) { background-color: #218838; }
+      .btn-secondary { background-color: var(--neutral-color); color: #fff; }
+      .btn-secondary:hover:not(:disabled) { background-color: #5a6268; }
+      .btn-warning { background-color: var(--warning-color); color: #000; }
+      .btn-warning:hover:not(:disabled) { background-color: #e0a800; }
+      .danger-zone { background-color: var(--error-color); color: white; border-color: #a71d2a; }
+      .danger-zone h2 { color: white; border-bottom-color: rgba(255, 255, 255, 0.5); }
+      .danger-zone p, .danger-zone strong { color: white; }
+      .danger-zone .btn-danger { background-color: #fff; color: var(--error-color); border: 1px solid var(--error-color); }
+      .danger-zone .btn-danger:hover { background-color: #f2f2f2; color: #a71d2a; }
+      .alert { display: none; position: fixed; top: 20px; right: 20px; z-index: 1060; padding: 15px 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); color: #fff; font-size: 1.1rem; }
+      .alert-success { background-color: var(--challenger-color); }
+      .alert-danger { background-color: var(--error-color); }
+      .alert-warning { background-color: #f8e473; color: #000; }
+      .d-none { display: none !important; }
+      .form-control.inline-edit, .form-select.inline-edit { display: inline-block; width: auto; vertical-align: middle; }
+      .player-name-static, .player-rank-static { padding: 0.375rem 0.75rem; display: inline-block; }
+      .password-feedback { font-size: 0.875em; color: var(--error-color); display: none; }
+      @media (max-width: 768px) { body { padding: 10px; } header { padding: 15px; margin-bottom: 20px; } header h1 { font-size: 2rem; } .challenge-container { padding: 15px; } .challenge-container h2 { font-size: 1.5rem; margin: -15px -15px 15px -15px; padding: 10px 15px;} }
     </style>
 </head>
 <body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 border-bottom">
+        <div class="container-fluid">
+          <a class="navbar-brand" href="{{ url_for('index') }}">Tennis Rangliste</a>
+          <div class="ms-auto d-flex align-items-center">
+            <span class="navbar-text me-3">
+              Angemeldet als: <strong>{{ current_user.username }}</strong> ({{ current_user.privilege_level }})
+            </span>
+            <div>
+              <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-primary {% if request.endpoint == 'index' %}active{% endif %}">Rangliste</a>
+              <a href="{{ url_for('admin') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'admin' %}active{% endif %}">Admin-Bereich</a>
+              {% if current_user.privilege_level == 'superadmin' %}
+                <a href="{{ url_for('db_settings') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'db_settings' %}active{% endif %}">DB-Einstellungen</a>
+              {% endif %}
+              <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Abmelden</a>
+            </div>
+          </div>
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="container">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
     <header>
         <h1>Spieler- und Datenbankverwaltung</h1>
     </header>
 
     <main>
         <div id="global-alert" class="alert" role="alert"></div>
-
         <div class="challenge-container">
             <h2>Spielerliste verwalten</h2>
             <div class="table-responsive">
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Rang</th>
-                            <th>Block-Status</th>
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody id="players-table-body">
-                        </tbody>
+                    <thead><tr><th>ID</th><th>Name</th><th>Rang</th><th>Block-Status</th><th>Aktionen</th></tr></thead>
+                    <tbody id="players-table-body"></tbody>
                 </table>
             </div>
         </div>
-
         <div class="challenge-container danger-zone">
             <h2>Gefahrenzone</h2>
             <p><strong>Achtung:</strong> Diese Aktion löscht die gesamte Datenbank (alle Spieler, Herausforderungen, Ergebnisse) und setzt sie auf den ursprünglichen Zustand zurück. Diese Aktion kann nicht rückgängig gemacht werden.</p>
@@ -264,221 +112,178 @@
         </div>
     </main>
 
-<script>
-$(document).ready(function() {
-    const socket = io();
+    <!-- Password Change Modal -->
+    <div class="modal fade" id="passwordChangeModal" tabindex="-1" aria-labelledby="passwordChangeModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="passwordChangeModalLabel">Passwort ändern für...</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="passwordChangeForm">
+              <div class="mb-3">
+                <label for="newPassword" class="form-label">Neues Passwort</label>
+                <input type="password" class="form-control" id="newPassword" required minlength="8">
+                <div class="password-feedback" id="password-length-feedback">Muss mindestens 8 Zeichen lang sein.</div>
+              </div>
+              <div class="mb-3">
+                <label for="confirmPassword" class="form-label">Passwort bestätigen</label>
+                <input type="password" class="form-control" id="confirmPassword" required>
+                <div class="password-feedback" id="password-match-feedback">Passwörter stimmen nicht überein.</div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+            <button type="button" class="btn btn-primary" id="savePasswordChangeBtn" disabled>Speichern</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    // --- UTILITY FUNCTIONS ---
-    function showAlert(message, type = 'success') {
-        const $alert = $('#global-alert');
-        $alert.removeClass('alert-success alert-danger alert-warning').addClass(`alert-${type}`);
-        $alert.html(message).fadeIn();
-        setTimeout(() => $alert.fadeOut(), 5000);
-    }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+      $(document).ready(function() {
+          $.ajaxSetup({ beforeSend: function(xhr, settings) { if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) { xhr.setRequestHeader("X-CSRFToken", $('meta[name="csrf-token"]').attr('content')); } } });
+          const socket = io();
+          const passwordChangeModal = new bootstrap.Modal(document.getElementById('passwordChangeModal'));
 
-    // --- DATA LOADING AND RENDERING ---
-    function loadPlayers() {
-        $.get('/get_players', function(players) {
-            const $tbody = $('#players-table-body');
-            $tbody.empty();
-            if (players && players.length > 0) {
-                players.forEach(player => {
-                    let blockStatus = 'none';
-                    if (player.block_challenger) {
-                        blockStatus = 'challenger';
-                    } else if (player.block_opponent) {
-                        blockStatus = 'opponent';
-                    }
+          function showAlert(message, type = 'success') { const $alert = $('#global-alert'); $alert.removeClass('alert-success alert-danger alert-warning').addClass(`alert-${type}`); $alert.html(message).fadeIn(); setTimeout(() => $alert.fadeOut(), 5000); }
+          
+          function loadPlayers() { 
+              $.get('/get_players', function(players) { 
+                  const $tbody = $('#players-table-body'); 
+                  $tbody.empty(); 
+                  if (players && players.length > 0) { 
+                      players.forEach(player => { 
+                          let blockStatus = 'none'; 
+                          if (player.block_challenger) { blockStatus = 'challenger'; } 
+                          else if (player.block_opponent) { blockStatus = 'opponent'; } 
+                          const rowHtml = `
+                            <tr data-player-id="${player.id}"> 
+                                <td>${player.id}</td> 
+                                <td> 
+                                    <span class="player-name-static">${player.name}</span> 
+                                    <input type="text" class="form-control inline-edit d-none" value="${player.name}"> 
+                                </td> 
+                                <td> 
+                                    <span class="player-rank-static">${player.rank}</span> 
+                                    <input type="number" class="form-control inline-edit d-none" value="${player.rank}" min="1" max="45"> 
+                                </td> 
+                                <td> 
+                                    <select class="form-select block-status-select" data-player-id="${player.id}"> 
+                                        <option value="none" ${blockStatus === 'none' ? 'selected' : ''}>Kein Block</option> 
+                                        <option value="challenger" ${blockStatus === 'challenger' ? 'selected' : ''}>Gesperrt (Herausf.)</option> 
+                                        <option value="opponent" ${blockStatus === 'opponent' ? 'selected' : ''}>Gesperrt (Gegner)</option> 
+                                    </select> 
+                                </td> 
+                                <td class="action-buttons"> 
+                                    <button class="btn btn-secondary btn-sm edit-player-btn">Bearbeiten</button> 
+                                    <button class="btn btn-success btn-sm save-player-btn d-none">Speichern</button> 
+                                    <button class="btn btn-secondary btn-sm cancel-edit-btn d-none">Abbrechen</button> 
+                                    <button class="btn btn-warning btn-sm change-password-btn" data-player-id="${player.id}" data-player-name="${player.name}">Passwort</button>
+                                    <button class="btn btn-danger btn-sm delete-player-btn">Löschen</button> 
+                                </td> 
+                            </tr>`; 
+                          $tbody.append(rowHtml); 
+                      }); 
+                  } else { 
+                      $tbody.append('<tr><td colspan="5" style="text-align: center;">Keine Spieler gefunden.</td></tr>'); 
+                  } 
+              }).fail(function() { 
+                  showAlert('Fehler beim Laden der Spielerliste.', 'danger'); 
+              }); 
+          }
 
-                    const rowHtml = `
-                        <tr data-player-id="${player.id}">
-                            <td>${player.id}</td>
-                            <td>
-                                <span class="player-name-static">${player.name}</span>
-                                <input type="text" class="form-control inline-edit d-none" value="${player.name}">
-                            </td>
-                            <td>
-                                <span class="player-rank-static">${player.rank}</span>
-                                <input type="number" class="form-control inline-edit d-none" value="${player.rank}" min="1" max="45">
-                            </td>
-                            <td>
-                                <select class="form-select block-status-select" data-player-id="${player.id}">
-                                    <option value="none" ${blockStatus === 'none' ? 'selected' : ''}>Kein Block</option>
-                                    <option value="challenger" ${blockStatus === 'challenger' ? 'selected' : ''}>Gesperrt (Herausf.)</option>
-                                    <option value="opponent" ${blockStatus === 'opponent' ? 'selected' : ''}>Gesperrt (Gegner)</option>
-                                </select>
-                            </td>
-                            <td class="action-buttons">
-                                <button class="btn btn-secondary edit-player-btn">Bearbeiten</button>
-                                <button class="btn btn-success save-player-btn d-none">Speichern</button>
-                                <button class="btn btn-secondary cancel-edit-btn d-none">Abbrechen</button>
-                                <button class="btn btn-danger delete-player-btn">Löschen</button>
-                            </td>
-                        </tr>
-                    `;
-                    $tbody.append(rowHtml);
-                });
-            } else {
-                $tbody.append('<tr><td colspan="5" style="text-align: center;">Keine Spieler gefunden.</td></tr>');
-            }
-        }).fail(function() {
-            showAlert('Fehler beim Laden der Spielerliste.', 'danger');
-        });
-    }
+          // --- Player Edit/Delete/Block Logic (unchanged) ---
+          $('#players-table-body').on('click', '.edit-player-btn', function() { const $row = $(this).closest('tr'); $row.find('.player-name-static, .player-rank-static').addClass('d-none'); $row.find('.inline-edit').removeClass('d-none'); $row.find('.edit-player-btn, .delete-player-btn, .change-password-btn').addClass('d-none'); $row.find('.save-player-btn, .cancel-edit-btn').removeClass('d-none'); });
+          $('#players-table-body').on('click', '.cancel-edit-btn', function() { const $row = $(this).closest('tr'); $row.find('.player-name-static, .player-rank-static').removeClass('d-none'); $row.find('.inline-edit').addClass('d-none'); $row.find('.edit-player-btn, .delete-player-btn, .change-password-btn').removeClass('d-none'); $row.find('.save-player-btn, .cancel-edit-btn').addClass('d-none'); $row.find('input.inline-edit[type="text"]').val($row.find('.player-name-static').text()); $row.find('input.inline-edit[type="number"]').val($row.find('.player-rank-static').text()); });
+          $('#players-table-body').on('click', '.save-player-btn', function() { const $row = $(this).closest('tr'); const playerId = $row.data('player-id'); const newName = $row.find('input.inline-edit[type="text"]').val(); const newRank = $row.find('input.inline-edit[type="number"]').val(); $.ajax({ url: '/update_player', method: 'POST', contentType: 'application/json', data: JSON.stringify({ id: playerId, name: newName, rank: newRank }), success: function(response) { if (response.success) { showAlert(response.message, 'success'); } else { showAlert(response.message, 'danger'); } }, error: function(xhr) { const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.'; showAlert(errorMsg, 'danger'); } }); });
+          $('#players-table-body').on('click', '.delete-player-btn', function() { const $row = $(this).closest('tr'); const playerId = $row.data('player-id'); const playerName = $row.find('.player-name-static').text(); if (confirm(`Sind Sie sicher, dass Sie den Spieler "${playerName}" löschen möchten? Alle zugehörigen Herausforderungen werden ebenfalls gelöscht.`)) { $.ajax({ url: '/delete_player', method: 'POST', contentType: 'application/json', data: JSON.stringify({ id: playerId }), success: function(response) { if (response.success) { showAlert(response.message, 'success'); } else { showAlert(response.message, 'danger'); } }, error: function(xhr) { const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.'; showAlert(errorMsg, 'danger'); } }); } });
+          $('#players-table-body').on('change', '.block-status-select', function() { const playerId = $(this).data('player-id'); const blockType = $(this).val(); $.ajax({ url: '/set_player_block_status', method: 'POST', contentType: 'application/json', data: JSON.stringify({ player_id: playerId, block_type: blockType }), success: function(response) { if (response.success) { showAlert(response.message, 'success'); } else { showAlert(response.message, 'danger'); } }, error: function(xhr) { const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.'; showAlert(errorMsg, 'danger'); loadPlayers(); } }); });
+          
+          // --- NEW: Password Change Modal Logic ---
+          $('#players-table-body').on('click', '.change-password-btn', function() {
+              const playerId = $(this).data('player-id');
+              const playerName = $(this).data('player-name');
+              $('#passwordChangeModalLabel').text(`Passwort ändern für ${playerName}`);
+              $('#passwordChangeModal').data('player-id', playerId);
+              passwordChangeModal.show();
+          });
 
-    // --- EVENT HANDLERS ---
+          function validatePasswordForm() {
+              const newPassword = $('#newPassword').val();
+              const confirmPassword = $('#confirmPassword').val();
+              let isValid = true;
 
-    // Edit Player
-    $('#players-table-body').on('click', '.edit-player-btn', function() {
-        const $row = $(this).closest('tr');
-        $row.find('.player-name-static, .player-rank-static').addClass('d-none');
-        $row.find('.inline-edit').removeClass('d-none');
-        $row.find('.edit-player-btn, .delete-player-btn').addClass('d-none');
-        $row.find('.save-player-btn, .cancel-edit-btn').removeClass('d-none');
-    });
+              if (newPassword.length < 8) {
+                  $('#password-length-feedback').show();
+                  isValid = false;
+              } else {
+                  $('#password-length-feedback').hide();
+              }
 
-    // Cancel Edit
-    $('#players-table-body').on('click', '.cancel-edit-btn', function() {
-        const $row = $(this).closest('tr');
-        $row.find('.player-name-static, .player-rank-static').removeClass('d-none');
-        $row.find('.inline-edit').addClass('d-none');
-        $row.find('.edit-player-btn, .delete-player-btn').removeClass('d-none');
-        $row.find('.save-player-btn, .cancel-edit-btn').addClass('d-none');
-        // Reset input values to original static values
-        $row.find('input.inline-edit[type="text"]').val($row.find('.player-name-static').text());
-        $row.find('input.inline-edit[type="number"]').val($row.find('.player-rank-static').text());
-    });
+              if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+                  $('#password-match-feedback').show();
+                  isValid = false;
+              } else {
+                  $('#password-match-feedback').hide();
+              }
+              
+              if (!newPassword || !confirmPassword) {
+                  isValid = false;
+              }
 
-    // Save Player
-    $('#players-table-body').on('click', '.save-player-btn', function() {
-        const $row = $(this).closest('tr');
-        const playerId = $row.data('player-id');
-        const newName = $row.find('input.inline-edit[type="text"]').val();
-        const newRank = $row.find('input.inline-edit[type="number"]').val();
+              $('#savePasswordChangeBtn').prop('disabled', !isValid);
+          }
 
-        $.ajax({
-            url: '/update_player',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ id: playerId, name: newName, rank: newRank }),
-            success: function(response) {
-                if (response.success) {
-                    showAlert(response.message, 'success');
-                    // The socket event will trigger loadPlayers() to refresh the table
-                } else {
-                    showAlert(response.message, 'danger');
-                }
-            },
-            error: function(xhr) {
-                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
-                showAlert(errorMsg, 'danger');
-            }
-        });
-    });
+          $('#newPassword, #confirmPassword').on('input', validatePasswordForm);
 
-    // Delete Player
-    $('#players-table-body').on('click', '.delete-player-btn', function() {
-        const $row = $(this).closest('tr');
-        const playerId = $row.data('player-id');
-        const playerName = $row.find('.player-name-static').text();
+          $('#savePasswordChangeBtn').on('click', function() {
+              const playerId = $('#passwordChangeModal').data('player-id');
+              const newPassword = $('#newPassword').val();
+              
+              $(this).prop('disabled', true).text('Speichern...');
 
-        if (confirm(`Sind Sie sicher, dass Sie den Spieler "${playerName}" löschen möchten? Alle zugehörigen Herausforderungen werden ebenfalls gelöscht.`)) {
-            $.ajax({
-                url: '/delete_player',
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ id: playerId }),
-                success: function(response) {
-                    if (response.success) {
-                        showAlert(response.message, 'success');
-                        // The socket event will trigger loadPlayers()
-                    } else {
-                        showAlert(response.message, 'danger');
-                    }
-                },
-                error: function(xhr) {
-                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
-                    showAlert(errorMsg, 'danger');
-                }
-            });
-        }
-    });
+              $.ajax({
+                  url: '/change_password',
+                  method: 'POST',
+                  contentType: 'application/json',
+                  data: JSON.stringify({ player_id: playerId, new_password: newPassword }),
+                  success: function(response) {
+                      if (response.success) {
+                          showAlert(response.message, 'success');
+                          passwordChangeModal.hide();
+                      } else {
+                          showAlert(response.message, 'danger');
+                      }
+                  },
+                  error: function(xhr) {
+                      const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                      showAlert(errorMsg, 'danger');
+                  },
+                  complete: function() {
+                      $('#savePasswordChangeBtn').prop('disabled', false).text('Speichern');
+                  }
+              });
+          });
 
-    // Change Block Status
-    $('#players-table-body').on('change', '.block-status-select', function() {
-        const playerId = $(this).data('player-id');
-        const blockType = $(this).val();
+          $('#passwordChangeModal').on('hidden.bs.modal', function () {
+              $('#passwordChangeForm')[0].reset();
+              $('.password-feedback').hide();
+              $('#savePasswordChangeBtn').prop('disabled', true);
+          });
 
-        $.ajax({
-            url: '/set_player_block_status',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ player_id: playerId, block_type: blockType }),
-            success: function(response) {
-                if (response.success) {
-                    showAlert(response.message, 'success');
-                    // The socket event will trigger updates on index.html
-                } else {
-                    showAlert(response.message, 'danger');
-                }
-            },
-            error: function(xhr) {
-                const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
-                showAlert(errorMsg, 'danger');
-                // Reload players to revert the dropdown on failure
-                loadPlayers();
-            }
-        });
-    });
-
-    // Reset Database
-    $('#reset-db-btn').on('click', function() {
-        const confirmation = prompt("Dies ist eine irreversible Aktion. Um fortzufahren, schreibe ---> RESET <---- in das Feld.");
-        if (confirmation === 'RESET') {
-            $(this).prop('disabled', true).text('Setze zurück...');
-            $.post('/reset_database')
-                .done(function(response) {
-                    showAlert(response.message, 'success');
-                    // The socket event will trigger a reload on all clients, including this one.
-                    // As a fallback, we can also reload here.
-                    setTimeout(() => window.location.reload(), 2000);
-                })
-                .fail(function(xhr) {
-                    const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
-                    showAlert(errorMsg, 'danger');
-                    $('#reset-db-btn').prop('disabled', false).text('Datenbank zurücksetzen');
-                });
-        } else {
-            showAlert('Zurücksetzen abgebrochen.', 'warning');
-        }
-    });
-
-    // --- SOCKET.IO LISTENERS ---
-    socket.on('connect', function() {
-        console.log('Connected to server via Socket.IO.');
-        loadPlayers();
-    });
-
-    socket.on('data_update', function(payload) {
-        console.log('Received data_update event. Refreshing player list.', payload.type);
-        // Any change on the main page should trigger a refresh here to keep ranks consistent
-        loadPlayers();
-    });
-    
-    socket.on('player_update', function(payload) {
-        console.log('Received player_update event. Refreshing player list.', payload.action);
-        // A specific player was updated (e.g., availability toggled on main page or block status here)
-        loadPlayers();
-    });
-
-    socket.on('database_reset', function() {
-        showAlert('Datenbank wurde zurückgesetzt. Seite wird neu geladen.', 'warning');
-        setTimeout(() => window.location.reload(), 1500);
-    });
-
-    // Initial load
-    loadPlayers();
-});
-</script>
+          // --- Database Reset and Socket Listeners (unchanged) ---
+          $('#reset-db-btn').on('click', function() { const confirmation = prompt("Dies ist eine irreversible Aktion. Um fortzufahren, schreibe ---> RESET <---- in das Feld."); if (confirmation === 'RESET') { $(this).prop('disabled', true).text('Setze zurück...'); $.post('/reset_database').done(function(response) { showAlert(response.message, 'success'); setTimeout(() => window.location.reload(), 2000); }).fail(function(xhr) { const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.'; showAlert(errorMsg, 'danger'); $('#reset-db-btn').prop('disabled', false).text('Datenbank zurücksetzen'); }); } else { showAlert('Zurücksetzen abgebrochen.', 'warning'); } });
+          socket.on('connect', function() { console.log('Connected to server via Socket.IO.'); loadPlayers(); });
+          socket.on('data_update', function(payload) { console.log('Received data_update event. Refreshing player list.', payload.type); loadPlayers(); });
+          socket.on('player_update', function(payload) { console.log('Received player_update event. Refreshing player list.', payload.action); loadPlayers(); });
+          socket.on('database_reset', function() { showAlert('Datenbank wurde zurückgesetzt. Seite wird neu geladen.', 'warning'); setTimeout(() => window.location.reload(), 1500); });
+          
+          loadPlayers();
+      });
+    </script>
 </body>
 </html>

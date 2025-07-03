@@ -1,41 +1,112 @@
 {
   "players": [
-    { "id": 0,  "name": "P. Krauskopf",     "is_available": true,  "rank": 1 },
-    { "id": 1,  "name": "M. Bachmayer",     "is_available": true,  "rank": 2 },
-    { "id": 2,  "name": "E. Werner",        "is_available": true,  "rank": 3 },
-    { "id": 3,  "name": "A. Klarer",        "is_available": true,  "rank": 4 },
-    { "id": 4,  "name": "H. Slunsky",       "is_available": true,  "rank": 5 },
-    { "id": 5,  "name": "N. Petric",        "is_available": true,  "rank": 6 },
-    { "id": 6,  "name": "Ch. Kramer",       "is_available": true,  "rank": 7 },
-    { "id": 7,  "name": "St. Farkas",       "is_available": true,  "rank": 8 },
-    { "id": 8,  "name": "A. Harbarth",      "is_available": true,  "rank": 9 },
-    { "id": 9,  "name": "M. Stecher",       "is_available": true,  "rank": 10 },
-    { "id": 10, "name": "H. Novak",         "is_available": true,  "rank": 11 },
-    { "id": 11, "name": "Ch. Bartsch",      "is_available": true,  "rank": 12 },
-    { "id": 12, "name": "Ch. Tendl",        "is_available": true,  "rank": 13 },
-    { "id": 13, "name": "M. Kronberger",    "is_available": true,  "rank": 14 },
-    { "id": 14, "name": "M. Kova",          "is_available": true,  "rank": 15 },
-    { "id": 15, "name": "Ph. Scheida",      "is_available": true,  "rank": 16 },
-    { "id": 16, "name": "M. Strausberger",  "is_available": true,  "rank": 17 },
-    { "id": 17, "name": "T. Hofer",         "is_available": true,  "rank": 18 },
-    { "id": 18, "name": "H. Brandt",        "is_available": true,  "rank": 19 },
-    { "id": 19, "name": "A. Kornberger",    "is_available": true,  "rank": 20 },
-    { "id": 20, "name": "M. Nechvatal",     "is_available": true,  "rank": 21 },
-    { "id": 21, "name": "W. Knotek",        "is_available": true,  "rank": 22 },
-    { "id": 22, "name": "M. Manninger",     "is_available": true,  "rank": 23 },
-    { "id": 23, "name": "F. Binder",        "is_available": true,  "rank": 24 },
-    { "id": 24, "name": "M. Schmid",        "is_available": true,  "rank": 25 },
-    { "id": 25, "name": "R. Haschke",       "is_available": true,  "rank": 26 },
-    { "id": 26, "name": "F. Berger",        "is_available": true,  "rank": 27 },
-    { "id": 27, "name": "S. Hofbauer",      "is_available": true,  "rank": 28 },
-    { "id": 28, "name": "R. Binder",        "is_available": true,  "rank": 29 },
-    { "id": 29, "name": "M. Hofbauer",      "is_available": true,  "rank": 30 },
-    { "id": 30, "name": "A. Peya",          "is_available": true,  "rank": 31 },
-    { "id": 31, "name": "F. Zechmeister",   "is_available": true,  "rank": 32 },
-    { "id": 32, "name": "M. Kudilek",       "is_available": true,  "rank": 33 },
-    { "id": 33, "name": "F. Petric",        "is_available": true,  "rank": 34 },
-    { "id": 34, "name": "St. Nitschmann",   "is_available": true,  "rank": 35 },
-    { "id": 35, "name": "M. Mularz",        "is_available": true, "rank": 36 }
+    {
+      "id": 0, "name": "P. Krauskopf", "username": "PKrauskopf", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 1
+    },
+    {
+      "id": 1, "name": "M. Bachmayer", "username": "MBachmayer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 2
+    },
+    {
+      "id": 2, "name": "E. Werner", "username": "EWerner", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 3
+    },
+    {
+      "id": 3, "name": "A. Klarer", "username": "AKlarer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 4
+    },
+    {
+      "id": 4, "name": "H. Slunsky", "username": "HSlunsky", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 5
+    },
+    {
+      "id": 5, "name": "N. Petric", "username": "NPetric", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 6
+    },
+    {
+      "id": 6, "name": "Ch. Kramer", "username": "ChKramer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 7
+    },
+    {
+      "id": 7, "name": "St. Farkas", "username": "StFarkas", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 8
+    },
+    {
+      "id": 8, "name": "A. Harbarth", "username": "AHarbarth", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 9
+    },
+    {
+      "id": 9, "name": "M. Stecher", "username": "MStecher", "password": "SuperSecretDevPassword!", "privilege_level": "superadmin", "is_ranked_player": 1, "is_available": true, "rank": 10
+    },
+    {
+      "id": 10, "name": "H. Novak", "username": "HNovak", "password": "SuperSecretDevPassword!", "privilege_level": "superadmin", "is_ranked_player": 1, "is_available": true, "rank": 11
+    },
+    {
+      "id": 11, "name": "Ch. Bartsch", "username": "ChBartsch", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 12
+    },
+    {
+      "id": 12, "name": "Ch. Tendl", "username": "ChTendl", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 13
+    },
+    {
+      "id": 13, "name": "M. Kronberger", "username": "MKronberger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 14
+    },
+    {
+      "id": 14, "name": "M. Kova", "username": "MKova", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 15
+    },
+    {
+      "id": 15, "name": "Ph. Scheida", "username": "PhScheida", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 16
+    },
+    {
+      "id": 16, "name": "M. Strausberger", "username": "MStrausberger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 17
+    },
+    {
+      "id": 17, "name": "T. Hofer", "username": "THofer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 18
+    },
+    {
+      "id": 18, "name": "H. Brandt", "username": "HBrandt", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 19
+    },
+    {
+      "id": 19, "name": "A. Kornberger", "username": "AKornberger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 20
+    },
+    {
+      "id": 20, "name": "M. Nechvatal", "username": "MNechvatal", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 21
+    },
+    {
+      "id": 21, "name": "W. Knotek", "username": "WKnotek", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 22
+    },
+    {
+      "id": 22, "name": "M. Manninger", "username": "MManninger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 23
+    },
+    {
+      "id": 23, "name": "F. Binder", "username": "FBinder", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 24
+    },
+    {
+      "id": 24, "name": "M. Schmid", "username": "MSchmid", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 25
+    },
+    {
+      "id": 25, "name": "R. Haschke", "username": "RHaschke", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 26
+    },
+    {
+      "id": 26, "name": "F. Berger", "username": "FBerger", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 27
+    },
+    {
+      "id": 27, "name": "S. Hofbauer", "username": "SHofbauer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 28
+    },
+    {
+      "id": 28, "name": "R. Binder", "username": "RBinder", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 29
+    },
+    {
+      "id": 29, "name": "M. Hofbauer", "username": "MHofbauer", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 30
+    },
+    {
+      "id": 30, "name": "A. Peya", "username": "APeya", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 31
+    },
+    {
+      "id": 31, "name": "F. Zechmeister", "username": "FZechmeister", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 32
+    },
+    {
+      "id": 32, "name": "M. Kudilek", "username": "MKudilek", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 33
+    },
+    {
+      "id": 33, "name": "F. Petric", "username": "FPetric", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 34
+    },
+    {
+      "id": 34, "name": "St. Nitschmann", "username": "StNitschmann", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 35
+    },
+    {
+      "id": 35, "name": "M. Mularz", "username": "MMularz", "password": "DefaultPassword1!", "privilege_level": "player", "is_ranked_player": 1, "is_available": true, "rank": 36
+    }
   ]
 }
-

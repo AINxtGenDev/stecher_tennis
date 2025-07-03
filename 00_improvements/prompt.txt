@@ -1,3 +1,5 @@
+Role: Act as a Senior Full-Stack Developer and Security Expert.
+
 The Tennis Ranking List web application is used to manage tennis players and organize challenges between them.
 In addition to displaying the current ranking list, the application offers functions for dynamically updating
 the ranking positions and for managing player blocking and availability.
@@ -8,22 +10,28 @@ Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
 Database: SQLite
 JSON data for initializing the players (initial_players.json)
 
-###############################################
 
-please formulate more beautifully:
+Please focus on the login behavior, after successfully login as a player everything will be displayed correctly,
+if the player clicks on the button "Admin area", the page will also be displayed correctly. within of the admin.html
+page the player cannot make any changes, the message appears: you are not authorized to submit a result for this
+challenge.
 
-Please focus on the new initial_players.json file when applying your changes.
-When the app starts from a fresh state with this JSON, every one of the 45 players
-must appear in the pyramid on index.html. Any player whose entry contains "is_available": false
-must be rendered in white to indicate unavailability, exactly as shown in the reference image.
+Important note: Every player is allowed to submit results on admin.html
+
+Please adjust accordingly.
+
+expected result: after a player has logged in, he can click on the button “Admin area” and submit results on this website.
 
 It is extremely important to apply all changes step by step, and to do so very carefully.
-Additionally, please always provide the complete, entire code for each file you modify.
+Additionally, please always provide the complete, entire code.
 This is extremely important for our code review process.
 At the end of this process, the tennis ranking app must be fully functional and production-ready.
 
 ###############################################
 ###############################################
+
+Role: Act as a Senior Full-Stack Developer and Security Expert.
+
 The Tennis Ranking List web application is used to manage tennis players and organize challenges between them.
 In addition to displaying the current ranking list, the application offers functions for dynamically updating
 the ranking positions and for managing player blocking and availability.
@@ -34,37 +42,8 @@ Frontend: HTML, CSS, JavaScript (jQuery, Bootstrap)
 Database: SQLite
 JSON data for initializing the players (initial_players.json)
 
-Please focus on index.html and to implement following new task.
-Task: Implement an availability change feature with confirmation dialog and reason input.
-Trigger Event:
-When player wants to change from "not available" to "available"
-
-Confirmation Dialog:
-Modal/Popup with text: "Please confirm that you want to be shown as not available!"
-Two buttons: "YES" and "NO"
-Dialog should block the rest of the page (modal)
-
-User Flow:
-On "NO":
-Close dialog
-No changes made
-Status remains "available"
-
-On "YES":
-Second dialog/input field appears
-Text field for reason (Placeholder: "e.g., Vacation until 15. Sep.")
-Validation: maximum 25 characters
-Confirm button
-Database Operations:
-Everything must be stored in the database
-
-When modifying database:
-- Provide an easy to handle migration script
-- Consider data integrity
-- Document schema changes
-
 It is extremely important to apply all changes step by step, and to do so very carefully.
-Additionally, please always provide the complete, entire code for each file you modify.
+Additionally, please always provide the complete, entire code for db_settings.html.
 This is extremely important for our code review process.
 At the end of this process, the tennis ranking app must be fully functional and production-ready.
 

@@ -3,14 +3,18 @@
 # Core Flask and Web Server
 Flask
 gunicorn
+bcrypt
 Werkzeug
 itsdangerous
 Jinja2
 click
+pip
 
 # Flask Plugins
 flask-cors
 Flask-SocketIO
+Flask-Login
+Flask-WTF
 
 # Async and Networking
 eventlet

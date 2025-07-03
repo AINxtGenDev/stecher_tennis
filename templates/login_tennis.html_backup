@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Rangliste 2025 - Login</title>
+    <style>
+        :root {
+            --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2;
+            --container-bg: #fff; --text-color: #333; --border-color: #ccc;
+            --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4);
+            --error-color: #dc3545; --success-color: #28a745; --input-bg: #f7f7f7;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif; background-color: var(--bg-color); min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            color: var(--text-color); perspective: 1000px;
+        }
+        .auth-container { width: 100%; max-width: 400px; transform-style: preserve-3d; }
+        .auth-card {
+            background: var(--container-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-shadow: 0 15px 25px var(--shadow-color);
+            transition: all 0.4s ease; transform: translateZ(10px); position: relative;
+        }
+        .auth-header {
+            text-align: center; margin-bottom: 32px; background-color: var(--primary-color);
+            padding: 20px; border-radius: 10px; transform: translateZ(5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+        }
+        .auth-header h1 {
+            color: #000; font-size: 2.5rem; font-weight: 700; margin-bottom: 8px;
+            text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
+        }
+        .auth-header p { color: #000; font-size: 16px; font-weight: 500; }
+        .form-group { margin-bottom: 24px; }
+        .form-group label {
+            display: block; font-weight: 600; color: var(--text-color);
+            margin-bottom: 8px; font-size: 1.1rem;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .form-group input[type="text"], .form-group input[type="password"] {
+            width: 100%; padding: 12px 40px 12px 16px; border: 1px solid var(--border-color);
+            border-radius: 6px; font-size: 16px; transition: all 0.3s ease;
+            background-color: var(--input-bg); color: var(--text-color); outline: none;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .form-group input:focus {
+            border-color: var(--primary-dark); background-color: white;
+            box-shadow: 0 0 0 2px var(--highlight-shadow);
+        }
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888;
+        }
+        .toggle-password:focus {
+            outline: none;
+            color: #333;
+        }
+        .toggle-password svg {
+            width: 20px;
+            height: 20px;
+        }
+        .btn-primary {
+            width: 100%; padding: 14px 24px; background: var(--primary-color);
+            color: #000; border: none; border-radius: 6px; font-size: 16px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark); transform: translateY(-1px);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+        .message {
+            padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;
+            text-align: center; box-shadow: 0 2px 4px var(--shadow-color);
+        }
+        .message.danger { background: #fef2f2; border: 1px solid #fecaca; color: var(--error-color); }
+        .message.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success-color); }
+        .message.warning { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+        .message.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>🎾 Tennis Rangliste</h1>
+                <p>Anmelden für Herausforderungen</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="message {{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+            
+            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="form-group">
+                    <label for="username">Benutzer</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required 
+                        placeholder="Benutzername eingeben"
+                        autocomplete="username"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Passwort</label>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            required 
+                            placeholder="Passwort eingeben"
+                            autocomplete="current-password"
+                        >
+                        <button type="button" id="togglePassword" class="toggle-password" aria-label="Passwort anzeigen/verbergen">
+                            <!-- SVG icon will be inserted here by script -->
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary">Anmelden</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.querySelector('#togglePassword');
+            const password = document.querySelector('#password');
+
+            const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+            const eyeSlashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></svg>`;
+
+            togglePassword.innerHTML = eyeIcon;
+
+            togglePassword.addEventListener('click', function () {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? eyeIcon : eyeSlashIcon;
+            });
+        });
+    </script>
+</body>
+</html>

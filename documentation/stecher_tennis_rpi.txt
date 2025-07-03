@@ -10,10 +10,13 @@ https://192.168.1.213/admin
 https://192.168.1.213/db_settings
 
 ##########################################
-## ssh & scp
+## ssh
 ##########################################
 ssh stecher@192.168.1.213 -o PreferredAuthentications=password -v
 
+##########################################
+## scp
+##########################################
 scp -r -o PreferredAuthentications=password . stecher@192.168.1.213:~/stecher_tennis/
 
 ##########################################
@@ -59,6 +62,7 @@ On my Ubuntu machine:
      # Core Flask and Web Server
      Flask
      gunicorn
+     bcrypt
      Werkzeug
      itsdangerous
      Jinja2

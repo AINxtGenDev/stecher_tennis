@@ -13,7 +13,11 @@ dependencies:
   - itsdangerous   # Security signing
   - jinja2         # Template engine
   - flask-socketio # For real-time communication with Socket.IO
+  - Flask-Login    # For user authentication
+  - Flask-WTF      # essential for CSRF protection (Cross-Site Request Forgery (CSRF) attacks)
+  - bcrypt         # For password hashing
   - pip            # For any packages not available in conda
+  - werkzeug       # library to hash the default passwords
   # Optional: Recommended for better performance with Flask-SocketIO (async mode)
   - eventlet
   # Development and testing tools

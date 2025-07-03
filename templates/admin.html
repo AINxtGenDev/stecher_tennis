@@ -5,432 +5,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Administrationsbereich</title>
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
   <style>
-    /* Global Styles using lemon yellow/grey theme with 3D effects */
-    :root {
-      --primary-color: #f8e473; /* Lemon Yellow - Used for the button background */
-      --primary-dark: #e6d661; /* Darker yellow for hover */
-      --bg-color: #f2f2f2;
-      --container-bg: #fff;
-      --text-color: #333;
-      --border-color: #ccc;
-      --shadow-color: rgba(0, 0, 0, 0.2);
-      --highlight-shadow: rgba(248, 228, 115, 0.4);
-      --challenger-color: #28a745; /* Green */
-      --opponent-color: #dc3545; /* Red */
-      --neutral-color: #6c757d; /* Grey */
-      --error-color: #dc3545; /* Red for errors/special results */
-    }
-
-    body {
-      background-color: var(--bg-color);
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      color: var(--text-color);
-      perspective: 1000px;
-    }
-
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-      background-color: var(--primary-color);
-      padding: 20px;
-      border-bottom: 3px solid var(--border-color);
-      transform: translateZ(30px);
-      box-shadow: 0 10px 25px var(--shadow-color);
-      border-radius: 10px;
-      position: relative;
-      transition: transform 0.3s ease;
-    }
-
-    header:hover {
-      transform: translateZ(40px) rotateX(2deg);
-    }
-
-    header h1 {
-      font-size: 3rem;
-      margin: 0;
-      color: #000;
-      text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      transform-style: preserve-3d;
-    }
-
-    .challenge-container {
-      background-color: var(--container-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-      box-shadow: 0 15px 25px var(--shadow-color);
-      transition: all 0.4s ease;
-      transform: translateZ(10px);
-      position: relative;
-    }
-
-    .challenge-container:hover {
-      transform: translateZ(25px) translateY(-5px);
-      box-shadow: 0 25px 40px var(--shadow-color);
-    }
-
-    .challenge-container p {
-      margin: 0 0 15px;
-      font-size: 1.5rem;
-      color: var(--text-color);
-      font-weight: 500;
-    }
-
-    .challenger-name {
-      color: var(--challenger-color);
-      font-weight: bold;
-    }
-    .opponent-name {
-      color: var(--opponent-color);
-      font-weight: bold;
-    }
-
-    .challenge-container form {
-      display: grid;
-      grid-template-columns: auto 1fr; /* Label | Control */
-      gap: 10px 15px; /* Row gap | Column gap */
-      align-items: center; /* Vertically align items in grid rows */
-    }
-
-    .challenge-container form label {
-      font-size: 1.1rem; /* Smaller labels */
-      color: #333;
-      font-weight: bold;
-      text-align: right;
-      grid-column: 1 / 2; /* Place label in first column */
-      padding-right: 10px; /* Add some space */
-    }
-
-    .challenge-container form select,
-    .challenge-container form input[type="text"],
-    .challenge-container form button { /* Base style for button included here */
-      font-size: 1.1rem; /* Smaller controls */
-      padding: 8px 12px; /* Adjust padding */
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      background-color: #f7f7f7;
-      color: var(--text-color);
-      outline: none;
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-      width: 100%; /* Make controls fill grid cell */
-      box-sizing: border-box; /* Include padding/border in width */
-      grid-column: 2 / 3; /* Place control in second column */
-    }
-    /* Style for disabled inputs within the details wrapper */
-    .result-details-wrapper input:disabled,
-    .result-details-wrapper select:disabled {
-        background-color: #e9ecef; /* Light grey background */
-        cursor: not-allowed;
-        opacity: 0.7; /* Slightly faded */
-    }
-
-
-    /* --- Wrapper for collapsible details --- */
-    .result-details-wrapper {
-        grid-column: 1 / 3; /* Span both columns */
-        margin-top: 10px;
-        /* display: none; is set inline initially */
-    }
-
-    /* --- Score Input Specific Styles --- */
-    .score-input-section {
-        display: grid;
-        grid-template-columns: auto repeat(3, minmax(80px, 1fr));
-        gap: 5px 10px;
-        align-items: center;
-        margin-top: 0; /* Adjusted margin */
-        margin-bottom: 5px;
-        padding-left: 5px;
-        border-left: 3px solid #eee;
-    }
-     .score-input-section .score-label {
-         grid-column: 1 / 2;
-         text-align: right;
-         font-size: 1.1rem;
-         font-weight: bold;
-         white-space: nowrap;
-     }
-    .score-input-section input[type="text"] { /* Inherits base styles, overrides specific ones */
-        font-size: 1rem;
-        padding: 6px 8px;
-        text-align: left;
-        /* width: 100%; */ /* Inherited */
-        grid-column: auto;
-        justify-self: stretch;
-    }
-    /* --- End Score Input Styles --- */
-
-    /* --- Special Result Input (Dropdown) --- */
-     .special-result-section {
-         display: grid;
-         grid-template-columns: auto 1fr;
-         gap: 10px 15px;
-         align-items: center;
-         margin-top: 5px;
-     }
-      .special-result-section label { /* Inherits base label styles */
-         grid-column: 1 / 2;
-         text-align: right;
-         /* font-size: 1.1rem; */ /* Inherited */
-         /* font-weight: bold; */ /* Inherited */
-      }
-       .special-result-section select { /* Inherits base select styles */
-         grid-column: 2 / 3;
-         /* font-size: 1.1rem; */ /* Inherited */
-         /* padding: 8px 12px; */ /* Inherited */
-       }
-    /* --- End Special Result Input --- */
-
-
-    /* --- Score Display --- */
-    .score-display-section {
-        margin: 10px 0;
-        padding: 10px;
-        background-color: #f0f0f0;
-        border: 1px dashed var(--border-color);
-        border-radius: 4px;
-        text-align: center;
-        font-size: 1.2rem;
-        font-weight: bold;
-        min-height: 2em;
-        line-height: 1.5em;
-        color: #333;
-    }
-    .score-display-section.score-error {
-        color: var(--error-color);
-        border-color: var(--error-color); /* Make border red for errors */
-        background-color: #ffe6e6; /* Light red background for errors */
-    }
-    /* --- End Score Display --- */
-
-    /* --- Result Dropdown & Submit Button --- */
-     .result-dropdown-section {
-         grid-column: 1 / 3;
-         display: grid;
-         grid-template-columns: auto 1fr;
-         gap: 10px 15px;
-         align-items: center;
-         margin-top: 5px;
-         margin-bottom: 0px; /* Reduced margin */
-     }
-      .result-dropdown-section label { /* Inherits base label styles */
-         grid-column: 1 / 2;
-         text-align: right;
-         /* font-size: 1.1rem; */ /* Inherited */
-         /* font-weight: bold; */ /* Inherited */
-      }
-       .result-dropdown-section select { /* Inherits base select styles */
-         grid-column: 2 / 3;
-         /* font-size: 1.1rem; */ /* Inherited */
-         /* padding: 8px 12px; */ /* Inherited */
-       }
-
-     .submit-button-section {
-         text-align: center;
-         margin-top: 15px;
-     }
-      /* --- MODIFIED: Adjusted padding and font-size for enabled button --- */
-      .submit-button-section button {
-         grid-column: auto; /* Override grid placement from base rule */
-         width: auto; /* Override width from base rule */
-         padding: 8px 20px; /* Adjusted padding for smaller look */
-         font-size: 1.1rem; /* Adjusted font size for smaller look */
-         background-color: var(--primary-color); /* Yellow background for enabled state */
-         color: #000; /* Black text on yellow */
-         cursor: pointer;
-         transition: all 0.3s ease;
-         box-shadow: 0 4px 8px var(--shadow-color);
-         transform: translateZ(5px);
-         position: relative;
-         /* Inherits border, border-radius, outline, box-sizing from base rule */
-      }
-       .submit-button-section button:disabled {
-           background-color: #e0e0e0; /* Grey background for disabled */
-           color: #999;
-           cursor: not-allowed;
-           box-shadow: none;
-           transform: none;
-           /* Inherits other properties like padding, font-size etc. unless overridden */
-       }
-        .submit-button-section button:not(:disabled):hover {
-          background-color: var(--primary-dark); /* Darker yellow on hover */
-          transform: translateZ(8px) translateY(-1px);
-          box-shadow: 0 6px 12px var(--shadow-color);
-        }
-         .submit-button-section button:not(:disabled):active {
-          transform: translateZ(2px) translateY(0px);
-          box-shadow: 0 2px 4px var(--shadow-color);
-        }
-    /* --- End Result/Submit --- */
-
-
-    .challenge-container form select option.option-challenger-wins {
-        color: var(--challenger-color);
-    }
-    .challenge-container form select option.option-opponent-wins {
-        color: var(--opponent-color);
-    }
-     .challenge-container form select option.option-not-happened {
-        color: var(--neutral-color);
-    }
-
-    .challenge-container form select:hover {
-      border-color: var(--primary-color);
-    }
-    .challenge-container form select:focus {
-      border-color: var(--primary-dark);
-      box-shadow: 0 0 0 2px var(--highlight-shadow);
-    }
-
-
-    /* Custom scrollbar for modern touch */
-    ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; box-shadow: inset 0 0 5px var(--shadow-color); }
-    ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
-
-    /* No results message */
+    /* All existing CSS remains the same... */
+    :root { --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2; --container-bg: #fff; --text-color: #333; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4); --challenger-color: #28a745; --opponent-color: #dc3545; --neutral-color: #6c757d; --error-color: #dc3545; }
+    body { background-color: var(--bg-color); font-family: Arial, sans-serif; margin: 0; padding: 20px; color: var(--text-color); perspective: 1000px; }
+    header { text-align: center; margin-bottom: 30px; background-color: var(--primary-color); padding: 20px; border-bottom: 3px solid var(--border-color); transform: translateZ(30px); box-shadow: 0 10px 25px var(--shadow-color); border-radius: 10px; position: relative; transition: transform 0.3s ease; }
+    header:hover { transform: translateZ(40px) rotateX(2deg); }
+    header h1 { font-size: 3rem; margin: 0; color: #000; text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow); }
+    main { max-width: 1200px; margin: 0 auto; transform-style: preserve-3d; }
+    .challenge-container { background-color: var(--container-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 30px; box-shadow: 0 15px 25px var(--shadow-color); transition: all 0.4s ease; transform: translateZ(10px); position: relative; }
+    .challenge-container:hover { transform: translateZ(25px) translateY(-5px); box-shadow: 0 25px 40px var(--shadow-color); }
+    .challenge-container p { margin: 0 0 15px; font-size: 1.5rem; color: var(--text-color); font-weight: 500; }
+    .challenger-name { color: var(--challenger-color); font-weight: bold; }
+    .opponent-name { color: var(--opponent-color); font-weight: bold; }
+    .challenge-container form { display: grid; grid-template-columns: auto 1fr; gap: 10px 15px; align-items: center; }
+    .challenge-container form label { font-size: 1.1rem; color: #333; font-weight: bold; text-align: right; grid-column: 1 / 2; padding-right: 10px; }
+    .challenge-container form select, .challenge-container form input[type="text"], .challenge-container form button { font-size: 1.1rem; padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; background-color: #f7f7f7; color: var(--text-color); outline: none; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; width: 100%; box-sizing: border-box; grid-column: 2 / 3; }
+    .result-details-wrapper input:disabled, .result-details-wrapper select:disabled { background-color: #e9ecef; cursor: not-allowed; opacity: 0.7; }
+    .result-details-wrapper { grid-column: 1 / 3; margin-top: 10px; }
+    .score-input-section { display: grid; grid-template-columns: auto repeat(3, minmax(80px, 1fr)); gap: 5px 10px; align-items: center; margin-top: 0; margin-bottom: 5px; padding-left: 5px; border-left: 3px solid #eee; }
+    .score-input-section .score-label { grid-column: 1 / 2; text-align: right; font-size: 1.1rem; font-weight: bold; white-space: nowrap; }
+    .score-input-section input[type="text"] { font-size: 1rem; padding: 6px 8px; text-align: left; grid-column: auto; justify-self: stretch; }
+    .special-result-section { display: grid; grid-template-columns: auto 1fr; gap: 10px 15px; align-items: center; margin-top: 5px; }
+    .special-result-section label { grid-column: 1 / 2; text-align: right; }
+    .special-result-section select { grid-column: 2 / 3; }
+    .score-display-section { margin: 10px 0; padding: 10px; background-color: #f0f0f0; border: 1px dashed var(--border-color); border-radius: 4px; text-align: center; font-size: 1.2rem; font-weight: bold; min-height: 2em; line-height: 1.5em; color: #333; }
+    .score-display-section.score-error { color: var(--error-color); border-color: var(--error-color); background-color: #ffe6e6; }
+    .result-dropdown-section { grid-column: 1 / 3; display: grid; grid-template-columns: auto 1fr; gap: 10px 15px; align-items: center; margin-top: 5px; margin-bottom: 0px; }
+    .result-dropdown-section label { grid-column: 1 / 2; text-align: right; }
+    .result-dropdown-section select { grid-column: 2 / 3; }
+    .submit-button-section { text-align: center; margin-top: 15px; }
+    .submit-button-section button { grid-column: auto; width: auto; padding: 8px 20px; font-size: 1.1rem; background-color: var(--primary-color); color: #000; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 8px var(--shadow-color); transform: translateZ(5px); position: relative; }
+    .submit-button-section button:disabled { background-color: #e0e0e0; color: #999; cursor: not-allowed; box-shadow: none; transform: none; }
+    .submit-button-section button:not(:disabled):hover { background-color: var(--primary-dark); transform: translateZ(8px) translateY(-1px); box-shadow: 0 6px 12px var(--shadow-color); }
+    .submit-button-section button:not(:disabled):active { transform: translateZ(2px) translateY(0px); box-shadow: 0 2px 4px var(--shadow-color); }
+    .challenge-container form select option.option-challenger-wins { color: var(--challenger-color); }
+    .challenge-container form select option.option-opponent-wins { color: var(--opponent-color); }
+    .challenge-container form select option.option-not-happened { color: var(--neutral-color); }
+    .challenge-container form select:hover { border-color: var(--primary-color); }
+    .challenge-container form select:focus { border-color: var(--primary-dark); box-shadow: 0 0 0 2px var(--highlight-shadow); }
+    ::-webkit-scrollbar { width: 10px; } ::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 10px; } ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; box-shadow: inset 0 0 5px var(--shadow-color); } ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
     .no-challenges { font-size: 1.5rem; text-align: center; padding: 30px; background-color: var(--container-bg); border-radius: 8px; box-shadow: 0 10px 20px var(--shadow-color); transform: translateZ(5px); transition: all 0.3s ease; }
     .no-challenges:hover { transform: translateZ(15px); }
-
-    /* --- Responsive Styles --- */
-    @media (max-width: 768px) {
-      body { padding: 10px; perspective: none; }
-      header { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 5px 15px var(--shadow-color); }
-      header:hover { transform: none !important; }
-      header h1 { font-size: 2rem; }
-      main { max-width: 100%; }
-      .challenge-container { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 8px 15px var(--shadow-color); }
-      .challenge-container:hover { transform: none !important; box-shadow: 0 12px 20px var(--shadow-color); }
-      .challenge-container p { font-size: 1.1rem; margin-bottom: 10px; }
-
-      .challenge-container form {
-          grid-template-columns: 1fr; /* Single column layout */
-          gap: 8px;
-      }
-       .challenge-container form label {
-           grid-column: 1 / -1; /* Span full width */
-           text-align: left; /* Align left on mobile */
-           font-size: 1rem;
-           margin-bottom: 0;
-           padding-right: 0; /* Remove padding */
-       }
-        .challenge-container form select,
-        .challenge-container form input[type="text"],
-        .challenge-container form button { /* Base mobile styles */
-            grid-column: 1 / -1; /* Span full width */
-            font-size: 1rem;
-            padding: 10px 12px; /* Reset padding for mobile */
-            width: 100%; /* Ensure full width */
-        }
-        /* Style for disabled inputs within the details wrapper on mobile */
-        .result-details-wrapper input:disabled,
-        .result-details-wrapper select:disabled {
-            /* Keep mobile styles consistent */
-        }
-
-
-       /* --- Ensure wrapper spans full width on mobile --- */
-       .result-details-wrapper {
-           grid-column: 1 / -1;
-       }
-
-       .score-input-section {
-           grid-template-columns: 1fr; /* Stack inputs */
-           gap: 8px;
-           padding-left: 0;
-           border-left: none;
-           margin-top: 5px; /* Adjust spacing */
-       }
-        .score-input-section .score-label {
-            grid-column: 1 / -1; /* Label spans full width */
-            text-align: left;
-            font-size: 0.9rem;
-        }
-         .score-input-section input[type="text"] {
-             /* width: 100%; */ /* Inherited */
-             font-size: 0.9rem;
-             min-width: 60px;
-             grid-column: 1 / -1; /* Each input takes full width */
-             /* padding: 6px 8px; */ /* Overridden by base mobile style */
-         }
-
-        .special-result-section,
-        .result-dropdown-section { /* Apply mobile styles to both */
-             grid-column: 1 / -1;
-             grid-template-columns: 1fr; /* Stack label and input */
-             gap: 5px;
-             margin-bottom: 5px; /* Adjust spacing */
-        }
-         .special-result-section label,
-         .result-dropdown-section label {
-             grid-column: 1 / -1;
-             text-align: left;
-             /* font-size: 1rem; */ /* Inherited */
-         }
-          .special-result-section select,
-          .result-dropdown-section select {
-             grid-column: 1 / -1;
-             /* font-size: 1rem; */ /* Inherited */
-             /* padding: 10px 12px; */ /* Inherited */
-         }
-
-        .score-display-section {
-            font-size: 1.1rem;
-        }
-        .submit-button-section {
-            /* grid-column: 1 / -1; */ /* Not needed */
-        }
-         /* --- Mobile button style override --- */
-         .submit-button-section button {
-             width: 100%; /* Full width button */
-             font-size: 1.1rem; /* Keep slightly larger font for mobile */
-             padding: 12px; /* More padding for easier tapping */
-             /* Inherits background, color etc. from base or :disabled */
-         }
-
-      .no-challenges { font-size: 1.1rem; padding: 20px; transform: none !important; }
-      .no-challenges:hover { transform: none !important; }
-    }
-
-    @media (max-width: 480px) {
-      header h1 { font-size: 1.8rem; }
-      .challenge-container p { font-size: 1rem; }
-      .challenge-container form label,
-      .challenge-container form select,
-      .challenge-container form input[type="text"],
-      .challenge-container form button, /* Base smaller mobile styles */
-      .no-challenges { font-size: 0.9rem; }
-
-       .score-input-section input[type="text"] {
-             margin-bottom: 5px;
-             /* font-size: 0.9rem; */ /* Inherited */
-         }
-
-         .score-display-section { font-size: 1rem; }
-         /* --- Smaller Mobile button style override --- */
-         .submit-button-section button {
-             font-size: 1rem; /* Slightly smaller font */
-             /* padding: 12px; */ /* Inherited from 768px breakpoint */
-         }
-    }
+    @media (max-width: 768px) { body { padding: 10px; perspective: none; } header { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 5px 15px var(--shadow-color); } header:hover { transform: none !important; } header h1 { font-size: 2rem; } main { max-width: 100%; } .challenge-container { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 8px 15px var(--shadow-color); } .challenge-container:hover { transform: none !important; box-shadow: 0 12px 20px var(--shadow-color); } .challenge-container p { font-size: 1.1rem; margin-bottom: 10px; } .challenge-container form { grid-template-columns: 1fr; gap: 8px; } .challenge-container form label { grid-column: 1 / -1; text-align: left; font-size: 1rem; margin-bottom: 0; padding-right: 0; } .challenge-container form select, .challenge-container form input[type="text"], .challenge-container form button { grid-column: 1 / -1; font-size: 1rem; padding: 10px 12px; width: 100%; } .result-details-wrapper { grid-column: 1 / -1; } .score-input-section { grid-template-columns: 1fr; gap: 8px; padding-left: 0; border-left: none; margin-top: 5px; } .score-input-section .score-label { grid-column: 1 / -1; text-align: left; font-size: 0.9rem; } .score-input-section input[type="text"] { font-size: 0.9rem; min-width: 60px; grid-column: 1 / -1; } .special-result-section, .result-dropdown-section { grid-column: 1 / -1; grid-template-columns: 1fr; gap: 5px; margin-bottom: 5px; } .special-result-section label, .result-dropdown-section label { grid-column: 1 / -1; text-align: left; } .special-result-section select, .result-dropdown-section select { grid-column: 1 / -1; } .score-display-section { font-size: 1.1rem; } .submit-button-section button { width: 100%; font-size: 1.1rem; padding: 12px; } .no-challenges { font-size: 1.1rem; padding: 20px; transform: none !important; } .no-challenges:hover { transform: none !important; } }
+    @media (max-width: 480px) { header h1 { font-size: 1.8rem; } .challenge-container p { font-size: 1rem; } .challenge-container form label, .challenge-container form select, .challenge-container form input[type="text"], .challenge-container form button, .no-challenges { font-size: 0.9rem; } .score-input-section input[type="text"] { margin-bottom: 5px; } .score-display-section { font-size: 1rem; } .submit-button-section button { font-size: 1rem; } }
   </style>
-  <!-- Load jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- Load Socket.IO client -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
 </head>
 <body>
+
+  <!-- MODIFIED: New Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-3 border-bottom">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="{{ url_for('index') }}">Tennis Rangliste</a>
+      <div class="ms-auto d-flex align-items-center">
+        <span class="navbar-text me-3">
+          Angemeldet als: <strong>{{ current_user.username }}</strong> ({{ current_user.privilege_level }})
+        </span>
+        <div>
+          <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-primary {% if request.endpoint == 'index' %}active{% endif %}">Rangliste</a>
+          {% if current_user.privilege_level in ['admin', 'superadmin'] %}
+            <a href="{{ url_for('admin') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'admin' %}active{% endif %}">Admin-Bereich</a>
+          {% endif %}
+          {% if current_user.privilege_level == 'superadmin' %}
+            <a href="{{ url_for('db_settings') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'db_settings' %}active{% endif %}">DB-Einstellungen</a>
+          {% endif %}
+          <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Abmelden</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MODIFIED: Flash Message Display -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
   <header>
     <h1>Ausstehende Herausforderungen</h1>
   </header>
@@ -438,630 +100,38 @@
     <div id="challenges-container">
       {% for challenge in challenges %}
         <div class="challenge-container" data-challenge-id="{{ challenge.id }}" data-challenger-id="{{ challenge.challenger_id }}" data-opponent-id="{{ challenge.opponent_id }}">
-          <p>
-            <span class="challenger-name">{{ challenge.challenger_name }}</span> gegen <span class="opponent-name">{{ challenge.opponent_name }}</span>
-            (Frist: {{ challenge.deadline.strftime('%Y-%m-%d %H:%M') if challenge.deadline else 'N/A' }}) {# Format deadline #}
-          </p>
-          <form class="result-form" method="POST" action="/submit_result">
+          <p><span class="challenger-name">{{ challenge.challenger_name }}</span> gegen <span class="opponent-name">{{ challenge.opponent_name }}</span> (Frist: {{ challenge.deadline.strftime('%Y-%m-%d %H:%M') if challenge.deadline else 'N/A' }})</p>
+          <form class="result-form" method="POST" action="{{ url_for('submit_result') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
-
-            <!-- *** Result Dropdown *** -->
-            <div class="result-dropdown-section">
-                <label for="result-{{ challenge.id }}">Sieger:</label>
-                <select id="result-{{ challenge.id }}" name="result" class="result-select">
-                  <option value="">-- Bitte wählen --</option> {# Add default option #}
-                  <option class="option-challenger-wins" value="challenger_wins">{{ challenge.challenger_name }} gewinnt</option>
-                  <option class="option-opponent-wins" value="opponent_wins">{{ challenge.opponent_name }} gewinnt</option>
-                  <option class="option-not-happened" value="not_happened">Nicht stattgefunden</option>
-                </select>
-            </div>
-
-            <!-- *** Wrapper for details, hidden initially *** -->
-            <div class="result-details-wrapper" style="display: none;">
-
-                <!-- Score Inputs -->
-                <div class="score-input-section">
-                     <label class="score-label">Endergebnis:</label>
-                     <input type="text" name="set1_score" class="score-input" placeholder="Satz 1: z.B. 0:6" aria-label="Satz 1 Ergebnis">
-                     <input type="text" name="set2_score" class="score-input" placeholder="Satz 2: z.B. 7:6(8:6)" aria-label="Satz 2 Ergebnis">
-                     <input type="text" name="set3_score" class="score-input" placeholder="Satz 3: z.B. 6:4" aria-label="Satz 3 Ergebnis">
-                </div>
-
-                <!-- Special Result Input (Dropdown) -->
-                 <div class="special-result-section">
-                    <label for="special_result-{{ challenge.id }}">Sonderfall:</label>
-                    <select id="special_result-{{ challenge.id }}" name="special_result" class="special-result-select">
-                        <option value="">-- Kein Sonderfall --</option>
-                        <option value="Aufgabe">Aufgabe</option>
-                        <option value="Disqualifikation">Disqualifikation</option>
-                    </select>
-                </div>
-
-                <!-- Score Display Area -->
-                <div id="score-display-{{ challenge.id }}" class="score-display-section">
-                    <!-- Score preview appears here -->
-                </div>
-
-                <!-- Submit Button -->
-                <div class="submit-button-section">
-                    <button type="submit" class="submit-button" disabled>Ergebnis absenden</button>
-                </div>
-
-            </div> <!-- *** END: result-details-wrapper *** -->
-
+            <div class="result-dropdown-section"><label for="result-{{ challenge.id }}">Sieger:</label><select id="result-{{ challenge.id }}" name="result" class="result-select"><option value="">-- Bitte wählen --</option><option class="option-challenger-wins" value="challenger_wins">{{ challenge.challenger_name }} gewinnt</option><option class="option-opponent-wins" value="opponent_wins">{{ challenge.opponent_name }} gewinnt</option><option class="option-not-happened" value="not_happened">Nicht stattgefunden</option></select></div>
+            <div class="result-details-wrapper" style="display: none;"><div class="score-input-section"><label class="score-label">Endergebnis:</label><input type="text" name="set1_score" class="score-input" placeholder="Satz 1: z.B. 0:6" aria-label="Satz 1 Ergebnis"><input type="text" name="set2_score" class="score-input" placeholder="Satz 2: z.B. 7:6(8:6)" aria-label="Satz 2 Ergebnis"><input type="text" name="set3_score" class="score-input" placeholder="Satz 3: z.B. 6:4" aria-label="Satz 3 Ergebnis"></div><div class="special-result-section"><label for="special_result-{{ challenge.id }}">Sonderfall:</label><select id="special_result-{{ challenge.id }}" name="special_result" class="special-result-select"><option value="">-- Kein Sonderfall --</option><option value="Aufgabe">Aufgabe</option><option value="Disqualifikation">Disqualifikation</option></select></div><div id="score-display-{{ challenge.id }}" class="score-display-section"></div><div class="submit-button-section"><button type="submit" class="submit-button" disabled>Ergebnis absenden</button></div></div>
           </form>
         </div>
       {% endfor %}
-
-      {% if not challenges %}
-        <div class="no-challenges">
-          Derzeit keine ausstehenden Herausforderungen.
-        </div>
-      {% endif %}
+      {% if not challenges %}<div class="no-challenges">Derzeit keine ausstehenden Herausforderungen.</div>{% endif %}
     </div>
   </main>
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
   <script>
+    // All existing JavaScript remains the same...
     $(document).ready(function(){
-      const socket = io({
-        reconnectionAttempts: 5, reconnectionDelay: 1000, timeout: 10000
-      });
+      $.ajaxSetup({ beforeSend: function(xhr, settings) { if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) { xhr.setRequestHeader("X-CSRFToken", $('meta[name="csrf-token"]').attr('content')); } } });
+      const socket = io({ reconnectionAttempts: 5, reconnectionDelay: 1000, timeout: 10000 });
       const $challengesContainer = $("#challenges-container");
-
-      // Regex for allowed characters in score input
-      const allowedScoreCharsRegex = /[^0-9:() ]/g; // Finds all NOT allowed characters
-      // Regex to check if a score looks potentially valid for confirmation (basic structure)
-      const validScoreFormatRegex = /^\d+:\d+(\(\d+:\d+\))?$/;
-      // Key for storing the reset timer ID on the form element
-      const formTimeoutKey = 'resetTimerId';
-      // Timeout duration in milliseconds (2 minutes)
-      const resetTimeoutDuration = 120 * 1000;
-
-      // --- Function to update the list of challenges from the server ---
-      function updateChallenges() {
-        // Clear existing reset timers before updating content
-        $('.result-form').each(function() {
-            const $form = $(this);
-            const timerId = $form.data(formTimeoutKey);
-            if (timerId) {
-                clearTimeout(timerId);
-                $form.removeData(formTimeoutKey);
-                console.log(`Cleared reset timer for form related to challenge ID: ${$form.find('input[name="challenge_id"]').val()} during update.`);
-            }
-        });
-
-        $.get("/admin", function(data){ // Fetch the admin page HTML
-          try {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data, "text/html");
-            const newContent = doc.querySelector("#challenges-container").innerHTML;
-            $challengesContainer.html(newContent); // Replace the content
-            add3DEffects(); // Re-apply 3D effects if any
-            bindInputListeners(); // Re-bind listeners to new elements
-
-            // Ensure button state AND visibility state are set after update for all forms
-            $('#challenges-container .result-form').each(function() {
-                const $form = $(this);
-                const $resultSelect = $form.find('.result-select');
-                if ($resultSelect.length) {
-                    handleInputChange({ target: $resultSelect[0] }); // Trigger state update
-                } else {
-                     console.warn("Could not find .result-select to initialize state for an updated form.");
-                }
-            });
-
-          } catch (error) { console.error("Error updating challenges:", error); }
-        });
-      }
-
-      // --- Function to add 3D effects (if applicable based on CSS) ---
-      function add3DEffects() {
-        $(".challenge-container").each(function(index) {
-          if (window.getComputedStyle(document.body).perspective !== 'none') {
-            $(this).css({'transition-delay': `${index * 0.1}s`, 'transform': `translateZ(${10 + index * 2}px)`});
-          } else {
-            $(this).css({'transition-delay': '', 'transform': ''});
-          }
-        });
-      }
-
-      // --- Function to sanitize score input, removing disallowed characters ---
-      function sanitizeScoreInput(event) {
-          const input = event.target;
-          const originalValue = input.value;
-          const sanitizedValue = originalValue.replace(allowedScoreCharsRegex, '');
-
-          if (originalValue !== sanitizedValue) {
-              let start = input.selectionStart;
-              let end = input.selectionEnd;
-              const diff = originalValue.length - sanitizedValue.length;
-              input.value = sanitizedValue;
-              // Adjust cursor position after sanitization
-              input.setSelectionRange(Math.max(0, start - diff), Math.max(0, end - diff));
-          }
-          // Trigger main input handler to update display and potentially button state
-          handleInputChange(event);
-      }
-
-      // --- Function to handle score input confirmation on blur ---
-      function handleScoreInputBlur(event) {
-          const input = event.target;
-          const $input = $(input);
-          const currentValue = input.value.trim();
-          const lastConfirmedValue = $input.data('confirmed-value') || '';
-
-          // Only confirm if the value is potentially valid, non-empty, and different from last confirmed
-          if (currentValue && currentValue !== lastConfirmedValue && validScoreFormatRegex.test(currentValue)) {
-              let setName = '';
-              if (input.name === 'set1_score') setName = 'Satz 1';
-              else if (input.name === 'set2_score') setName = 'Satz 2';
-              else if (input.name === 'set3_score') setName = 'Satz 3';
-
-              // German confirmation message
-              const confirmationMessage = `Bitte bestätige, dass ${setName} mit ${currentValue} beendet wurde.`;
-
-              if (confirm(confirmationMessage)) {
-                  $input.data('confirmed-value', currentValue); // Store confirmed value
-              } else {
-                  input.value = ''; // Clear input if user cancels
-                  $input.removeData('confirmed-value'); // Remove confirmation status
-              }
-          } else if (!currentValue || !validScoreFormatRegex.test(currentValue)) {
-              // If the value becomes empty or invalid after being confirmed, remove confirmation
-              $input.removeData('confirmed-value');
-          }
-          // Always trigger the main input handler after blur to re-evaluate form state
-          handleInputChange(event);
-      }
-
-      // --- Function to reset a specific form ---
-      function resetForm($form) {
-          if (!$form || !$form.length) return;
-
-          const challengeId = $form.find('input[name="challenge_id"]').val();
-          console.log(`Resetting form for challenge ID: ${challengeId} due to inactivity.`);
-
-          // Trigger handleInputChange with an empty target to reset based on empty result select
-          handleInputChange({ target: $form.find('.result-select')[0] });
-
-          // Clear the timer data from the form element
-          $form.removeData(formTimeoutKey);
-
-          // Optional: Add a visual cue that the form was reset
-          const $container = $form.closest('.challenge-container');
-          if ($container.length) {
-              $container.css('background-color', '#fff3cd'); // Light yellow flash
-              setTimeout(() => { $container.css('background-color', 'var(--container-bg)'); }, 1500);
-          }
-      }
-
-      /**
-       * Parses a tennis set score string.
-       * @param {string} scoreString - e.g., "6:4", "7:6(8:6)"
-       * @returns {object|null} - { challengerWins: boolean } or null if invalid.
-       */
-      function parseSetScore(scoreString) {
-          if (!scoreString) return null;
-          scoreString = scoreString.trim();
-
-          const tieBreakRegex = /^(\d+):(\d+)\((\d+):(\d+)\)$/;
-          const standardRegex = /^(\d+):(\d+)$/;
-          let match = scoreString.match(tieBreakRegex);
-          let isTieBreak = false;
-          let p1Games, p2Games, p1TieBreak, p2TieBreak;
-
-          if (match) {
-              isTieBreak = true;
-              p1Games = parseInt(match[1], 10);
-              p2Games = parseInt(match[2], 10);
-              p1TieBreak = parseInt(match[3], 10);
-              p2TieBreak = parseInt(match[4], 10);
-          } else {
-              match = scoreString.match(standardRegex);
-              if (!match) return null; // Invalid format
-              p1Games = parseInt(match[1], 10);
-              p2Games = parseInt(match[2], 10);
-          }
-
-          if (isNaN(p1Games) || isNaN(p2Games)) return null;
-
-          // --- Validation Logic ---
-          if (isTieBreak) {
-              if (isNaN(p1TieBreak) || isNaN(p2TieBreak)) return null;
-              
-              // Check if game score is consistent with a tie-break
-              if (!((p1Games === 7 && p2Games === 6) || (p1Games === 6 && p2Games === 7))) {
-                  return null;
-              }
-              
-              // Check tie-break score validity (win by 2, min 7 points)
-              const tieBreakDiff = Math.abs(p1TieBreak - p2TieBreak);
-              const maxTieBreak = Math.max(p1TieBreak, p2TieBreak);
-              if (tieBreakDiff < 2 || (maxTieBreak < 7)) {
-                  return null;
-              }
-              
-              // Check consistency: winner of games must match winner of tie-break
-              const p1WonGames = p1Games > p2Games;
-              const p1WonTieBreak = p1TieBreak > p2TieBreak;
-              if (p1WonGames !== p1WonTieBreak) {
-                  return null;
-              }
-              
-              return { challengerWins: p1WonGames };
-          } else {
-              // Standard set validation
-              const gameDiff = Math.abs(p1Games - p2Games);
-              const maxGames = Math.max(p1Games, p2Games);
-              const minGames = Math.min(p1Games, p2Games);
-
-              // Basic validation rules for standard sets
-              if (maxGames < 6) {
-                  return null; // Must win at least 6 games
-              }
-              
-              if (maxGames === 6 && gameDiff < 2) {
-                  return null; // 6-5 is invalid, must be 7-5
-              }
-              
-              if (maxGames > 7) {
-                  return null; // Max score can be 7-5 or 7-6
-              }
-              
-              if (maxGames === 7 && gameDiff > 2) {
-                  return null; // 7-4 is invalid
-              }
-              
-              if (maxGames === 7 && gameDiff === 1) {
-                  // 7-6 or 6-7 requires a tie-break format
-                  return null;
-              }
-              
-              // Valid standard scores: 6-0 to 6-4, 7-5
-              return { challengerWins: p1Games > p2Games };
-          }
-      }
-
-      /**
-       * Validates the entire match result based on scores and selected winner.
-       * @param {jQuery} $form - The jQuery object for the form being submitted.
-       * @returns {boolean|string} - True if valid, or an error message string if invalid.
-       */
-      function validateMatchResult($form) {
-          const selectedWinner = $form.find('.result-select').val();
-          const specialResult = $form.find('.special-result-select').val();
-          const s1 = $form.find('input[name="set1_score"]').val().trim();
-          const s2 = $form.find('input[name="set2_score"]').val().trim();
-          const s3 = $form.find('input[name="set3_score"]').val().trim();
-
-          // 1. Handle "Nicht stattgefunden"
-          if (selectedWinner === 'not_happened') {
-              return true;
-          }
-
-          // 2. Handle Special Results
-          if (specialResult) {
-              if (selectedWinner === 'challenger_wins' || selectedWinner === 'opponent_wins') {
-                  return true;
-              } else {
-                  return "Bitte wählen Sie einen Sieger für das Ergebnis '" + specialResult + "'.";
-              }
-          }
-
-          // 3. Standard Score Validation
-          if (!selectedWinner || selectedWinner === 'not_happened') {
-              return "Bitte wählen Sie einen Sieger oder 'Nicht stattgefunden'.";
-          }
-
-          if (!s1 || !s2) {
-              return "Bitte geben Sie das Ergebnis für Satz 1 und Satz 2 ein.";
-          }
-
-          let challengerSetsWon = 0;
-          let opponentSetsWon = 0;
-
-          // Parse Set 1
-          const setResult1 = parseSetScore(s1);
-          if (setResult1 === null) {
-              return `Ungültiges Format oder Ergebnis für Satz 1: "${s1}".`;
-          }
-          if (setResult1.challengerWins) challengerSetsWon++; else opponentSetsWon++;
-
-          // Parse Set 2
-          const setResult2 = parseSetScore(s2);
-          if (setResult2 === null) {
-              return `Ungültiges Format oder Ergebnis für Satz 2: "${s2}".`;
-          }
-          if (setResult2.challengerWins) challengerSetsWon++; else opponentSetsWon++;
-
-          // Check after 2 sets
-          if (challengerSetsWon === 2 || opponentSetsWon === 2) {
-              if (s3) {
-                  return `Das Match war bereits nach 2 Sätzen entschieden. Satz 3 darf nicht eingegeben werden.`;
-              }
-          } else { // Score is 1-1
-              if (!s3) {
-                  return `Das Match ist nach 2 Sätzen unentschieden (1:1). Satz 3 muss eingegeben werden.`;
-              }
-              const setResult3 = parseSetScore(s3);
-              if (setResult3 === null) {
-                  return `Ungültiges Format oder Ergebnis für Satz 3: "${s3}".`;
-              }
-              if (setResult3.challengerWins) challengerSetsWon++; else opponentSetsWon++;
-          }
-
-          // Determine overall winner from scores
-          let calculatedWinner = null;
-          if (challengerSetsWon > opponentSetsWon) {
-              calculatedWinner = 'challenger_wins';
-          } else if (opponentSetsWon > challengerSetsWon) {
-              calculatedWinner = 'opponent_wins';
-          } else {
-              // This case should only be reachable if the logic above fails, e.g. 1-1 without a third set.
-              return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`;
-          }
-          
-          // Final check on total sets won
-          if (challengerSetsWon < 2 && opponentSetsWon < 2) {
-              return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`;
-          }
-
-          // Compare with dropdown selection
-          if (calculatedWinner !== selectedWinner) {
-              const selectedWinnerName = $form.find('.result-select option:selected').text();
-              return `Der ausgewählte Sieger (${selectedWinnerName}) stimmt nicht mit dem Ergebnis der Sätze (${challengerSetsWon}:${opponentSetsWon}) überein.`;
-          }
-
-          return true;
-      }
-
-      // --- Function to handle input changes and update button state/score display ---
-      function handleInputChange(event) {
-          const $form = $(event.target).closest('form.result-form');
-          if (!$form.length) return;
-
-          const $submitButton = $form.find('.submit-button');
-          const $scoreDisplay = $form.find('.score-display-section');
-          const $resultSelect = $form.find('.result-select');
-          const selectedResult = $resultSelect.val();
-          const $detailsWrapper = $form.find('.result-details-wrapper');
-          const $scoreInputs = $form.find('.score-input');
-          const $specialResultSelect = $form.find('.special-result-select');
-
-          // --- Show/Hide Logic for Details ---
-          if (selectedResult) {
-              $detailsWrapper.slideDown(200);
-          } else {
-              $detailsWrapper.slideUp(200);
-              // When hiding, also clear inputs and reset state
-              $scoreInputs.val('').removeData('confirmed-value');
-              $specialResultSelect.val('');
-              $scoreDisplay.text('...').removeClass('score-error');
-              $submitButton.prop('disabled', true);
-              // Clear any active timer when selection is cleared
-              const currentTimerId = $form.data(formTimeoutKey);
-              if (currentTimerId) {
-                  clearTimeout(currentTimerId);
-                  $form.removeData(formTimeoutKey);
-              }
-              return; // Exit early as nothing else needs processing
-          }
-
-          // --- Disable/Enable Inputs based on "Nicht stattgefunden" ---
-          if (selectedResult === "not_happened") {
-              $scoreInputs.prop('disabled', true).val('').removeData('confirmed-value');
-              $specialResultSelect.prop('disabled', true).val('');
-          } else {
-              $scoreInputs.prop('disabled', false);
-              $specialResultSelect.prop('disabled', false);
-          }
-
-          // --- Score Validation and Display Logic ---
-          const s1Input = $form.find('input[name="set1_score"]');
-          const s2Input = $form.find('input[name="set2_score"]');
-          const s3Input = $form.find('input[name="set3_score"]');
-          const s1 = s1Input.val().trim();
-          const s2 = s2Input.val().trim();
-          const s3 = s3Input.val().trim();
-          const specialResult = $specialResultSelect.val();
-
-          let displayScore = "";
-          let scoreIsPotentiallyComplete = false; // Can we enable the button?
-          let requiresConfirmation = false; // Flag if any score needs confirmation
-          $scoreDisplay.removeClass('score-error'); // Reset error state
-
-          if (selectedResult === "not_happened") {
-              displayScore = "Nicht stattgefunden";
-              scoreIsPotentiallyComplete = true; // Enable button
-          } else if (specialResult === "Aufgabe" || specialResult === "Disqualifikation") {
-              displayScore = specialResult;
-              scoreIsPotentiallyComplete = true; // Enable button
-              $scoreDisplay.addClass('score-error'); // Use error color
-          } else if (s1 || s2 || s3) { // Only validate if scores entered AND not "Nicht stattgefunden"
-              const s1ValidFormat = !s1 || validScoreFormatRegex.test(s1);
-              const s2ValidFormat = !s2 || validScoreFormatRegex.test(s2);
-              const s3ValidFormat = !s3 || validScoreFormatRegex.test(s3);
-
-              const s1Confirmed = !s1 || s1Input.data('confirmed-value') === s1;
-              const s2Confirmed = !s2 || s2Input.data('confirmed-value') === s2;
-              const s3Confirmed = !s3 || s3Input.data('confirmed-value') === s3;
-
-              if (s1ValidFormat && s2ValidFormat && s3ValidFormat) {
-                  // Basic structure check: Need at least set 1 and set 2 for a standard result
-                  if (s1 && s2) {
-                      let sets = [s1, s2];
-                      if (s3) { sets.push(s3); }
-                      displayScore = sets.join(' ');
-
-                      // Check confirmation status
-                      if (s1Confirmed && s2Confirmed && s3Confirmed) {
-                          scoreIsPotentiallyComplete = true; // Format OK, confirmed, enable button
-                      } else {
-                          displayScore += " (Bestätigung ausstehend)";
-                          requiresConfirmation = true;
-                          scoreIsPotentiallyComplete = false; // Needs confirmation
-                      }
-                  } else if (s1 && !s2 && !s3) {
-                      displayScore = s1 + " (Satz 2 fehlt)";
-                      scoreIsPotentiallyComplete = false;
-                      if (!s1Confirmed) requiresConfirmation = true;
-                  } else {
-                      displayScore = "Unvollständig";
-                      scoreIsPotentiallyComplete = false;
-                      if ((s1 && !s1Confirmed) || (s2 && !s2Confirmed) || (s3 && !s3Confirmed)) requiresConfirmation = true;
-                  }
-              } else {
-                  displayScore = "Ungültiges Format";
-                  scoreIsPotentiallyComplete = false;
-                  $scoreDisplay.addClass('score-error');
-              }
-          } else {
-              // No scores entered, no special result, and not "Nicht stattgefunden"
-              displayScore = "..."; // Placeholder
-              scoreIsPotentiallyComplete = false;
-          }
-          $scoreDisplay.text(displayScore);
-
-          // --- Button Enable/Disable Logic ---
-          // Enable only if a winner/result type is selected AND
-          // (it's "not_happened" OR a special result OR the score is potentially complete and confirmed)
-          let enableButton = selectedResult &&
-                             (selectedResult === "not_happened" ||
-                              specialResult ||
-                              (scoreIsPotentiallyComplete && !requiresConfirmation));
-
-          $submitButton.prop('disabled', !enableButton);
-
-          // --- Timer Management Logic ---
-          let currentTimerId = $form.data(formTimeoutKey);
-          if (enableButton) {
-              if (currentTimerId) { clearTimeout(currentTimerId); }
-              const newTimerId = setTimeout(() => { resetForm($form); }, resetTimeoutDuration);
-              $form.data(formTimeoutKey, newTimerId);
-          } else {
-              if (currentTimerId) {
-                  clearTimeout(currentTimerId);
-                  $form.removeData(formTimeoutKey);
-              }
-          }
-      }
-
-
-      // --- Bind event listeners to form controls ---
-      function bindInputListeners() {
-          const scoreInputSelector = '.result-form .score-input';
-          const otherControlsSelector = '.result-form .result-select, .result-form .special-result-select';
-
-          // Use event delegation on the container
-          $challengesContainer.off('input', scoreInputSelector)
-                             .on('input', scoreInputSelector, sanitizeScoreInput);
-
-          $challengesContainer.off('blur', scoreInputSelector)
-                             .on('blur', scoreInputSelector, handleScoreInputBlur);
-
-          $challengesContainer.off('change', otherControlsSelector)
-                             .on('change', otherControlsSelector, handleInputChange);
-      }
-
-
-      // --- Socket.IO event handlers ---
-      socket.on("connect", function() {
-          console.log("Connected to server via Socket.IO");
-          updateChallenges(); // Fetch initial/updated challenges on connect
-      });
-
-      // MODIFIED: Listen for 'data_update' to know when any data has changed.
-      socket.on("data_update", function(payload) {
-          console.log("Received 'data_update' event from server", payload);
-          // The admin page just needs to know an update happened.
-          // It re-fetches its own content to stay in sync.
-          updateChallenges();
-      });
-
-      socket.on("connect_error", function(error) {
-          console.error("Socket.IO connection error:", error);
-      });
-      socket.on("disconnect", function(reason) {
-          console.log("Disconnected from server:", reason);
-      });
-      
-      socket.on("database_reset", function(data) {
-          console.log("Received 'database_reset' event on admin page:", data);
-          alert("Die Datenbank wurde zurückgesetzt. Die Liste der Herausforderungen wird aktualisiert.");
-          updateChallenges(); // Refresh the list of challenges
-      });
-
-      // --- Form submission handler using event delegation ---
-      $challengesContainer.on("submit", ".result-form", function(e) {
-        e.preventDefault(); // Prevent default form submission
-        const $form = $(this);
-        const $container = $form.closest(".challenge-container");
-        const $button = $form.find('.submit-button');
-        const $scoreDisplay = $form.find('.score-display-section');
-
-        // --- Perform Validation ---
-        const validationResult = validateMatchResult($form);
-        if (validationResult !== true) {
-            $scoreDisplay.text(validationResult).addClass('score-error');
-            $button.prop('disabled', false);
-            console.warn("Validation failed:", validationResult);
-            return; // Stop submission
-        }
-        // --- End Validation ---
-
-        // Clear the inactivity reset timer for this form
-        const timerId = $form.data(formTimeoutKey);
-        if (timerId) {
-            clearTimeout(timerId);
-            $form.removeData(formTimeoutKey);
-        }
-
-        // Visually indicate submission and prevent double-clicks
-        $container.css('opacity', '0.7');
-        $button.prop('disabled', true).text('Sende...');
-        $scoreDisplay.removeClass('score-error');
-
-        setTimeout(() => {
-            const formData = $form.serialize();
-            const challengeId = $container.data("challenge-id");
-            const challengerId = $container.data("challenger-id");
-            const opponentId = $container.data("opponent-id");
-
-            // AJAX POST request to the server
-            $.post("/submit_result", formData)
-              .done(function(response) {
-                console.log("Submit successful (client-side). Server will trigger update via Socket.IO.");
-                // The server now handles the redirect, and the socket event will trigger updateChallenges()
-              })
-              .fail(function(xhr, status, error) {
-                console.error("Error submitting result:", error, xhr.responseText);
-                $container.css({'opacity': '1', 'background-color': '#ffe6e6'});
-                setTimeout(function() { $container.css('background-color', 'var(--container-bg)'); }, 2000);
-                $button.prop('disabled', false).text('Ergebnis absenden');
-                 const errorMsg = xhr.responseJSON?.message || xhr.responseText || "Fehler bei der Übermittlung.";
-                 $scoreDisplay.text(errorMsg).addClass('score-error');
-                handleInputChange({ target: $form.find('.result-select')[0] });
-              });
-        }, 50);
-
-    });
-    // --- END Form submission handler ---
-
-
-      // --- Initial setup when the page loads ---
-      add3DEffects(); // Apply initial visual effects
-      bindInputListeners(); // Set up event handling for form inputs
-
-      // Ensure initial button state AND visibility are set correctly for all forms on load
-      $('.result-form').each(function() {
-          const $form = $(this);
-          const $resultSelect = $form.find('.result-select');
-          if ($resultSelect.length) {
-              handleInputChange({ target: $resultSelect[0] });
-          } else {
-              console.warn("Could not find .result-select to initialize state for a form on page load.");
-          }
-      });
+      const allowedScoreCharsRegex = /[^0-9:() ]/g; const validScoreFormatRegex = /^\d+:\d+(\(\d+:\d+\))?$/; const formTimeoutKey = 'resetTimerId'; const resetTimeoutDuration = 120 * 1000;
+      function updateChallenges() { $('.result-form').each(function() { const $form = $(this); const timerId = $form.data(formTimeoutKey); if (timerId) { clearTimeout(timerId); $form.removeData(formTimeoutKey); } }); $.get("{{ url_for('admin') }}", function(data){ try { const parser = new DOMParser(); const doc = parser.parseFromString(data, "text/html"); const newContent = doc.querySelector("#challenges-container").innerHTML; $challengesContainer.html(newContent); add3DEffects(); bindInputListeners(); $('#challenges-container .result-form').each(function() { const $form = $(this); const $resultSelect = $form.find('.result-select'); if ($resultSelect.length) { handleInputChange({ target: $resultSelect[0] }); } }); } catch (error) { console.error("Error updating challenges:", error); } }); }
+      function add3DEffects() { $(".challenge-container").each(function(index) { if (window.getComputedStyle(document.body).perspective !== 'none') { $(this).css({'transition-delay': `${index * 0.1}s`, 'transform': `translateZ(${10 + index * 2}px)`}); } else { $(this).css({'transition-delay': '', 'transform': ''}); } }); }
+      function sanitizeScoreInput(event) { const input = event.target; const originalValue = input.value; const sanitizedValue = originalValue.replace(allowedScoreCharsRegex, ''); if (originalValue !== sanitizedValue) { let start = input.selectionStart; let end = input.selectionEnd; const diff = originalValue.length - sanitizedValue.length; input.value = sanitizedValue; input.setSelectionRange(Math.max(0, start - diff), Math.max(0, end - diff)); } handleInputChange(event); }
+      function handleScoreInputBlur(event) { const input = event.target; const $input = $(input); const currentValue = input.value.trim(); const lastConfirmedValue = $input.data('confirmed-value') || ''; if (currentValue && currentValue !== lastConfirmedValue && validScoreFormatRegex.test(currentValue)) { let setName = ''; if (input.name === 'set1_score') setName = 'Satz 1'; else if (input.name === 'set2_score') setName = 'Satz 2'; else if (input.name === 'set3_score') setName = 'Satz 3'; const confirmationMessage = `Bitte bestätige, dass ${setName} mit ${currentValue} beendet wurde.`; if (confirm(confirmationMessage)) { $input.data('confirmed-value', currentValue); } else { input.value = ''; $input.removeData('confirmed-value'); } } else if (!currentValue || !validScoreFormatRegex.test(currentValue)) { $input.removeData('confirmed-value'); } handleInputChange(event); }
+      function resetForm($form) { if (!$form || !$form.length) return; const challengeId = $form.find('input[name="challenge_id"]').val(); console.log(`Resetting form for challenge ID: ${challengeId} due to inactivity.`); handleInputChange({ target: $form.find('.result-select')[0] }); $form.removeData(formTimeoutKey); const $container = $form.closest('.challenge-container'); if ($container.length) { $container.css('background-color', '#fff3cd'); setTimeout(() => { $container.css('background-color', 'var(--container-bg)'); }, 1500); } }
+      function parseSetScore(scoreString) { if (!scoreString) return null; scoreString = scoreString.trim(); const tieBreakRegex = /^(\d+):(\d+)\((\d+):(\d+)\)$/; const standardRegex = /^(\d+):(\d+)$/; let match = scoreString.match(tieBreakRegex); let isTieBreak = false; let p1Games, p2Games, p1TieBreak, p2TieBreak; if (match) { isTieBreak = true; p1Games = parseInt(match[1], 10); p2Games = parseInt(match[2], 10); p1TieBreak = parseInt(match[3], 10); p2TieBreak = parseInt(match[4], 10); } else { match = scoreString.match(standardRegex); if (!match) return null; p1Games = parseInt(match[1], 10); p2Games = parseInt(match[2], 10); } if (isNaN(p1Games) || isNaN(p2Games)) return null; if (isTieBreak) { if (isNaN(p1TieBreak) || isNaN(p2TieBreak)) return null; if (!((p1Games === 7 && p2Games === 6) || (p1Games === 6 && p2Games === 7))) return null; const tieBreakDiff = Math.abs(p1TieBreak - p2TieBreak); const maxTieBreak = Math.max(p1TieBreak, p2TieBreak); if (tieBreakDiff < 2 || (maxTieBreak < 7)) return null; const p1WonGames = p1Games > p2Games; const p1WonTieBreak = p1TieBreak > p2TieBreak; if (p1WonGames !== p1WonTieBreak) return null; return { challengerWins: p1WonGames }; } else { const gameDiff = Math.abs(p1Games - p2Games); const maxGames = Math.max(p1Games, p2Games); if (maxGames < 6) return null; if (maxGames === 6 && gameDiff < 2) return null; if (maxGames > 7) return null; if (maxGames === 7 && gameDiff > 2) return null; if (maxGames === 7 && gameDiff === 1) return null; return { challengerWins: p1Games > p2Games }; } }
+      function validateMatchResult($form) { const selectedWinner = $form.find('.result-select').val(); const specialResult = $form.find('.special-result-select').val(); const s1 = $form.find('input[name="set1_score"]').val().trim(); const s2 = $form.find('input[name="set2_score"]').val().trim(); const s3 = $form.find('input[name="set3_score"]').val().trim(); if (selectedWinner === 'not_happened') return true; if (specialResult) { if (selectedWinner === 'challenger_wins' || selectedWinner === 'opponent_wins') return true; else return "Bitte wählen Sie einen Sieger für das Ergebnis '" + specialResult + "'."; } if (!selectedWinner || selectedWinner === 'not_happened') return "Bitte wählen Sie einen Sieger oder 'Nicht stattgefunden'."; if (!s1 || !s2) return "Bitte geben Sie das Ergebnis für Satz 1 und Satz 2 ein."; let challengerSetsWon = 0, opponentSetsWon = 0; const setResult1 = parseSetScore(s1); if (setResult1 === null) return `Ungültiges Format oder Ergebnis für Satz 1: "${s1}".`; if (setResult1.challengerWins) challengerSetsWon++; else opponentSetsWon++; const setResult2 = parseSetScore(s2); if (setResult2 === null) return `Ungültiges Format oder Ergebnis für Satz 2: "${s2}".`; if (setResult2.challengerWins) challengerSetsWon++; else opponentSetsWon++; if (challengerSetsWon === 2 || opponentSetsWon === 2) { if (s3) return `Das Match war bereits nach 2 Sätzen entschieden. Satz 3 darf nicht eingegeben werden.`; } else { if (!s3) return `Das Match ist nach 2 Sätzen unentschieden (1:1). Satz 3 muss eingegeben werden.`; const setResult3 = parseSetScore(s3); if (setResult3 === null) return `Ungültiges Format oder Ergebnis für Satz 3: "${s3}".`; if (setResult3.challengerWins) challengerSetsWon++; else opponentSetsWon++; } let calculatedWinner = null; if (challengerSetsWon > opponentSetsWon) calculatedWinner = 'challenger_wins'; else if (opponentSetsWon > challengerSetsWon) calculatedWinner = 'opponent_wins'; else return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`; if (challengerSetsWon < 2 && opponentSetsWon < 2) return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`; if (calculatedWinner !== selectedWinner) { const selectedWinnerName = $form.find('.result-select option:selected').text(); return `Der ausgewählte Sieger (${selectedWinnerName}) stimmt nicht mit dem Ergebnis der Sätze (${challengerSetsWon}:${opponentSetsWon}) überein.`; } return true; }
+      function handleInputChange(event) { const $form = $(event.target).closest('form.result-form'); if (!$form.length) return; const $submitButton = $form.find('.submit-button'); const $scoreDisplay = $form.find('.score-display-section'); const $resultSelect = $form.find('.result-select'); const selectedResult = $resultSelect.val(); const $detailsWrapper = $form.find('.result-details-wrapper'); const $scoreInputs = $form.find('.score-input'); const $specialResultSelect = $form.find('.special-result-select'); if (selectedResult) { $detailsWrapper.slideDown(200); } else { $detailsWrapper.slideUp(200); $scoreInputs.val('').removeData('confirmed-value'); $specialResultSelect.val(''); $scoreDisplay.text('...').removeClass('score-error'); $submitButton.prop('disabled', true); const currentTimerId = $form.data(formTimeoutKey); if (currentTimerId) { clearTimeout(currentTimerId); $form.removeData(formTimeoutKey); } return; } if (selectedResult === "not_happened") { $scoreInputs.prop('disabled', true).val('').removeData('confirmed-value'); $specialResultSelect.prop('disabled', true).val(''); } else { $scoreInputs.prop('disabled', false); $specialResultSelect.prop('disabled', false); } const s1 = $form.find('input[name="set1_score"]').val().trim(); const s2 = $form.find('input[name="set2_score"]').val().trim(); const s3 = $form.find('input[name="set3_score"]').val().trim(); const specialResult = $specialResultSelect.val(); let displayScore = "", scoreIsPotentiallyComplete = false, requiresConfirmation = false; $scoreDisplay.removeClass('score-error'); if (selectedResult === "not_happened") { displayScore = "Nicht stattgefunden"; scoreIsPotentiallyComplete = true; } else if (specialResult === "Aufgabe" || specialResult === "Disqualifikation") { displayScore = specialResult; scoreIsPotentiallyComplete = true; $scoreDisplay.addClass('score-error'); } else if (s1 || s2 || s3) { const s1ValidFormat = !s1 || validScoreFormatRegex.test(s1); const s2ValidFormat = !s2 || validScoreFormatRegex.test(s2); const s3ValidFormat = !s3 || validScoreFormatRegex.test(s3); const s1Confirmed = !s1 || $form.find('input[name="set1_score"]').data('confirmed-value') === s1; const s2Confirmed = !s2 || $form.find('input[name="set2_score"]').data('confirmed-value') === s2; const s3Confirmed = !s3 || $form.find('input[name="set3_score"]').data('confirmed-value') === s3; if (s1ValidFormat && s2ValidFormat && s3ValidFormat) { if (s1 && s2) { let sets = [s1, s2]; if (s3) { sets.push(s3); } displayScore = sets.join(' '); if (s1Confirmed && s2Confirmed && s3Confirmed) { scoreIsPotentiallyComplete = true; } else { displayScore += " (Bestätigung ausstehend)"; requiresConfirmation = true; scoreIsPotentiallyComplete = false; } } else if (s1 && !s2 && !s3) { displayScore = s1 + " (Satz 2 fehlt)"; scoreIsPotentiallyComplete = false; if (!s1Confirmed) requiresConfirmation = true; } else { displayScore = "Unvollständig"; scoreIsPotentiallyComplete = false; if ((s1 && !s1Confirmed) || (s2 && !s2Confirmed) || (s3 && !s3Confirmed)) requiresConfirmation = true; } } else { displayScore = "Ungültiges Format"; scoreIsPotentiallyComplete = false; $scoreDisplay.addClass('score-error'); } } else { displayScore = "..."; scoreIsPotentiallyComplete = false; } $scoreDisplay.text(displayScore); let enableButton = selectedResult && (selectedResult === "not_happened" || specialResult || (scoreIsPotentiallyComplete && !requiresConfirmation)); $submitButton.prop('disabled', !enableButton); let currentTimerId = $form.data(formTimeoutKey); if (enableButton) { if (currentTimerId) { clearTimeout(currentTimerId); } const newTimerId = setTimeout(() => { resetForm($form); }, resetTimeoutDuration); $form.data(formTimeoutKey, newTimerId); } else { if (currentTimerId) { clearTimeout(currentTimerId); $form.removeData(formTimeoutKey); } } }
+      function bindInputListeners() { const scoreInputSelector = '.result-form .score-input'; const otherControlsSelector = '.result-form .result-select, .result-form .special-result-select'; $challengesContainer.off('input', scoreInputSelector).on('input', scoreInputSelector, sanitizeScoreInput); $challengesContainer.off('blur', scoreInputSelector).on('blur', scoreInputSelector, handleScoreInputBlur); $challengesContainer.off('change', otherControlsSelector).on('change', otherControlsSelector, handleInputChange); }
+      socket.on("connect", function() { console.log("Connected to server via Socket.IO"); updateChallenges(); }); socket.on("data_update", function(payload) { console.log("Received 'data_update' event from server", payload); updateChallenges(); }); socket.on("connect_error", function(error) { console.error("Socket.IO connection error:", error); }); socket.on("disconnect", function(reason) { console.log("Disconnected from server:", reason); }); socket.on("database_reset", function(data) { console.log("Received 'database_reset' event on admin page:", data); alert("Die Datenbank wurde zurückgesetzt. Die Liste der Herausforderungen wird aktualisiert."); updateChallenges(); });
+      $challengesContainer.on("submit", ".result-form", function(e) { e.preventDefault(); const $form = $(this); const $container = $form.closest(".challenge-container"); const $button = $form.find('.submit-button'); const $scoreDisplay = $form.find('.score-display-section'); const validationResult = validateMatchResult($form); if (validationResult !== true) { $scoreDisplay.text(validationResult).addClass('score-error'); $button.prop('disabled', false); return; } const timerId = $form.data(formTimeoutKey); if (timerId) { clearTimeout(timerId); $form.removeData(formTimeoutKey); } $container.css('opacity', '0.7'); $button.prop('disabled', true).text('Sende...'); $scoreDisplay.removeClass('score-error'); $form.get(0).submit(); });
+      add3DEffects(); bindInputListeners(); $('.result-form').each(function() { const $form = $(this); const $resultSelect = $form.find('.result-select'); if ($resultSelect.length) { handleInputChange({ target: $resultSelect[0] }); } });
     });
   </script>
 </body>

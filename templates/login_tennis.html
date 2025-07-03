@@ -3,315 +3,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tennis Rankings - Login</title>
+    <title>Tennis Rangliste 2025 - Login</title>
     <style>
-        /* Global Styles using lemon yellow/grey theme with 3D effects */
         :root {
-            --primary-color: #f8e473; /* Lemon Yellow - Used for the button background */
-            --primary-dark: #e6d661; /* Darker yellow for hover */
-            --bg-color: #f2f2f2;
-            --container-bg: #fff;
-            --text-color: #333;
-            --border-color: #ccc;
-            --shadow-color: rgba(0, 0, 0, 0.2);
-            --highlight-shadow: rgba(248, 228, 115, 0.4);
-            --error-color: #dc3545;
-            --success-color: #28a745;
-            --input-bg: #f7f7f7;
+            --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2;
+            --container-bg: #fff; --text-color: #333; --border-color: #ccc;
+            --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4);
+            --error-color: #dc3545; --success-color: #28a745; --input-bg: #f7f7f7;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            min-height: 100vh;
+            font-family: Arial, sans-serif; background-color: var(--bg-color); min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+            color: var(--text-color); perspective: 1000px;
+        }
+        .auth-container { 
+            width: 100%; max-width: 400px; transform-style: preserve-3d;
+            animation: containerEntrance 0.8s ease-out;
+        }
+        .auth-card {
+            background: var(--container-bg); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-shadow: 0 15px 25px var(--shadow-color);
+            transition: all 0.4s ease; transform: translateZ(10px); position: relative;
+        }
+        .auth-header {
+            text-align: center; margin-bottom: 32px; background-color: var(--primary-color);
+            padding: 20px 15px; /* MODIFIED: Adjusted horizontal padding */
+            border-radius: 10px; transform: translateZ(5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+            position: relative; overflow: hidden;
+        }
+        
+        /* Tennis ball animation */
+        .tennis-ball {
+            display: inline-block;
+            animation: ballBounce 2s ease-in-out infinite;
+            transform-origin: center bottom;
+            position: relative;
+        }
+        
+        /* Main title animations */
+        .auth-header h1 {
+            color: #000; font-size: 2.2rem; /* MODIFIED: Adjusted font size */
+            font-weight: 700; margin-bottom: 8px;
+            text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
+            animation: titleSlideIn 1s ease-out 0.3s both;
+        }
+        
+        /* Individual letter animations */
+        .animated-text {
+            display: inline-block;
+            white-space: nowrap;
+            min-width: max-content;
+        }
+        
+        .letter {
+            display: inline-block;
+            animation: letterDrop 0.6s ease-out both;
+            transition: all 0.3s ease;
+            white-space: pre;
+        }
+        
+        .letter:hover {
+            transform: translateY(-3px) scale(1.1);
+            color: var(--primary-dark);
+            text-shadow: 3px 3px 6px var(--shadow-color);
+        }
+        
+        .auth-header p { 
+            color: #000; font-size: 16px; font-weight: 500;
+            animation: subtitleFadeIn 1s ease-out 0.8s both;
+        }
+        
+        /* Background decoration */
+        .auth-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 70%
+            );
+            animation: shimmer 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        /* Floating tennis balls decoration */
+        .floating-balls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .floating-ball {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1.2rem;
+            animation: float 4s ease-in-out infinite;
+        }
+        
+        .floating-ball:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-ball:nth-child(2) {
+            top: 20%;
+            right: 15%;
+            animation-delay: 1s;
+        }
+        
+        .floating-ball:nth-child(3) {
+            bottom: 15%;
+            left: 20%;
+            animation-delay: 2s;
+        }
+        
+        /* Form animations */
+        .form-group { 
+            margin-bottom: 24px;
+            animation: formSlideUp 0.6s ease-out both;
+        }
+        
+        .form-group:nth-child(1) { animation-delay: 1.2s; }
+        .form-group:nth-child(2) { animation-delay: 1.4s; }
+        
+        .btn-primary {
+            width: 100%; padding: 14px 24px; background: var(--primary-color);
+            color: #000; border: none; border-radius: 6px; font-size: 16px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 8px var(--shadow-color);
+            animation: formSlideUp 0.6s ease-out 1.6s both;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transition: all 0.6s ease;
+            transform: translate(-50%, -50%);
+        }
+        
+        .btn-primary:hover::before {
+            width: 300%;
+            height: 300%;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark); transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 16px var(--shadow-color);
+        }
+        
+        .password-wrapper {
+            position: relative;
+        }
+        .form-group label {
+            display: block; font-weight: 600; color: var(--text-color);
+            margin-bottom: 8px; font-size: 1.1rem;
+        }
+        .form-group input[type="text"], .form-group input[type="password"] {
+            width: 100%; padding: 12px 40px 12px 16px; border: 1px solid var(--border-color);
+            border-radius: 6px; font-size: 16px; transition: all 0.3s ease;
+            background-color: var(--input-bg); color: var(--text-color); outline: none;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .form-group input:focus {
+            border-color: var(--primary-dark); background-color: white;
+            box-shadow: 0 0 0 2px var(--highlight-shadow);
+            transform: scale(1.02);
+        }
+        .toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
-            color: var(--text-color);
-            perspective: 1000px;
-        }
-
-        .auth-container {
-            width: 100%;
-            max-width: 400px;
-            transform-style: preserve-3d;
-        }
-
-        .auth-card {
-            background: var(--container-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 15px 25px var(--shadow-color);
-            transition: all 0.4s ease;
-            transform: translateZ(10px);
-            position: relative;
-            animation: slideUp 0.6s ease-out;
-        }
-
-        .auth-card:hover {
-            transform: translateZ(25px) translateY(-5px);
-            box-shadow: 0 25px 40px var(--shadow-color);
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px) translateZ(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) translateZ(10px);
-            }
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 32px;
-            background-color: var(--primary-color);
-            padding: 20px;
-            border-radius: 10px;
-            transform: translateZ(5px);
-            box-shadow: 0 10px 20px var(--shadow-color);
-            transition: transform 0.3s ease;
-            position: relative;
-        }
-
-        .auth-header:hover {
-            transform: translateZ(15px) rotateX(2deg);
-        }
-
-        .auth-header h1 {
-            color: #000;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow);
-        }
-
-        .auth-header p {
-            color: #000;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: var(--text-color);
-            margin-bottom: 8px;
-            font-size: 1.1rem;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="password"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 16px;
+            color: #888;
             transition: all 0.3s ease;
-            background-color: var(--input-bg);
-            color: var(--text-color);
+        }
+        .toggle-password:hover {
+            color: #333;
+            transform: translateY(-50%) scale(1.1);
+        }
+        .toggle-password:focus {
             outline: none;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            color: #333;
         }
-
-        .password-container {
-            position: relative;
-        }
-
-        .password-container input[type="password"],
-        .password-container input[type="text"] {
-            padding-right: 50px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            padding: 4px;
-            color: #6b7280;
-            transition: color 0.3s ease;
-            user-select: none;
-        }
-
-        .password-toggle:hover {
-            color: var(--primary-dark);
-        }
-
-        .password-toggle svg {
+        .toggle-password svg {
             width: 20px;
             height: 20px;
         }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-dark);
-            background-color: white;
-            box-shadow: 0 0 0 2px var(--highlight-shadow);
-        }
-
-        .form-group input.error {
-            border-color: var(--error-color);
-            background-color: #fef2f2;
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 14px 24px;
-            background: var(--primary-color);
-            color: #000;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 8px var(--shadow-color);
-            transform: translateZ(5px);
-            position: relative;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--primary-dark);
-            transform: translateZ(8px) translateY(-1px);
-            box-shadow: 0 6px 12px var(--shadow-color);
-        }
-
-        .btn-primary:active:not(:disabled) {
-            transform: translateZ(2px) translateY(0px);
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            background-color: #e0e0e0;
-            color: #999;
-            box-shadow: none;
-            transform: none;
-        }
-
         .message {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
-            text-align: center;
-            box-shadow: 0 2px 4px var(--shadow-color);
+            padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px;
+            text-align: center; box-shadow: 0 2px 4px var(--shadow-color);
+            animation: messageSlideIn 0.5s ease-out;
         }
-
-        .message.error {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: var(--error-color);
-        }
-
-        .message.success {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: var(--success-color);
-        }
-
-        .main-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 16px;
-        }
-
-        /* Custom scrollbar for modern touch */
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: var(--bg-color); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; box-shadow: inset 0 0 5px var(--shadow-color); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--primary-color); }
-
-        /* Responsive Styles */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-                perspective: none;
+        .message.danger { background: #fef2f2; border: 1px solid #fecaca; color: var(--error-color); }
+        .message.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: var(--success-color); }
+        .message.warning { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; }
+        .message.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        
+        /* Keyframe animations */
+        @keyframes containerEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) rotateX(10deg);
             }
-
-            .auth-card {
-                padding: 30px;
-                transform: none !important;
-                box-shadow: 0 8px 15px var(--shadow-color);
-            }
-
-            .auth-card:hover {
-                transform: none !important;
-                box-shadow: 0 12px 20px var(--shadow-color);
-            }
-
-            .auth-header {
-                padding: 15px;
-                transform: none !important;
-                box-shadow: 0 5px 15px var(--shadow-color);
-            }
-
-            .auth-header:hover {
-                transform: none !important;
-            }
-
-            .auth-header h1 {
-                font-size: 2rem;
-            }
-
-            .btn-primary {
-                transform: none !important;
-                box-shadow: 0 2px 4px var(--shadow-color);
-            }
-
-            .btn-primary:hover:not(:disabled) {
-                transform: none !important;
-                box-shadow: 0 4px 8px var(--shadow-color);
-            }
-
-            .btn-primary:active:not(:disabled) {
-                transform: none !important;
-                box-shadow: 0 1px 2px var(--shadow-color);
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
             }
         }
-
+        
+        @keyframes ballBounce {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg);
+                animation-timing-function: ease-out;
+            }
+            25% { 
+                transform: translateY(-10px) rotate(90deg);
+                animation-timing-function: ease-in;
+            }
+            50% { 
+                transform: translateY(0) rotate(180deg);
+                animation-timing-function: ease-out;
+            }
+            75% { 
+                transform: translateY(-5px) rotate(270deg);
+                animation-timing-function: ease-in;
+            }
+        }
+        
+        @keyframes titleSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes letterDrop {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px) rotateX(90deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+        
+        @keyframes subtitleFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+        
+        @keyframes float {
+            0%, 100% { 
+                transform: translateY(0px) rotate(0deg);
+                opacity: 0.3;
+            }
+            50% { 
+                transform: translateY(-20px) rotate(180deg);
+                opacity: 0.6;
+            }
+        }
+        
+        @keyframes formSlideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes messageSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Responsive design */
         @media (max-width: 480px) {
-            .auth-card {
-                padding: 20px;
-            }
-
             .auth-header h1 {
                 font-size: 1.8rem;
             }
-
-            .form-group label,
-            .btn-primary {
-                font-size: 14px;
+            
+            .auth-card {
+                padding: 20px;
             }
-
-            .form-group input[type="text"],
-            .form-group input[type="password"] {
-                font-size: 14px;
-                padding: 10px 12px;
+            
+            .animated-text {
+                word-break: keep-all;
+                overflow-wrap: normal;
             }
-
-            .password-container input[type="password"],
-            .password-container input[type="text"] {
-                padding-right: 40px;
+        }
+        
+        @media (max-width: 380px) {
+            .auth-header h1 {
+                font-size: 1.6rem;
             }
         }
     </style>
@@ -320,13 +355,30 @@
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <h1>🎾 Tennis Rankings</h1>
-                <p>Anmelden für Ihr Ranking</p>
+                <div class="floating-balls">
+                    <div class="floating-ball">🎾</div>
+                    <div class="floating-ball">🎾</div>
+                    <div class="floating-ball">🎾</div>
+                </div>
+                
+                <h1>
+                    <span class="tennis-ball">🎾</span> 
+                    <span class="animated-text" id="animatedTitle">Tennis Rangliste</span>
+                </h1>
+                <p>Anmelden für Herausforderungen</p>
             </div>
 
-            <div id="message" style="display: none;"></div>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="message {{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
             
-            <form id="loginForm">
+            <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
                 <div class="form-group">
                     <label for="username">Benutzer</label>
                     <input 
@@ -335,224 +387,108 @@
                         name="username" 
                         required 
                         placeholder="Benutzername eingeben"
+                        autocomplete="username"
                     >
                 </div>
                 
                 <div class="form-group">
                     <label for="password">Passwort</label>
-                    <div class="password-container">
+                    <div class="password-wrapper">
                         <input 
                             type="password" 
                             id="password" 
                             name="password" 
                             required 
                             placeholder="Passwort eingeben"
+                            autocomplete="current-password"
                         >
-                        <span class="password-toggle" id="passwordToggle">
-                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                <circle cx="12" cy="12" r="3"></circle>
-                            </svg>
-                        </span>
+                        <button type="button" id="togglePassword" class="toggle-password" aria-label="Passwort anzeigen/verbergen">
+                            <!-- SVG icon will be inserted here by script -->
+                        </button>
                     </div>
                 </div>
                 
-                <div class="main-buttons">
-                    <button type="button" class="btn-primary" id="forderungenBtn">
-                        Forderungen
-                    </button>
-                    <button type="button" class="btn-primary" id="ausstehendeBtn">
-                        ausstehende Forderungen
-                    </button>
-                    <button type="button" class="btn-primary" id="datenbankBtn">
-                        Datenbank
-                    </button>
-                </div>
+                <button type="submit" class="btn-primary">Anmelden</button>
             </form>
         </div>
     </div>
 
     <script>
-        // Brute force protection variables
-        let failedAttempts = 0;
-        let lockoutEndTime = null;
-        let countdownInterval = null;
-        const MAX_ATTEMPTS = 5;
-        const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+        document.addEventListener('DOMContentLoaded', function() {
+            // Password toggle functionality
+            const togglePassword = document.querySelector('#togglePassword');
+            const password = document.querySelector('#password');
 
-        function showMessage(text, type) {
-            const msgEl = document.getElementById('message');
-            msgEl.textContent = text;
-            msgEl.className = `message ${type}`;
-            msgEl.style.display = 'block';
-        }
+            const eyeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+            const eyeSlashIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" x2="22" y1="2" y2="22"></line></svg>`;
 
-        function hideMessage() {
-            document.getElementById('message').style.display = 'none';
-        }
+            togglePassword.innerHTML = eyeIcon;
 
-        function validateLogin(username, password) {
-            // Valid credentials
-            const validUsers = {
-                'testuser': 'Password123!'
-            };
+            togglePassword.addEventListener('click', function () {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? eyeIcon : eyeSlashIcon;
+            });
 
-            if (validUsers[username] && validUsers[username] === password) {
-                return { success: true, message: 'Anmeldung erfolgreich!' };
-            } else {
-                return { success: false, message: 'Ungültiger Benutzername oder Passwort' };
-            }
-        }
-
-        function isLockedOut() {
-            if (lockoutEndTime && Date.now() < lockoutEndTime) {
-                return true;
-            }
-            if (lockoutEndTime && Date.now() >= lockoutEndTime) {
-                // Lockout period has ended, reset everything
-                resetLockout();
-            }
-            return false;
-        }
-
-        function resetLockout() {
-            failedAttempts = 0;
-            lockoutEndTime = null;
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            enableButtons();
-        }
-
-        function startLockout() {
-            lockoutEndTime = Date.now() + LOCKOUT_DURATION;
-            disableButtons();
-            startCountdown();
-        }
-
-        function disableButtons() {
-            document.getElementById('forderungenBtn').disabled = true;
-            document.getElementById('ausstehendeBtn').disabled = true;
-            document.getElementById('datenbankBtn').disabled = true;
-        }
-
-        function enableButtons() {
-            document.getElementById('forderungenBtn').disabled = false;
-            document.getElementById('ausstehendeBtn').disabled = false;
-            document.getElementById('datenbankBtn').disabled = false;
-        }
-
-        function startCountdown() {
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-            }
-            
-            countdownInterval = setInterval(() => {
-                const remainingTime = lockoutEndTime - Date.now();
+            // Animate title letters individually
+            function animateTitle() {
+                const titleElement = document.getElementById('animatedTitle');
+                const text = titleElement.textContent;
+                titleElement.innerHTML = '';
                 
-                if (remainingTime <= 0) {
-                    resetLockout();
-                    hideMessage();
-                    return;
+                for (let i = 0; i < text.length; i++) {
+                    const letter = document.createElement('span');
+                    letter.className = 'letter';
+                    letter.textContent = text[i] === ' ' ? '\u00A0' : text[i]; // Non-breaking space
+                    letter.style.animationDelay = `${1.5 + i * 0.1}s`;
+                    titleElement.appendChild(letter);
                 }
-                
-                const minutes = Math.floor(remainingTime / 60000);
-                const seconds = Math.floor((remainingTime % 60000) / 1000);
-                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
-                showMessage(`🔒 Konto gesperrt wegen zu vieler fehlgeschlagener Versuche. Versuchen Sie es erneut in: ${timeString}`, 'error');
-            }, 1000);
-        }
-
-        function handleButtonClick(buttonName) {
-            hideMessage();
-            
-            // Check if currently locked out
-            if (isLockedOut()) {
-                const remainingTime = lockoutEndTime - Date.now();
-                const minutes = Math.floor(remainingTime / 60000);
-                const seconds = Math.floor((remainingTime % 60000) / 1000);
-                const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                showMessage(`🔒 Konto gesperrt. Versuchen Sie es erneut in: ${timeString}`, 'error');
-                startCountdown(); // Ensure countdown is running
-                return;
-            }
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            
-            if (!username || !password) {
-                showMessage('Bitte füllen Sie beide Felder aus', 'error');
-                return;
             }
 
-            const result = validateLogin(username, password);
-            
-            if (result.success) {
-                // Reset failed attempts on successful login
-                resetLockout();
+            // Initialize title animation
+            animateTitle();
+
+            // Add ripple effect to button
+            const button = document.querySelector('.btn-primary');
+            button.addEventListener('click', function(e) {
+                const ripple = document.createElement('div');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
                 
-                showMessage(`🎉 Anmeldung erfolgreich! Navigation zu ${buttonName}...`, 'success');
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    background: rgba(255, 255, 255, 0.6);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s ease-out;
+                    pointer-events: none;
+                `;
                 
-                // Clear the input fields after successful login
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
+                this.appendChild(ripple);
                 
-                // In a real app, redirect here based on button clicked
                 setTimeout(() => {
-                    showMessage(`🔄 Weiterleitung zu ${buttonName}...`, 'success');
-                }, 1500);
-            } else {
-                // Increment failed attempts
-                failedAttempts++;
-                
-                if (failedAttempts >= MAX_ATTEMPTS) {
-                    startLockout();
-                    showMessage(`🔒 Konto nach ${MAX_ATTEMPTS} fehlgeschlagenen Versuchen für 5 Minuten gesperrt.`, 'error');
-                } else {
-                    const remainingAttempts = MAX_ATTEMPTS - failedAttempts;
-                    showMessage(`${result.message} (${remainingAttempts} Versuche verbleibend)`, 'error');
+                    ripple.remove();
+                }, 600);
+            });
+
+            // Add the ripple keyframe animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
                 }
-            }
-        }
-
-        function togglePasswordVisibility() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                // Change to "eye-off" icon
-                eyeIcon.innerHTML = `
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                `;
-            } else {
-                passwordInput.type = 'password';
-                // Change back to "eye" icon
-                eyeIcon.innerHTML = `
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                `;
-            }
-        }
-
-        // Add event listeners for the three main buttons
-        document.getElementById('forderungenBtn').addEventListener('click', function() {
-            handleButtonClick('Forderungen');
+            `;
+            document.head.appendChild(style);
         });
-
-        document.getElementById('ausstehendeBtn').addEventListener('click', function() {
-            handleButtonClick('ausstehende Forderungen');
-        });
-
-        document.getElementById('datenbankBtn').addEventListener('click', function() {
-            handleButtonClick('Datenbank');
-        });
-
-        // Add event listener for password toggle
-        document.getElementById('passwordToggle').addEventListener('click', togglePasswordVisibility);
     </script>
 </body>
 </html>
