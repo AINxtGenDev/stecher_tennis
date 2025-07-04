@@ -8,14 +8,17 @@ A comprehensive web-based tennis ranking management system with real-time update
 
 The **Tennis Ranking Web Application** is a full-featured system for managing tennis players in a ranking-based tournament format. It provides real-time dynamic ranking updates, player blocking management, availability tracking, and advanced challenge scheduling with automatic rank adjustments based on match results.
 
+This version (v3.xx) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
+
 ## ✨ Key Features
 
-### Player Management
-- **Dynamic Ranking System**: Automatic ranking updates based on match results
-- **Player CRUD Operations**: Add, edit, and delete players with comprehensive validation
-- **Availability Tracking**: Players can toggle their availability status
-- **Blocking System**: Temporary blocking of players as challengers or opponents after matches
-- **New Player Integration**: Special workflow for integrating new players into the ranking
+### Player and Ranking Management
+- **Dynamic Ranking System**: Automatic ranking updates based on match results.
+- **Visual Pyramid Display**: An interactive pyramid visually represents the ranking hierarchy.
+- **Player CRUD Operations**: Admins can add, edit, and delete players with comprehensive validation.
+- **Availability Tracking**: Players can toggle their availability status, which affects challenge eligibility.
+- **Blocking System**: Players are temporarily blocked from challenging or being challenged after matches to ensure fair play.
+- **New Player Integration**: A dedicated workflow for new players to challenge into the ranking system.
 
 ### Challenge Management
 - **Challenge Creation**: Players can challenge opponents within specific ranking rules
@@ -24,10 +27,11 @@ The **Tennis Ranking Web Application** is a full-featured system for managing te
 - **Deadline Tracking**: Automatic deadline management with 10-day challenge windows
 - **Result Processing**: Comprehensive result entry with score validation
 
-### Real-time Features
-- **Live Updates**: Socket.IO-powered real-time updates across all connected clients
-- **Dynamic UI**: Instant reflection of changes without page refreshes
-- **Multi-client Sync**: All users see updates simultaneously
+### Real-time Features & UI
+- **Live Updates**: Powered by Flask-SocketIO, all changes (new challenges, results, availability) are broadcast to all connected clients in real-time without needing a page refresh.
+- **Dynamic UI**: The interface instantly reflects changes, providing a seamless user experience.
+- **Color-coded Status**: Players in the pyramid are color-coded to indicate their status (available, unavailable, active challenger, opponent, blocked).
+- **Responsive Design**: The application is optimized for both desktop and mobile devices.
 
 ### Advanced UI
 - **Pyramid Display**: Visual pyramid representation of the ranking hierarchy
@@ -35,20 +39,31 @@ The **Tennis Ranking Web Application** is a full-featured system for managing te
 - **Responsive Design**: Mobile-optimized interface with touch-friendly controls
 - **3D Effects**: Modern visual enhancements for better user experience
 
+### Authentication & Security
+- **Secure Login**: User authentication is handled with hashed passwords (bcrypt) and session management (Flask-Login).
+- **Role-Based Access Control**:
+    - **Player**: Can view rankings, manage their availability, and issue challenges.
+    - **Admin**: Can manage match results.
+    - **Superadmin**: Has full control over player management (add/edit/delete), database settings, and all admin functions.
+- **Protected Routes**: Critical pages and actions are protected and require appropriate user privileges.
+- **CSRF Protection**: Flask-WTF is used to prevent Cross-Site Request Forgery attacks on all forms.
+
 ## 🛠 Technical Stack
 
 ### Backend
-- **Framework**: Flask (Python web framework)
-- **Real-time**: Flask-SocketIO with eventlet for WebSocket support
-- **Database**: SQLite with comprehensive schema and views
-- **Configuration**: python-dotenv for environment management
-- **Validation**: Custom business logic validation for tennis match rules
+- **Framework**: Flask (Python)
+- **Real-time Communication**: Flask-SocketIO with Eventlet for high-performance WebSocket support.
+- **Authentication**: Flask-Login for session management, Bcrypt for password hashing.
+- **Security**: Flask-WTF for CSRF protection.
+- **Database**: SQLite for simplicity and portability.
+- **Configuration**: `python-dotenv` for managing environment variables.
 
 ### Frontend
-- **UI Framework**: Bootstrap 5 for responsive design
-- **Real-time Client**: Socket.IO client for live updates
-- **Styling**: Custom CSS with 3D effects and animations
-- **JavaScript**: jQuery for DOM manipulation and AJAX requests
+- **UI Framework**: Bootstrap 5 for a responsive and modern layout.
+- **JavaScript**: jQuery for DOM manipulation and AJAX.
+- **Real-time Client**: Socket.IO client library to receive live updates from the server.
+- **Templating**: Jinja2 (via Flask).
+- **Styling**: Custom CSS for thematic styling and effects.
 
 ### Deployment
 - **Web Server**: Gunicorn with eventlet workers
@@ -159,6 +174,27 @@ The application uses SQLite with the following key tables:
 
 ## 📖 Usage Guide
 
+### Authentication
+- All users must log in to access the application.
+- Initial credentials are provided in `initial_players.json`. The default password for most users is `DefaultPassword1!`.
+- Superadmins can change user passwords via the "DB-Einstellungen" (Database Settings) page.
+
+### User Roles
+- **Player**: Can view the ranking pyramid, see active challenges, and manage their own availability. Can issue challenges to eligible opponents.
+- **Admin**: Has all player permissions, plus access to the `/admin` page to submit match results.
+- **Superadmin**: Has all admin permissions, plus access to the `/db_settings` page to manage players (add, edit, delete, change passwords) and reset the database.
+
+### Main Workflow
+1.  **Login**: Access the application with your assigned username and password.
+2.  **View Rankings**: The main page displays the ranking pyramid.
+3.  **Challenge a Player**:
+    - Select yourself from the "Herausforderer" (Challenger) dropdown.
+    - The "Gegner" (Opponent) dropdown will populate with eligible players based on ranking rules.
+    - Click "Herausfordern" to create the challenge.
+4.  **Manage Availability**: Click the small square on your player card in the pyramid to toggle your availability.
+5.  **Submit Results (Admins)**: Navigate to the `/admin` page to view pending challenges and submit match scores.
+6.  **Manage Players (Superadmins)**: Navigate to the `/db_settings` page to manage the player roster.
+
 ### Basic Workflow
 
 1. **Player Management**
@@ -174,7 +210,7 @@ The application uses SQLite with the following key tables:
    - Optional: Schedule specific match date/time
 
 3. **Managing Results**
-   - Access admin panel at `/admin`
+   - Access admin button
    - Enter match results with score validation
    - System automatically updates rankings based on results
    - Players are temporarily blocked after matches
@@ -185,11 +221,7 @@ The application uses SQLite with the following key tables:
    - Successful integration places them in the ranking
    - Failed integration removes them from the system
 
-### Admin Functions
 
-Access admin features at:
-- `/admin` - Challenge result management
-- `/db_settings` - Player management and database operations
 
 ## 🌐 API Endpoints
 
@@ -216,23 +248,35 @@ Access admin features at:
 - `GET /admin` - Admin interface for challenge management
 - `GET /db_settings` - Database management interface
 
+
 ## 🗄️ Database Schema
 
-### Players Table
+The application uses a SQLite database with two main tables: `players` and `challenges`.
+
+### `players` Table
+Stores all user and player information.
+
 ```sql
 CREATE TABLE players (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    privilege_level TEXT NOT NULL DEFAULT 'player', -- (player, admin, superadmin)
+    is_ranked_player INTEGER NOT NULL DEFAULT 1,
     available INTEGER NOT NULL DEFAULT 1,
     rank INTEGER NOT NULL,
     unavailable_since DATETIME,
+    unavailability_reason TEXT,
     block_challenger_until DATETIME,
     block_opponent_until DATETIME,
     is_new INTEGER NOT NULL DEFAULT 0
 );
 ```
 
-### Challenges Table
+### `challenges` Table
+Stores all challenge information, both active and completed.
+
 ```sql
 CREATE TABLE challenges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
