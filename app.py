@@ -70,7 +70,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.38"
+APP_VERSION = "3.41"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -118,9 +118,7 @@ csrf = CSRFProtect(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
-login_manager.login_message = (
-    "Bitte melden Sie sich an, um auf diese Seite zuzugreifen."
-)
+login_manager.login_message = "Bitte melde dich an, um auf diese Seite zuzugreifen."
 login_manager.login_message_category = "warning"
 
 # --- NEW: Rate Limiting for Login ---
@@ -162,9 +160,7 @@ def admin_required(f):
             "admin",
             "superadmin",
         ]:
-            flash(
-                "Sie haben keine Berechtigung, auf diese Seite zuzugreifen.", "danger"
-            )
+            flash("Du hast keine Berechtigung, auf diese Seite zuzugreifen.", "danger")
             return redirect(url_for("index"))
         return f(*args, **kwargs)
 
@@ -953,7 +949,7 @@ def login():
                         wait_time = LOGIN_LOCKOUT_TIME - time_since_last_attempt
                         wait_minutes = int(wait_time.total_seconds() / 60) + 1
                         flash(
-                            f"Zu viele fehlgeschlagene Anmeldeversuche. Bitte warten Sie {wait_minutes} Minute(n).",
+                            f"Zu viele fehlgeschlagene Anmeldeversuche. Bitte warte {wait_minutes} Minute(n).",
                             "danger",
                         )
                         return redirect(url_for("login"))
@@ -1017,7 +1013,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash("Sie wurden erfolgreich abgemeldet.", "info")
+    flash("Du wurdest erfolgreich abgemeldet.", "info")
     return redirect(url_for("login"))
 
 
@@ -1043,7 +1039,7 @@ def index():
         if not all_data:
             logger.error("Failed to retrieve data for index page rendering.")
             flash(
-                "Konnte die Ranglistendaten nicht laden. Bitte versuchen Sie es später erneut.",
+                "Konnte die Ranglistendaten nicht laden. Bitte versuche es später erneut.",
                 "danger",
             )
             return (
@@ -1796,7 +1792,7 @@ def newplayer_challenge():
                     f"New player '{newplayer_name}' (ID: {newplayer_id}) was unexpectedly deleted during re-ranking. Rolling back."
                 )
                 raise sqlite3.Error(
-                    f"Der neue Spieler '{newplayer_name}' konnte nicht korrekt der Rangliste hinzugefügt werden. Bitte versuchen Sie es erneut."
+                    f"Der neue Spieler '{newplayer_name}' konnte nicht korrekt der Rangliste hinzugefügt werden. Bitte versuche es erneut."
                 )
             cur_opponent_after_rerank = db.execute(
                 "SELECT * FROM players WHERE id = ?", (opponent_id,)
