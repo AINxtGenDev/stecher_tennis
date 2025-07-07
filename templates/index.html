@@ -75,7 +75,56 @@
     .opponent-select { background-color: #ffe6e6 !important; border-color: #dc3545 !important; }
     .challenger-option { background-color: #e6ffe6; }
     .opponent-option { background-color: #ffe6e6; }
-    @media (max-width: 768px) { body { perspective: none; } .container { padding: 15px; } h2 { font-size: 1.8rem; } .ranking-list { perspective: none; } .ranking-list .row { transform: none; margin: 5px 0; } .ranking-list .player { width: 80px; height: 80px; font-size: 0.75rem; margin: 3px; transform: none !important; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); } .ranking-list .player:hover { transform: none !important; box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15); } .availability-toggle { width: 18px; height: 18px; top: 3px; right: 3px; } .legend { margin-bottom: 15px; } .legend-item { font-size: 0.8rem; margin: 3px 8px; } .legend-color { width: 18px; height: 18px; } #challengeForm .form-label { font-size: 0.9rem; } #challengeForm .form-select, #challengeForm .btn { font-size: 0.9rem; padding: 0.4rem 0.8rem; } .active-challenges, .blocked-players, .unavailable-players, .completed-challenges, .newplayer-challenge .card { max-width: 100%; margin-left: 0; margin-right: 0; } .custom-card-header h4 { font-size: 1rem; } .custom-card-body { padding: 10px; } .challenge-entry, .blocked-entry, .unavailable-entry, .completed-entry { font-size: 0.85rem; gap: 8px; flex-wrap: wrap; } .challenge-deadline, .blocked-info, .unavailable-info, .completed-info, .completed-result { font-size: 0.75rem; } .completed-result { min-width: 100px; } .challenge-date-selector { flex-direction: column; align-items: flex-start; gap: 3px; } .scheduled-date-dropdown, .scheduled-time-dropdown { min-width: 100%; } .selected-scheduled-date { margin-left: 0 !important; font-size: 0.75rem; } .newplayer-challenge h4 { font-size: 1.1rem; } .newplayer-challenge .form-label { font-size: 0.9rem; } .newplayer-challenge .form-control, .newplayer-challenge .form-select, .newplayer-challenge .btn { font-size: 0.9rem; } footer { font-size: 0.8rem; } footer h5 { font-size: 1rem; } }
+
+    /* MODIFIED: Media query for larger tablets (like Pixel Tablet landscape) and small desktops */
+    @media (max-width: 1200px) {
+      .ranking-list .player {
+        width: 80px;
+        height: 80px;
+        font-size: 0.55rem; /* Adjust font for better fit */
+      }
+    }
+
+    @media (max-width: 768px) { 
+      body { perspective: none; } 
+      .container { padding: 15px; } 
+      h2 { font-size: 1.8rem; } 
+      .ranking-list { perspective: none; } 
+      .ranking-list .row { transform: none; margin: 5px 0; } 
+      .ranking-list .player { 
+        /* This size is for portrait tablets, overriding the 1200px rule */
+        width: 65px; 
+        height: 65px; 
+        font-size: 0.7rem; 
+        margin: 3px; 
+        transform: none !important; 
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
+      } 
+      .ranking-list .player:hover { 
+        transform: none !important; 
+        box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15); 
+      } 
+      .availability-toggle { width: 18px; height: 18px; top: 3px; right: 3px; } 
+      .legend { margin-bottom: 15px; } 
+      .legend-item { font-size: 0.8rem; margin: 3px 8px; } 
+      .legend-color { width: 18px; height: 18px; } 
+      #challengeForm .form-label { font-size: 0.9rem; } 
+      #challengeForm .form-select, #challengeForm .btn { font-size: 0.9rem; padding: 0.4rem 0.8rem; } 
+      .active-challenges, .blocked-players, .unavailable-players, .completed-challenges, .newplayer-challenge .card { max-width: 100%; margin-left: 0; margin-right: 0; } 
+      .custom-card-header h4 { font-size: 1rem; } 
+      .custom-card-body { padding: 10px; } 
+      .challenge-entry, .blocked-entry, .unavailable-entry, .completed-entry { font-size: 0.85rem; gap: 8px; flex-wrap: wrap; } 
+      .challenge-deadline, .blocked-info, .unavailable-info, .completed-info, .completed-result { font-size: 0.75rem; } 
+      .completed-result { min-width: 100px; } 
+      .challenge-date-selector { flex-direction: column; align-items: flex-start; gap: 3px; } 
+      .scheduled-date-dropdown, .scheduled-time-dropdown { min-width: 100%; } 
+      .selected-scheduled-date { margin-left: 0 !important; font-size: 0.75rem; } 
+      .newplayer-challenge h4 { font-size: 1.1rem; } 
+      .newplayer-challenge .form-label { font-size: 0.9rem; } 
+      .newplayer-challenge .form-control, .newplayer-challenge .form-select, .newplayer-challenge .btn { font-size: 0.9rem; } 
+      footer { font-size: 0.8rem; } 
+      footer h5 { font-size: 1rem; } 
+    }
     
     /* --- MOBILE OPTIMIZATION START --- */
     /* Further adjustments for very small screens (Phones) */
