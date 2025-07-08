@@ -322,31 +322,153 @@ CREATE TABLE challenges (
    - Successful integration places them in the ranking
    - Failed integration removes them from the system
 
-## 🌐 API Endpoints
+# 🌐 API Endpoints
 
-### Player Management
-- `GET /get_players` - Retrieve all players with status
-- `POST /toggle_availability` - Toggle player availability
-- `POST /eligible_opponents` - Get valid opponents for a challenger
+## 1. User Authentication & Session Management
 
-### Challenge Management
-- `POST /challenge` - Create new challenge
-- `POST /submit_result` - Submit match result (admin only)
-- `POST /update_scheduled_date` - Update match scheduling
-- `POST /newplayer_challenge` - Create challenge for new player
+These endpoints handle user login, logout, and session control.
 
-### Admin Operations
-- `POST /add_player` - Add new player (admin)
-- `POST /update_player` - Update player details (admin)
-- `POST /delete_player` - Remove player (admin)
-- `POST /set_player_block_status` - Manage player blocking (admin)
-- `POST /reset_database` - Reset entire database (admin)
+### `GET, POST /login`
+- **Method:** `GET`, `POST`
+- **Description:** Renders the login page (`GET`) and processes user authentication (`POST`). Implements rate limiting to prevent brute-force attacks.
+- **Authorization:** Public
 
-### Data Access
-- `GET /api/realtime_data` - Get current system state
-- `GET /admin` - Admin interface for challenge management
-- `GET /db_settings` - Database management interface
+### `GET /logout`
+- **Method:** `GET`
+- **Description:** Logs out the currently authenticated user and redirects to the login page.
+- **Authorization:** `@login_required` (Any logged-in user)
 
+### `GET /`
+- **Method:** `GET`
+- **Description:** The root URL of the application. It automatically redirects to `/login`.
+- **Authorization:** Public
+
+---
+
+## 2. Main Application Routes
+
+These routes serve the primary views of the application for authenticated users.
+
+### `GET /index`
+- **Method:** `GET`
+- **Description:** Displays the main dashboard, including the tennis pyramid, active challenges, completed games, and player status lists.
+- **Authorization:** `@login_required`
+
+### `GET /admin`
+- **Method:** `GET`
+- **Description:** Renders the administration page. This page provides tools for managing active challenges and players. While the route itself only requires login, the actions available on the page are protected by admin-level authorization.
+- **Authorization:** `@login_required`
+
+---
+
+## 3. Data-Fetching API Endpoints (JSON)
+
+These endpoints provide data to the frontend for dynamic updates.
+
+### `GET /api/realtime_data`
+- **Method:** `GET`
+- **Description:** Returns a comprehensive JSON object containing all current data for the application, including players, active/completed challenges, and blocked players. This is the primary endpoint for keeping the UI in sync.
+- **Authorization:** `@login_required`
+
+### `GET /get_players`
+- **Method:** `GET`
+- **Description:** Returns a detailed JSON list of all players, including their rank, availability, and any active blocks.
+- **Authorization:** `@login_required`
+
+### `POST /eligible_opponents`
+- **Method:** `POST`
+- **Description:** Accepts a `challenger_id` and returns a JSON list of opponents that the specified player is currently eligible to challenge based on ranking rules and availability.
+- **Authorization:** `@login_required`
+
+---
+
+## 4. Core Action API Endpoints
+
+These endpoints handle the primary user actions within the application.
+
+### `POST /challenge`
+- **Method:** `POST`
+- **Description:** Creates a new challenge between two players.
+- **Authorization:** `@login_required`
+
+### `POST /newplayer_challenge`
+- **Method:** `POST`
+- **Description:** Adds a new player to the pyramid by immediately creating a challenge against a selected, eligible opponent.
+- **Authorization:** `@login_required`
+
+### `POST /toggle_availability`
+- **Method:** `POST`
+- **Description:** Toggles a player's availability status (e.g., from "available" to "unavailable" for a vacation).
+- **Authorization:** `@login_required`
+
+### `POST /update_scheduled_date`
+- **Method:** `POST`
+- **Description:** Sets or updates the agreed-upon play date and time for an active challenge.
+- **Authorization:** `@login_required`
+
+---
+
+## 5. Admin-Only API Endpoints
+
+These endpoints are restricted to users with `admin` or `superadmin` privileges and are used for managing the game and its players.
+
+### `POST /submit_result`
+- **Method:** `POST`
+- **Description:** Submits the result of a completed challenge. This action resolves the challenge, updates player ranks if necessary, and applies post-game blocks.
+- **Authorization:** `@login_required` (Note: The documentation indicates any logged-in user can submit, but it's functionally an admin action performed from the `/admin` page).
+
+### `POST /add_player`
+- **Method:** `POST`
+- **Description:** Manually adds a new player to the system with a specified name and rank.
+- **Authorization:** `@admin_required`
+
+### `POST /update_player/<int:player_id>`
+- **Method:** `POST`
+- **Description:** Updates the details (name, rank, etc.) of a specific player.
+- **Authorization:** `@admin_required`
+
+### `POST /delete_player/<int:player_id>`
+- **Method:** `POST`
+- **Description:** Deletes a player from the system.
+- **Authorization:** `@admin_required`
+
+### `POST /cancel_challenge`
+- **Method:** `POST`
+- **Description:** Cancels an active challenge without affecting player ranks or applying blocks.
+- **Authorization:** `@admin_required`
+
+### `POST /reset_password`
+- **Method:** `POST`
+- **Description:** Resets a player's password to a default value.
+- **Authorization:** `@admin_required`
+
+---
+
+## 6. Superadmin-Only Routes
+
+These routes are for system-level database management and are restricted to users with the `superadmin` privilege level.
+
+### `GET /db_settings`
+- **Method:** `GET`
+- **Description:** Renders the page for database management, including options to back up and restore the database.
+- **Authorization:** `@superadmin_required`
+
+### `POST /api/db_actions`
+- **Method:** `POST`
+- **Description:** Performs a database action, such as creating a backup file.
+- **Authorization:** `@superadmin_required`
+
+### `GET /download_db`
+- **Method:** `GET`
+- **Description:** Downloads a backup of the SQLite database file.
+- **Authorization:** `@superadmin_required`
+
+### `POST /upload_db`
+- **Method:** `POST`
+- **Description:** Uploads and restores a database file, replacing the current one.
+- **Authorization:** `@superadmin_required`
+
+---
 
 ## 🐧 Raspberry Pi Deployment
 
