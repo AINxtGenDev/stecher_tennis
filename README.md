@@ -168,6 +168,7 @@ python app.py
 ```
 
 Access the application at `http://127.0.0.1:5000`
+Access the application on mobile device use the ip-address from your development server like `http://192.168.1.8:5000`
 
 ### Production Requirements
 ```
