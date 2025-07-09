@@ -685,7 +685,9 @@ tail -f /var/log/caddy/access.log
 # initial_players.json    112
 # schema.sql	           59
 # error.html	           21
+#############################
 # Total	                3.965
+#############################
 ```
 
 ## 📝 License
