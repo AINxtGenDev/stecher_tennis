@@ -7,69 +7,95 @@ A comprehensive web-based tennis ranking management system with real-time update
 ## 🎯 Project Overview
 
 The **Tennis Ranking Web Application** is a full-featured system for managing tennis players in a ranking-based tournament format. It provides real-time dynamic ranking updates, player blocking management, availability tracking, and advanced challenge scheduling with automatic rank adjustments based on match results.
-
 This version (v3.xx) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
+
+## 🛠 Core Technologies
+
+- **Backend**: Python with the **Flask** web framework.
+- **Real-time Communication**: **Flask-SocketIO** is used to push live data updates to all connected clients, ensuring the UI is always synchronized without needing page reloads.
+- **Frontend**:
+    - **HTML5** with Jinja2 templating.
+    - **CSS**: **Bootstrap 5** for layout and styling, with significant custom CSS for a unique, 3D-effect look and feel.
+    - **JavaScript**: **jQuery** for DOM manipulation and event handling, and the Socket.IO client library for real-time communication.
+- **Database**: **SQLite 3**, with the schema defined in `schema.sql`.
+- **Security**:
+    - **bcrypt** for securely hashing user passwords.
+    - **Flask-Login** for managing user sessions and authentication.
+    - **Flask-WTF** for CSRF (Cross-Site Request Forgery) protection on all forms.
 
 ## ✨ Key Features
 
-### Player and Ranking Management
-- **Dynamic Ranking System**: Automatic ranking updates based on match results.
-- **Visual Pyramid Display**: An interactive pyramid visually represents the ranking hierarchy.
-- **Player CRUD Operations**: Admins can add, edit, and delete players with comprehensive validation.
-- **Availability Tracking**: Players can toggle their availability status, which affects challenge eligibility.
-- **Blocking System**: Players are temporarily blocked from challenging or being challenged after matches to ensure fair play.
-- **New Player Integration**: A dedicated workflow for new players to challenge into the ranking system.
+- **Player Ranking Pyramid**: The main page (`index.html`) displays players in a visual pyramid structure, clearly showing their current rank.
+- **Authentication & Authorization**:
+    - Secure login system (`login_tennis.html`).
+    - Three user privilege levels: `player`, `admin`, and `superadmin`.
+    - Navigation and features are dynamically shown/hidden based on the logged-in user's role.
+- **Challenge System**:
+    - Players can challenge others based on a set of rules (e.g., rank proximity).
+    - The system enforces who can challenge whom.
+    - Active challenges are displayed in a dedicated section.
+- **New Player Integration**: A special workflow allows a new, unranked player to challenge an existing player (between ranks 11-44) to enter the pyramid.
+- **Result Submission**: Admins can enter match results, including set scores and special outcomes like "Walkover" or "Disqualification." The system validates the score format.
+- **Automatic Re-ranking**: Based on a challenge outcome, the system automatically adjusts player ranks. If a lower-ranked challenger wins, they take the opponent's rank, and all players in between are shifted down.
+- **Player Availability**: Players can mark themselves as "unavailable," preventing them from being challenged. When they become available again, they are temporarily blocked from challenging higher-ranked players.
+- **Player Blocking**: After a match, players are temporarily "blocked" (for 7 days) from challenging or being challenged by the same opponent to encourage variety.
+- **Real-time UI**: All changes (new challenges, results, availability changes) are instantly reflected on the UIs of all connected users via WebSockets.
+- **Administration Panels**:
+    - **Admin (`admin.html`)**: View and manage all pending challenges.
+    - **Super-Admin (`db_settings.html`)**: A powerful panel to:
+        - Edit/delete any player.
+        - Manually adjust player block status.
+        - Change any user's password.
+        - **Reset the entire database** to its initial state.
 
-### Challenge Management
-- **Challenge Creation**: Players can challenge opponents within specific ranking rules
-- **Eligibility Rules**: Sophisticated rules determining valid opponents based on rank
-- **Schedule Management**: Set specific dates and times for matches
-- **Deadline Tracking**: Automatic deadline management with 10-day challenge windows
-- **Result Processing**: Comprehensive result entry with score validation
+## 4. Data Model (`schema.sql`)
 
-### Real-time Features & UI
-- **Live Updates**: Powered by Flask-SocketIO, all changes (new challenges, results, availability) are broadcast to all connected clients in real-time without needing a page refresh.
-- **Dynamic UI**: The interface instantly reflects changes, providing a seamless user experience.
-- **Color-coded Status**: Players in the pyramid are color-coded to indicate their status (available, unavailable, active challenger, opponent, blocked).
-- **Responsive Design**: The application is optimized for both desktop and mobile devices.
+The application uses a simple but effective database schema with two main tables and one view.
 
-### Advanced UI
-- **Pyramid Display**: Visual pyramid representation of the ranking hierarchy
-- **Color-coded Status**: Different colors for available, unavailable, active challengers/opponents, and blocked players
-- **Responsive Design**: Mobile-optimized interface with touch-friendly controls
-- **3D Effects**: Modern visual enhancements for better user experience
+- **`players` table**:
+    - Stores user credentials (`username`, `password_hash`), personal info (`name`, `rank`), and application state (`available`, `privilege_level`, `is_new`, `block_challenger_until`, `block_opponent_until`).
+    - `is_new` flag tracks players who have just been added and are in their first challenge.
+- **`challenges` table**:
+    - Records every challenge, linking a `challenger_id` to an `opponent_id`.
+    - Tracks the challenge `timestamp`, `deadline`, resolution status (`resolved`, `resolved_at`), and the final `result` and `score_details`.
+- **`completed_challenges_view`**: A pre-built SQL VIEW to simplify querying for past matches, joining the `challenges` and `players` tables.
 
-### Authentication & Security
-- **Secure Login**: User authentication is handled with hashed passwords (bcrypt) and session management (Flask-Login).
-- **Role-Based Access Control**:
-    - **Player**: Can view rankings, manage their availability, and issue challenges.
-    - **Admin**: Can manage match results.
-    - **Superadmin**: Has full control over player management (add/edit/delete), database settings, and all admin functions.
-- **Protected Routes**: Critical pages and actions are protected and require appropriate user privileges.
-- **CSRF Protection**: Flask-WTF is used to prevent Cross-Site Request Forgery attacks on all forms.
+The database is initialized with a set of players from `initial_players.json`.
 
-## 🛠 Technical Stack
+## Code & File Structure Summary
 
-### Backend
-- **Framework**: Flask (Python)
-- **Real-time Communication**: Flask-SocketIO with Eventlet for high-performance WebSocket support.
-- **Authentication**: Flask-Login for session management, Bcrypt for password hashing.
-- **Security**: Flask-WTF for CSRF protection.
-- **Database**: SQLite for simplicity and portability.
-- **Configuration**: `python-dotenv` for managing environment variables.
+- **`app.py`**: The heart of the application. It defines all Flask routes, Socket.IO event handlers, database logic, and business rules for challenges, ranking, and security.
+- **`index.html`**: The main user-facing page. It's highly dynamic, with most of its content being rendered and updated by JavaScript based on data received from the backend via Socket.IO.
+- **`admin.html`**: The page for admins to manage ongoing matches. It features complex client-side validation for score entry.
+- **`db_settings.html`**: The super-admin interface for direct player and database manipulation.
+- **`login_tennis.html`**: A visually appealing, animated login page.
+- **`schema.sql` / `initial_players.json`**: Define the database structure and its initial data, respectively.
+- **`error.html`**: A generic page to display errors.
 
-### Frontend
-- **UI Framework**: Bootstrap 5 for a responsive and modern layout.
-- **JavaScript**: jQuery for DOM manipulation and AJAX.
-- **Real-time Client**: Socket.IO client library to receive live updates from the server.
-- **Templating**: Jinja2 (via Flask).
-- **Styling**: Custom CSS for thematic styling and effects.
-
-### Deployment
-- **Web Server**: Gunicorn with eventlet workers
-- **Reverse Proxy**: Caddy for HTTPS termination and static file serving
-- **SSL**: Automatic Let's Encrypt certificate management
-- **Platform**: Optimized for Raspberry Pi deployment
+#### Project Structure
+```
+tennis-ranking-app/
+├── app.py                   # Main Flask application
+├── schema.sql               # Database schema
+├── initial_players.json     # Default player data
+├── environment.yml          # Conda environment specification
+├── requirements.txt         # Python dependencies (pip)
+├── prod-requirements.txt    # Python dependencies for production
+├── README.md                # Project description
+├── .env                     # Environment configuration
+├── backup_tennis _db.sh     # backup database script
+├── check_db.sh              # script to check database healthy
+├── templates/               # HTML templates
+│   ├── login_tennis.html    # Login page
+│   ├── index.html           # Main ranking display
+│   ├── admin.html           # Admin interface
+│   ├── db_settings.html     # Database management
+│   └── error.html           # Error pages
+├── static/                  # Static assets
+│   ├── 01_tennis_racket.png # image used withih github
+│   └── a1_duck_11.png       # image used within index.html
+└── tennis.db                # SQLite database (auto-created)
+```
 
 ## 🚀 Installation & Setup
 
@@ -141,15 +167,43 @@ This will automatically create the SQLite database and populate it with initial 
 python app.py
 ```
 
-Access the application at `http://localhost:5000`
+Access the application at `http://127.0.0.1:5000`
+Access the application on mobile device use the ip-address from your development server like `http://192.168.1.8:5000`
 
 ### Production Requirements
 ```
-Flask==2.3.2
-gunicorn==21.2.0
-Flask-SocketIO==5.3.4
-eventlet==0.33.3
-python-dotenv==1.0.0
+# Core Flask and Web Server
+Flask
+gunicorn
+bcrypt
+Werkzeug
+itsdangerous
+Jinja2
+click
+pip
+
+# Flask Plugins
+flask-cors
+Flask-SocketIO
+Flask-Login
+Flask-WTF
+
+# Async and Networking
+eventlet
+greenlet
+python-engineio
+python-socketio
+
+# Configuration
+python-dotenv
+
+# Other potential runtime dependencies (include ONLY if your app uses them in production)
+google-generativeai
+openai
+numpy
+scipy
+pydantic
+requests
 ```
 
 ## ⚙️ Configuration
@@ -171,6 +225,53 @@ The application uses SQLite with the following key tables:
 - `players`: Player information, ranks, availability, and blocking status
 - `challenges`: Active and completed challenges with deadlines and results
 - `completed_challenges_view`: View for easy access to completed challenges
+
+
+### 🗄️ Database Schema
+
+The application uses a SQLite database with two main tables: `players` and `challenges`.
+
+#### `players` Table
+Stores all user and player information.
+
+```sql
+CREATE TABLE players (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    privilege_level TEXT NOT NULL DEFAULT 'player', -- (player, admin, superadmin)
+    is_ranked_player INTEGER NOT NULL DEFAULT 1,
+    available INTEGER NOT NULL DEFAULT 1,
+    rank INTEGER NOT NULL,
+    unavailable_since DATETIME,
+    unavailability_reason TEXT,
+    block_challenger_until DATETIME,
+    block_opponent_until DATETIME,
+    is_new INTEGER NOT NULL DEFAULT 0
+);
+```
+
+#### `challenges` Table
+Stores all challenge information, both active and completed.
+
+```sql
+CREATE TABLE challenges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    challenger_id INTEGER NOT NULL,
+    opponent_id INTEGER NOT NULL,
+    timestamp DATETIME NOT NULL,
+    deadline DATETIME NOT NULL,
+    resolved_at DATETIME,
+    resolved INTEGER NOT NULL DEFAULT 0,
+    result TEXT,
+    score_details TEXT,
+    scheduled_play_date DATETIME,
+    FOREIGN KEY (challenger_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (opponent_id) REFERENCES players(id) ON DELETE CASCADE
+);
+```
+
 
 ## 📖 Usage Guide
 
@@ -221,78 +322,153 @@ The application uses SQLite with the following key tables:
    - Successful integration places them in the ranking
    - Failed integration removes them from the system
 
+# 🌐 API Endpoints
 
+## 1. User Authentication & Session Management
 
-## 🌐 API Endpoints
+These endpoints handle user login, logout, and session control.
 
-### Player Management
-- `GET /get_players` - Retrieve all players with status
-- `POST /toggle_availability` - Toggle player availability
-- `POST /eligible_opponents` - Get valid opponents for a challenger
+### `GET, POST /login`
+- **Method:** `GET`, `POST`
+- **Description:** Renders the login page (`GET`) and processes user authentication (`POST`). Implements rate limiting to prevent brute-force attacks.
+- **Authorization:** Public
 
-### Challenge Management
-- `POST /challenge` - Create new challenge
-- `POST /submit_result` - Submit match result (admin only)
-- `POST /update_scheduled_date` - Update match scheduling
-- `POST /newplayer_challenge` - Create challenge for new player
+### `GET /logout`
+- **Method:** `GET`
+- **Description:** Logs out the currently authenticated user and redirects to the login page.
+- **Authorization:** `@login_required` (Any logged-in user)
 
-### Admin Operations
-- `POST /add_player` - Add new player (admin)
-- `POST /update_player` - Update player details (admin)
-- `POST /delete_player` - Remove player (admin)
-- `POST /set_player_block_status` - Manage player blocking (admin)
-- `POST /reset_database` - Reset entire database (admin)
+### `GET /`
+- **Method:** `GET`
+- **Description:** The root URL of the application. It automatically redirects to `/login`.
+- **Authorization:** Public
 
-### Data Access
-- `GET /api/realtime_data` - Get current system state
-- `GET /admin` - Admin interface for challenge management
-- `GET /db_settings` - Database management interface
+---
 
+## 2. Main Application Routes
 
-## 🗄️ Database Schema
+These routes serve the primary views of the application for authenticated users.
 
-The application uses a SQLite database with two main tables: `players` and `challenges`.
+### `GET /index`
+- **Method:** `GET`
+- **Description:** Displays the main dashboard, including the tennis pyramid, active challenges, completed games, and player status lists.
+- **Authorization:** `@login_required`
 
-### `players` Table
-Stores all user and player information.
+### `GET /admin`
+- **Method:** `GET`
+- **Description:** Renders the administration page. This page provides tools for managing active challenges and players. While the route itself only requires login, the actions available on the page are protected by admin-level authorization.
+- **Authorization:** `@login_required`
 
-```sql
-CREATE TABLE players (
-    id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    privilege_level TEXT NOT NULL DEFAULT 'player', -- (player, admin, superadmin)
-    is_ranked_player INTEGER NOT NULL DEFAULT 1,
-    available INTEGER NOT NULL DEFAULT 1,
-    rank INTEGER NOT NULL,
-    unavailable_since DATETIME,
-    unavailability_reason TEXT,
-    block_challenger_until DATETIME,
-    block_opponent_until DATETIME,
-    is_new INTEGER NOT NULL DEFAULT 0
-);
-```
+---
 
-### `challenges` Table
-Stores all challenge information, both active and completed.
+## 3. Data-Fetching API Endpoints (JSON)
 
-```sql
-CREATE TABLE challenges (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    challenger_id INTEGER NOT NULL,
-    opponent_id INTEGER NOT NULL,
-    timestamp DATETIME NOT NULL,
-    deadline DATETIME NOT NULL,
-    resolved_at DATETIME,
-    resolved INTEGER NOT NULL DEFAULT 0,
-    result TEXT,
-    score_details TEXT,
-    scheduled_play_date DATETIME,
-    FOREIGN KEY (challenger_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (opponent_id) REFERENCES players(id) ON DELETE CASCADE
-);
-```
+These endpoints provide data to the frontend for dynamic updates.
+
+### `GET /api/realtime_data`
+- **Method:** `GET`
+- **Description:** Returns a comprehensive JSON object containing all current data for the application, including players, active/completed challenges, and blocked players. This is the primary endpoint for keeping the UI in sync.
+- **Authorization:** `@login_required`
+
+### `GET /get_players`
+- **Method:** `GET`
+- **Description:** Returns a detailed JSON list of all players, including their rank, availability, and any active blocks.
+- **Authorization:** `@login_required`
+
+### `POST /eligible_opponents`
+- **Method:** `POST`
+- **Description:** Accepts a `challenger_id` and returns a JSON list of opponents that the specified player is currently eligible to challenge based on ranking rules and availability.
+- **Authorization:** `@login_required`
+
+---
+
+## 4. Core Action API Endpoints
+
+These endpoints handle the primary user actions within the application.
+
+### `POST /challenge`
+- **Method:** `POST`
+- **Description:** Creates a new challenge between two players.
+- **Authorization:** `@login_required`
+
+### `POST /newplayer_challenge`
+- **Method:** `POST`
+- **Description:** Adds a new player to the pyramid by immediately creating a challenge against a selected, eligible opponent.
+- **Authorization:** `@login_required`
+
+### `POST /toggle_availability`
+- **Method:** `POST`
+- **Description:** Toggles a player's availability status (e.g., from "available" to "unavailable" for a vacation).
+- **Authorization:** `@login_required`
+
+### `POST /update_scheduled_date`
+- **Method:** `POST`
+- **Description:** Sets or updates the agreed-upon play date and time for an active challenge.
+- **Authorization:** `@login_required`
+
+---
+
+## 5. Admin-Only API Endpoints
+
+These endpoints are restricted to users with `admin` or `superadmin` privileges and are used for managing the game and its players.
+
+### `POST /submit_result`
+- **Method:** `POST`
+- **Description:** Submits the result of a completed challenge. This action resolves the challenge, updates player ranks if necessary, and applies post-game blocks.
+- **Authorization:** `@login_required` (Note: The documentation indicates any logged-in user can submit, but it's functionally an admin action performed from the `/admin` page).
+
+### `POST /add_player`
+- **Method:** `POST`
+- **Description:** Manually adds a new player to the system with a specified name and rank.
+- **Authorization:** `@admin_required`
+
+### `POST /update_player/<int:player_id>`
+- **Method:** `POST`
+- **Description:** Updates the details (name, rank, etc.) of a specific player.
+- **Authorization:** `@admin_required`
+
+### `POST /delete_player/<int:player_id>`
+- **Method:** `POST`
+- **Description:** Deletes a player from the system.
+- **Authorization:** `@admin_required`
+
+### `POST /cancel_challenge`
+- **Method:** `POST`
+- **Description:** Cancels an active challenge without affecting player ranks or applying blocks.
+- **Authorization:** `@admin_required`
+
+### `POST /reset_password`
+- **Method:** `POST`
+- **Description:** Resets a player's password to a default value.
+- **Authorization:** `@admin_required`
+
+---
+
+## 6. Superadmin-Only Routes
+
+These routes are for system-level database management and are restricted to users with the `superadmin` privilege level.
+
+### `GET /db_settings`
+- **Method:** `GET`
+- **Description:** Renders the page for database management, including options to back up and restore the database.
+- **Authorization:** `@superadmin_required`
+
+### `POST /api/db_actions`
+- **Method:** `POST`
+- **Description:** Performs a database action, such as creating a backup file.
+- **Authorization:** `@superadmin_required`
+
+### `GET /download_db`
+- **Method:** `GET`
+- **Description:** Downloads a backup of the SQLite database file.
+- **Authorization:** `@superadmin_required`
+
+### `POST /upload_db`
+- **Method:** `POST`
+- **Description:** Uploads and restores a database file, replacing the current one.
+- **Authorization:** `@superadmin_required`
+
+---
 
 ## 🐧 Raspberry Pi Deployment
 
@@ -434,41 +610,25 @@ coverage run -m pytest
 coverage report
 ```
 
-### Project Structure
-```
-tennis-ranking-app/
-├── app.py                # Main Flask application
-├── schema.sql            # Database schema
-├── initial_players.json  # Default player data
-├── environment.yml       # Conda environment specification
-├── requirements.txt      # Python dependencies (pip)
-├── .env                  # Environment configuration
-├── templates/            # HTML templates
-│   ├── index.html        # Main ranking display
-│   ├── admin.html        # Admin interface
-│   ├── db_settings.html  # Database management
-│   └── error.html        # Error pages
-├── static/               # Static assets
-│   └── images/
-└── tennis.db             # SQLite database (auto-created)
-```
+## ✨ Development Settings
 
-### Key Components
+Here are the important development settings:
 
-1. **Real-time Data Flow**
-   - Client connects via Socket.IO
-   - Server emits `data_update` events on any change
-   - Clients automatically refresh UI with new data
-
-2. **Challenge Rules Engine**
-   - Rank-based opponent eligibility calculation
-   - Automatic rank adjustment after matches
-   - Temporary blocking system to prevent immediate re-challenges
-
-3. **Caching Layer**
-   - 10-second TTL cache for frequently accessed data
-   - Thread-safe cache invalidation on updates
-   - Improved performance for multiple concurrent users
+### Core settings are:
+- **.env**: # to enable development mode
+  - FLASK_DEBUG=true
+- **activate conda environment**: # to enable python environment
+  - conda activate stecher_tennis
+- **check git status**: # expectation is that there are no changes
+  - git status
+- **do your development work**
+  - code .
+  - run tests
+- **sync with git**: # sync with github repository https://github.com/AINxtGenDev/stecher_tennis
+  - git add .
+  - git commit -m "commit message"
+  - git push
+  - git status
 
 ### Testing
 
@@ -526,60 +686,3 @@ For support or questions:
 - **Mobile**: 0043 664 105 25 56
 
 ---
-
-## 📊 Tennis Ranking Project - Code Line Count
-
-Here's the complete breakdown of code lines in your tennis ranking project:
-
-### Core Application Files
-- **app.py**: 1,444 lines (Main Flask application with all backend logic)
-- **initial_players.json**: 40 lines (Initial player data)
-- **schema.sql**: 56 lines (Database schema)
-- **environment.yml**: 24 lines (Conda environment specification)
-
-### HTML Template Files
-- **admin.html**: 485 lines (Administration interface with extensive CSS/JS)
-- **db_settings.html**: 380 lines (Database management interface)
-- **index.html**: 772 lines (Main interface with pyramid visualization)
-- **error.html**: 21 lines (Simple error page)
-
-### Project Summary
-- **Total Lines**: 3,222
-- **By Category**:
-  - Core files (Python/JSON/SQL/YAML): 1,564 lines
-  - HTML templates: 1,658 lines
-- **By Technology**:
-  - Python (Flask/Backend): 1,444 lines (44.8%)
-  - HTML/CSS/JavaScript: 1,658 lines (51.4%)
-  - SQL (Database Schema): 56 lines (1.7%)
-  - JSON (Initial Data): 40 lines (1.2%)
-  - YAML (Environment Config): 24 lines (0.7%)
-
-This is a substantial project with over 3,200 lines of code! The distribution shows it's well-balanced between backend logic (Python) and frontend presentation (HTML/CSS/JavaScript), which makes sense for a full-stack web application with rich user interfaces like your pyramid visualization and real-time updates. The project includes comprehensive development tooling through conda environment management.
-
----
-
-**Version**: 2.09-prod-opt  
-**Last Updated**: June 20, 2025
-
----
-
-## ✨ Development Settings
-
-Here are the important development settings:
-
-### Core settings are:
-- **.env**: # to enable development mode
-  - FLASK_DEBUG=true
-- **activate conda environment**: # to enable python environment
-  - conda activate stecher_tennis
-- **check git status**: # expectation is that there are no changes
-  - git status
-- **do your development work**
-  - code .
-  - run tests
-- **sync with git**: # sync with github repository https://github.com/AINxtGenDev/stecher_tennis
-  - git add .
-  - git commit -m "commit message"
-  - git push
-  - git status
