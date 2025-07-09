@@ -1,4 +1,4 @@
-# Tennis Ranking Web Application
+# Tennis-Ranking Web Application
 
 <img src="static/01_tennis_racket.png" alt="Tennis Racket" width="300">
 
