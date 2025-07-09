@@ -676,16 +676,17 @@ tail -f /var/log/caddy/access.log
 ```
 ## ✨ Total Lines of Code (LOC)
 
-- app.py                2.460
-- index.html	            392
-- admin.html    	        138
-- db_settings.html	      289
-- login_tennis.html	      494
-- initial_players.json    112
-- schema.sql	             59
-- error.html	             21
-- Total	                3.965
-
+```bash
+# app.py                2.460
+# index.html	          392
+# admin.html    	  138
+# db_settings.html	  289
+# login_tennis.html	  494
+# initial_players.json    112
+# schema.sql	           59
+# error.html	           21
+# Total	                3.965
+```
 
 ## 📝 License
 
