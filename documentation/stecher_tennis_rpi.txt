@@ -407,4 +407,87 @@ sudo crontab -e
      Confirm Sunday night:     
      journalctl -u unattended-upgrades --since "2025-06-30 03:00"
 
+##########################################
+# ssh with keys
+##########################################
+
+--> I want SSH on behalf keys from NUC8 to RPi4
+
+1) RPi4
+   --> mkdir ~/.ssh
+   
+2) NUC8
+   --> ssh-keygen -t ed25519
+       ssh-keygen -t ed25519 -C "your_email@example.com"
+       
+       Ed25519 is generally considered a better option for SSH keys today
+
+   It will create 2 files located in ~/.ssh/ directory, private key and public key
+   stecher_tennis_key      --> private key
+   stecher_tennis_key.pub  --> public key
+   
+   chmod 400 stecher_tennis_key       --> read-only for you and no one else
+   chmod 644 stecher_tennis_key.pub   --> readable by everyone but only writable by you
+
+  *) upload the public key stecher_tennis_key.pub to RPi4
+  --> ssh-copy-id -i ~/.ssh/stecher_tennis_key.pub -p 10115 stecher@192.168.1.213
+      ssh-copy-id -p 10115 pi@192.168.1.39
+
+  on RPI4
+  cp stecher_tennis_key.pub authorized_keys
+  chmod 600 authorized_keys
+
+4) RPi4
+   --> to see if port 10115 is free:
+       netstat -ntap | grep 10115
+
+   sudo nano /etc/ssh/sshd_config
+
+         --> Port 10115
+         --> AddressFamily inet --> only IP Version 4
+         --> PermitRootLogin no
+         --> ChallengeResponseAuthentication no
+         --> PubkeyAuthentication yes
+         --> AuthorizedKeysFile .ssh/authorized_keys
+         --> AuthenticationMethods publickey
+         --> PasswordAuthentication no
+         --> UsePAM yes
+         --> LoginGraceTime 30
+         --> MaxAuthTries 3
+         --> MaxSessions 4
+
+PAM = Pluggable Authentication Modules
+UsePAM	no
+This is a significant change with potential side effects. PAM (Pluggable Authentication Modules)
+is used by the system for more than just authentication. It also handles account management
+(e.g., checking for expired accounts) and session management (e.g., setting resource limits or
+displaying the message of the day). By setting UsePAM no, you are disabling these system-level
+checks for SSH sessions. Since you have already disabled password authentication, the security
+benefit of disabling PAM is minimal, but the risk of unintended consequences is higher.
+---> Recommendation: It is generally safer and recommended to leave this enabled (UsePAM yes).
+     Your server remains secure because PasswordAuthentication no and AuthenticationMethods publickey
+     will still prevent password logins.
+
+      sudo sshd -t
+      sudo systemctl restart ssh
+
+  *) check if port 10115 is available
+     --> sudo netstat -tuln | grep 10115
+     tcp   0  0 0.0.0.0:10115    0.0.0.0:*   LISTEN 
+
+  *) check which ports are open
+     --> sudo ss -tuln | grep 10115
+     tcp   LISTEN 0      128     0.0.0.0:10115    0.0.0.0:*
+
+  *) chek ssh on behalf your keyfile from NUC8
+    ssh -p 10115 stecher@192.168.1.213
+
+#######################################################################################
+
+If you turn on "PasswordAuthentication yes" again you must use:
+
+ssh -o PubkeyAuthentication=no pi@192.168.1.139 -p 10115 -vv
+
+#######################################################################################
+
 
