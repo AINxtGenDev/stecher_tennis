@@ -48,7 +48,7 @@ This version (v3.xx) introduces a robust authentication and authorization system
         - Change any user's password.
         - **Reset the entire database** to its initial state.
 
-## 4. Data Model (`schema.sql`)
+## Data Model (`schema.sql`)
 
 The application uses a simple but effective database schema with two main tables and one view.
 
