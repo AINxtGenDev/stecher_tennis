@@ -100,7 +100,7 @@
             <h2>Spielerliste verwalten</h2>
             <div class="table-responsive">
                 <table class="table">
-                    <thead><tr><th>ID</th><th>Name</th><th>Rang</th><th>Block-Status</th><th>Aktionen</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Name</th><th>User</th><th>Rang</th><th>Block-Status</th><th>Aktionen</th></tr></thead>
                     <tbody id="players-table-body"></tbody>
                 </table>
             </div>
@@ -166,7 +166,8 @@
                                 <td> 
                                     <span class="player-name-static">${player.name}</span> 
                                     <input type="text" class="form-control inline-edit d-none" value="${player.name}"> 
-                                </td> 
+                                </td>
+                                <td>${player.username}</td>
                                 <td> 
                                     <span class="player-rank-static">${player.rank}</span> 
                                     <input type="number" class="form-control inline-edit d-none" value="${player.rank}" min="1" max="45"> 
@@ -189,7 +190,7 @@
                           $tbody.append(rowHtml); 
                       }); 
                   } else { 
-                      $tbody.append('<tr><td colspan="5" style="text-align: center;">Keine Spieler gefunden.</td></tr>'); 
+                      $tbody.append('<tr><td colspan="6" style="text-align: center;">Keine Spieler gefunden.</td></tr>'); 
                   } 
               }).fail(function() { 
                   showAlert('Fehler beim Laden der Spielerliste.', 'danger'); 

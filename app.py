@@ -70,7 +70,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.41"
+APP_VERSION = "3.42"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -1167,6 +1167,7 @@ def get_players():
                 {
                     "id": p["id"],
                     "name": p["name"],
+                    "username": p["username"],
                     "rank": p["rank"],
                     "available": bool(p["available"]),
                     "unavailable_since": unavailable_since_str,
