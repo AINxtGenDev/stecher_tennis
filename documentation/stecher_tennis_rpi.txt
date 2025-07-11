@@ -486,8 +486,73 @@ benefit of disabling PAM is minimal, but the risk of unintended consequences is 
 
 If you turn on "PasswordAuthentication yes" again you must use:
 
-ssh -o PubkeyAuthentication=no pi@192.168.1.139 -p 10115 -vv
+ssh -o PubkeyAuthentication=no stecher@192.168.1.213 -p 10115 -vv
 
 #######################################################################################
 
 
+
+
+##########################################
+# how to update stecher_tennis app
+##########################################
+
+*) ssh to raspberry
+   ssh stecher@192.168.1.213 -o PreferredAuthentications=password -v
+
+   or
+
+   ssh -i ~/.ssh/stecher_tennis_key -o IdentitiesOnly=yes stecher@192.168.1.213 -p 10115 -v
+
+*) cd /home/stecher/stecher_tennis
+
+*) check service status and stop it
+   sudo systemctl status stecher-tennis.service
+   
+   sudo systemctl stop stecher-tennis.service
+
+*) copy the new files in the correct directory
+   e.g. db_settings.html  to /home/stecher/stecher_tennis/templates
+
+*) start service and check status
+   sudo systemctl start stecher-tennis.service
+   
+   sudo systemctl status stecher-tennis.service
+   
+   ● stecher-tennis.service - Gunicorn instance for Stecher Tennis App
+     Loaded: loaded (/etc/systemd/system/stecher-tennis.service; enabled; preset: enabled)
+     Active: active (running) since Fri 2025-07-11 08:22:02 CEST; 3min 17s ago
+   Main PID: 29446 (gunicorn)
+      Tasks: 2 (limit: 3927)
+        CPU: 1.566s
+     CGroup: /system.slice/stecher-tennis.service
+             ├─29446 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 1 --worker-class >
+             └─29447 /home/stecher/stecher_tennis/bin/python3 /home/stecher/stecher_tennis/bin/gunicorn --workers 1 --worker-class >
+
+Jul 11 08:22:02 stechertennis systemd[1]: Started stecher-tennis.service - Gunicorn instance for Stecher Tennis App.
+Jul 11 08:22:03 stechertennis stecher-tennis[29446]: [2025-07-11 08:22:03 +0200] [29446] [INFO] Starting gunicorn 23.0.0
+Jul 11 08:22:03 stechertennis stecher-tennis[29446]: [2025-07-11 08:22:03 +0200] [29446] [INFO] Listening at: http://127.0.0.1:8000>
+Jul 11 08:22:03 stechertennis stecher-tennis[29446]: [2025-07-11 08:22:03 +0200] [29446] [INFO] Using worker: eventlet
+Jul 11 08:22:03 stechertennis stecher-tennis[29447]: [2025-07-11 08:22:03 +0200] [29447] [INFO] Booting worker with pid: 29447
+Jul 11 08:22:04 stechertennis stecher-tennis[29447]: INFO:app:Starting Tennis App version: 3.42
+Jul 11 08:22:04 stechertennis stecher-tennis[29447]: INFO:app:Production CSRF trusted origins set to: ['https://tc-breakpoint-forde>
+Jul 11 08:22:04 stechertennis stecher-tennis[29447]: INFO:app:CORS allowed origins configured for: ['https://tc-breakpoint-forderun>
+lines 1-18/18 (END)
+
+*) check database
+   ./check_db.sh 
+
+    === Tennis Database Health Check ===
+    1. Integrity Check:
+    ok
+
+    2. Quick Check:
+    ok
+
+    3. Foreign Key Check:
+
+    4. Database Info:
+    0|main|/home/stecher/stecher_tennis/tennis.db
+
+
+   
