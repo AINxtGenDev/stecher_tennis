@@ -451,6 +451,7 @@ sudo crontab -e
          --> AuthorizedKeysFile .ssh/authorized_keys
          --> AuthenticationMethods publickey
          --> PasswordAuthentication no
+         --> KbdInteractiveAuthentication no
          --> UsePAM yes
          --> LoginGraceTime 30
          --> MaxAuthTries 3
