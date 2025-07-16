@@ -6,7 +6,7 @@ mobile_stecher_tennis/*
 # And include files directly in mobile_stecher_tennis
 !mobile_stecher_tennis/*.*
 # Other exclusions
-documentation/02_app_description.txt
+# documentation/02_app_description.txt
 # aider-specific files
 .aider*
 .aider.conf.yml
