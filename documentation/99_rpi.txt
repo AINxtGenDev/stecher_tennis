@@ -1,10 +1,28 @@
 ##########################################
 192.168.1.213
 user: stecher
-psw:
+hostname: stechertennis
 ##########################################
 
-https://192.168.1.213/stecher_start
+##########################################
+## static ip address
+##########################################
+
+sudo nmtui
+     *) IPv4 CONFIGURATION, change from <Automatic> to <Manual>.
+        Addresses: Desired static IP, with subnet (e.g., 192.168.1.100/24)
+        Gateway: Router’s IP address (e.g., 192.168.1.1)
+        DNS Servers: Router/gateway or public DNS (e.g., 8.8.8.8)
+
+     *) Apply Changes
+        sudo systemctl restart NetworkManager
+
+     *) Verify Static IP
+        hostname -I
+
+##########################################
+
+https://192.168.1.213/login
 https://192.168.1.213/index
 https://192.168.1.213/admin
 https://192.168.1.213/db_settings
