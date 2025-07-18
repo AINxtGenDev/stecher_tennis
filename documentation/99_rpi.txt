@@ -48,20 +48,32 @@ tc-breakpoint-forderung.duckdns.org
    cd duckdns
    nano duck_stechertennis.sh
 
-   echo url="https://www.duckdns.org/update?domains=tc-breakpoint-forderung&token=f5035eb4-6739-4f5e-b0e7-5ee827c7062d&ip=" | curl -k -o ~/duckdns/duck.log -K -
+echo url="https://www.duckdns.org/update?domains=nechvatal&token=f5035eb4-6739-4f5e-b0e7-5ee827c7062d&ip=&verbose=true" | curl -k -o /home/stecher/stecher_tennis/duckdns/duckstechertennis.log -K -
+
+echo url="https://www.duckdns.org/update?domains=tc-breakpoint-forderung&token=b245dd6c-7a7b-4384-afd2-da22918e0007&ip=&verbose=true" | curl -k -o /home/stecher/stecher_tennis/duckdns/duckstechertennis.log -K -
+
 
   chmod 700 duck_stechertennis.sh
   
   crontab -e
-  */5 * * * * ~/duckdns/duck_stechertennis.sh >/dev/null 2>&1
+  */5 * * * * /home/stecher/stecher_tennis/duckdns/duckstechertennis.sh >/dev/null 2>&1
   
   *) test the script
      ./duck_stechertennis.sh
-     cat duck.log
+     cat duckstechertennis.log
      OK
 
-    ping tc-breakpoint-forderung.duckdns.org
+ping nechvatal.duckdns.org -c 5
+PING nechvatal.duckdns.org (188.23.148.173) 56(84) bytes of data.
+64 bytes from 188-23-148-173.adsl.highway.telekom.at (188.23.148.173): icmp_seq=1 ttl=63 time=4.19 ms
+64 bytes from 188-23-148-173.adsl.highway.telekom.at (188.23.148.173): icmp_seq=2 ttl=63 time=0.800 ms
+64 bytes from 188-23-148-173.adsl.highway.telekom.at (188.23.148.173): icmp_seq=3 ttl=63 time=1.27 ms
+64 bytes from 188-23-148-173.adsl.highway.telekom.at (188.23.148.173): icmp_seq=4 ttl=63 time=0.875 ms
+64 bytes from 188-23-148-173.adsl.highway.telekom.at (188.23.148.173): icmp_seq=5 ttl=63 time=0.998 ms
 
+--- nechvatal.duckdns.org ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4006ms
+rtt min/avg/max/mdev = 0.800/1.627/4.191/1.291 ms
 
 ##########################################
 ## create, activate virtuell python environment
