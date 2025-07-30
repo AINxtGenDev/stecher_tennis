@@ -768,6 +768,78 @@ def rerank_players(db, allow_temporary_overflow=False):
         raise e
 
 
+def resolve_expired_challenges():
+    """
+    Finds and resolves any challenges where the deadline has passed.
+    Sets their result to 'not_happened' and handles 'is_new' players.
+    """
+    db = get_db()
+    now = get_current_time()
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        # Find expired, unresolved challenges
+        cur = db.execute(
+            "SELECT id, challenger_id FROM challenges WHERE resolved = 0 AND deadline < ?",
+            (now_str,),
+        )
+        expired_challenges = cur.fetchall()
+
+        if not expired_challenges:
+            return  # Nothing to do
+
+        challenger_ids_of_expired_new_players = []
+        challenge_ids_to_resolve = [c["id"] for c in expired_challenges]
+
+        with db:  # Use a transaction
+            # Check which of the challengers were new players
+            for challenge in expired_challenges:
+                challenger_cur = db.execute(
+                    "SELECT is_new FROM players WHERE id = ?", (challenge["challenger_id"],)
+                )
+                challenger = challenger_cur.fetchone()
+                if challenger and challenger["is_new"] == 1:
+                    challenger_ids_of_expired_new_players.append(
+                        challenge["challenger_id"]
+                    )
+
+            # Bulk update challenges to 'not_happened'
+            if challenge_ids_to_resolve:
+                placeholders = ",".join("?" for _ in challenge_ids_to_resolve)
+                db.execute(
+                    f"UPDATE challenges SET resolved = 1, result = 'not_happened', resolved_at = ? WHERE id IN ({placeholders})",
+                    (now, *challenge_ids_to_resolve),
+                )
+
+            # Bulk update new players so they are no longer 'is_new'
+            if challenger_ids_of_expired_new_players:
+                placeholders = ",".join(
+                    "?" for _ in challenger_ids_of_expired_new_players
+                )
+                db.execute(
+                    f"UPDATE players SET is_new = 0 WHERE id IN ({placeholders})",
+                    (*challenger_ids_of_expired_new_players,),
+                )
+
+            logger.info(
+                f"Automatically resolved {len(challenge_ids_to_resolve)} expired challenges as 'not_happened'."
+            )
+            # Invalidate cache and emit update *after* commit
+            emit_data_update(
+                "expired_challenges_resolved", {"resolved_ids": challenge_ids_to_resolve}
+            )
+
+    except sqlite3.Error as e:
+        logger.exception(
+            "Database error during automatic resolution of expired challenges."
+        )
+        # The 'with db:' block handles the rollback on error
+    except Exception as e:
+        logger.exception(
+            "Unexpected error during automatic resolution of expired challenges."
+        )
+
+
 def get_realtime_data():
     db = get_db()
     now_dt = get_current_time()
@@ -1072,11 +1144,13 @@ def index():
 def admin():
     db = get_db()
     try:
+        now_str = get_current_time().strftime("%Y-%m-%d %H:%M:%S")
         cur = db.execute(
             "SELECT c.*, p1.name as challenger_name, p2.name as opponent_name FROM challenges c "
             "JOIN players p1 ON c.challenger_id = p1.id "
             "JOIN players p2 ON c.opponent_id = p2.id "
-            "WHERE c.resolved = 0 ORDER BY c.deadline ASC"
+            "WHERE c.resolved = 0 AND c.deadline > ? ORDER BY c.deadline ASC",
+            (now_str,),
         )
         challenges_raw = cur.fetchall()
         challenges_processed = []
