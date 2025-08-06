@@ -22,7 +22,7 @@ Herausforderungs-Logik
 Top 10 (Ränge 1–10):
 Jeder Spieler in den Top 10 darf einen beliebigen, vor ihm platzierten Rang (1 bis eigener Rang−1) fordern.
 
-Ränge 11–36 (in Reihen 5–8):
+Ränge 11–45 (in Reihen 5–9):
 Jede Reihe hat eine maximale Anzahl an Plätzen, die man „nach oben“ fordern darf:
 
 Reihe	Ränge	Max. Aufwärts-Forderung
@@ -30,6 +30,7 @@ Reihe	Ränge	Max. Aufwärts-Forderung
 6	16–21	5 Plätze
 7	22–28	6 Plätze
 8	29–36	7 Plätze
+9	37–45	8 Plätze
 
 Beispiel einer Herausforderung
 

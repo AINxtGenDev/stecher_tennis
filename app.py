@@ -714,15 +714,37 @@ def eligible_opponents_for(challenger):
     else:
         max_rank_diff = 0
     original_min_eligible_rank = max(1, challenger_rank - max_rank_diff)
-    query_unavailable_count = (
-        "SELECT COUNT(*) as unavailable_count FROM players "
-        "WHERE rank >= ? AND rank < ? AND available = 0"
-    )
-    cur = db.execute(
-        query_unavailable_count, (original_min_eligible_rank, challenger_rank)
-    )
-    unavailable_count = cur.fetchone()["unavailable_count"]
-    adjusted_min_eligible_rank = max(1, original_min_eligible_rank - unavailable_count)
+    
+    # Iteratively count unavailable players and extend the range
+    # Each unavailable player in the current range allows extending by 1 position
+    current_min_rank = original_min_eligible_rank
+    previous_min_rank = None
+    
+    # Keep extending while we find new unavailable players in the extended range
+    while current_min_rank != previous_min_rank and current_min_rank > 1:
+        previous_min_rank = current_min_rank
+        
+        # Count unavailable players in the current range
+        query_unavailable_count = (
+            "SELECT COUNT(*) as unavailable_count FROM players "
+            "WHERE rank >= ? AND rank < ? AND available = 0"
+        )
+        cur = db.execute(
+            query_unavailable_count, (current_min_rank, challenger_rank)
+        )
+        unavailable_count = cur.fetchone()["unavailable_count"]
+        
+        # Extend the range by the number of unavailable players
+        # But still respect the original max_rank_diff limit for eligible opponents
+        new_min_rank = max(1, original_min_eligible_rank - unavailable_count)
+        
+        # If we found new unavailable players in the extended range, continue
+        if new_min_rank < current_min_rank:
+            current_min_rank = new_min_rank
+        else:
+            break
+    
+    adjusted_min_eligible_rank = current_min_rank
     query = (
         "SELECT * FROM players WHERE rank >= ? AND rank < ? AND available = 1 "
         "AND id != ? "
@@ -736,6 +758,8 @@ def eligible_opponents_for(challenger):
     )
     cur = db.execute(query, parameters)
     eligible = cur.fetchall()
+    # Filter out players who are currently in active challenges
+    # They cannot be challenged while already in a challenge
     eligible = [p for p in eligible if p["id"] not in active_ids]
     return eligible
 
