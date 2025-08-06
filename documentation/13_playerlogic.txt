@@ -1,0 +1,167 @@
+# Tennis Ranking System - Challenge Logic Documentation
+
+## Overview
+The Tennis Ranking System implements a pyramid-based ranking system where players can challenge others based on specific rules. The system manages 45 players organized in 9 rows with complex challenge eligibility logic.
+
+## Ranking Structure
+
+### Player Distribution
+The 45 players are organized in a pyramid structure across 9 rows:
+
+```
+Row 1: Rank 1
+Row 2: Ranks 2-3
+Row 3: Ranks 4-6
+Row 4: Ranks 7-10
+Row 5: Ranks 11-15
+Row 6: Ranks 16-21
+Row 7: Ranks 22-28
+Row 8: Ranks 29-36
+Row 9: Ranks 37-45
+```
+
+## Challenge Rules
+
+### Top 10 Players (Ranks 1-10)
+- **Rule**: Can challenge ANY player ranked above them
+- **Range**: From rank 1 to (own rank - 1)
+- **Example**: Player at rank 7 can challenge ranks 1, 2, 3, 4, 5, or 6
+
+### Lower Ranked Players (Ranks 11-45)
+Each row has a maximum number of positions they can challenge upward:
+
+| Row | Ranks   | Max Upward Positions | Example |
+|-----|---------|---------------------|---------|
+| 5   | 11-15   | 4 positions         | Rank 15 can challenge ranks 11-14 |
+| 6   | 16-21   | 5 positions         | Rank 21 can challenge ranks 16-20 |
+| 7   | 22-28   | 6 positions         | Rank 28 can challenge ranks 22-27 |
+| 8   | 29-36   | 7 positions         | Rank 36 can challenge ranks 29-35 |
+| 9   | 37-45   | 8 positions         | Rank 45 can challenge ranks 37-44 |
+
+## Advanced Challenge Logic - Range Extension
+
+### Unavailable Players Extension Rule
+**Core Principle**: For each unavailable player (available = 0) within the normal challenge range, the challenger can extend their range by ONE additional position upward.
+
+### Iterative Extension Algorithm
+The system uses an iterative approach to calculate the extended challenge range:
+
+1. **Start** with the normal challenge range
+2. **Count** unavailable players in the current range
+3. **Extend** the range upward by the number of unavailable players
+4. **Repeat** until no further extension is possible
+5. **Stop** when no new unavailable players are found in the extended range
+
+### Example: Rank 15 Challenge Logic
+
+**Normal Range**: Rank 15 can challenge 4 positions up (ranks 11-14)
+
+**Scenario**: 
+- Rank 12: Unavailable (available = 0)
+- Rank 13: Unavailable (available = 0) 
+- Rank 9: Unavailable (available = 0)
+
+**Iteration Process**:
+1. **Iteration 1**: Range 11-14 has 2 unavailable players → extends to rank 9
+2. **Iteration 2**: Range 9-14 has 3 unavailable players (including rank 9) → extends to rank 8
+3. **Iteration 3**: Range 8-14 still has 3 unavailable players → no further extension
+
+**Result**: Rank 15 can now challenge ranks 8-14 (instead of just 11-14)
+
+## Player Status Categories
+
+### Available Players (available = 1)
+- Can be challenged if not in active challenges
+- Can initiate challenges if not blocked by cooldown periods
+
+### Unavailable Players (available = 0)
+- **Cannot** be challenged
+- **Cannot** initiate challenges
+- **Count** toward range extension for others
+
+### Players in Active Challenges
+- **Cannot** be challenged by others (filtered out)
+- Their involvement in challenges does **NOT** extend ranges for other players
+- Only unavailable players extend ranges
+
+### Blocked Players
+Players may be temporarily blocked from challenging or being challenged:
+- **block_challenger_until**: Cannot initiate challenges until this date
+- **block_opponent_until**: Cannot be challenged until this date
+
+## Challenge Resolution Rules
+
+### Win/Loss Outcomes
+When a challenge is resolved:
+
+**If Challenger Wins**:
+- Challenger takes the opponent's rank
+- Opponent and all players between them move down one rank
+- Challenger is blocked from being challenged for 7 days
+- Challenger can immediately issue new challenges
+
+**If Challenger Loses**:
+- Ranks remain unchanged
+- Challenger is blocked from challenging for 7 days
+- Challenger can be challenged immediately
+
+### Challenge Expiration
+- **Validity Period**: 10 days from creation
+- **Auto-Resolution**: Expired challenges are automatically resolved as "not_happened"
+- **Effect**: Frees up both players for new challenges
+
+## Implementation Details (eligible_opponents_for function)
+
+### Algorithm Flow
+```python
+1. Determine base challenge range based on player rank
+2. Initialize current_min_rank = base_minimum_rank
+3. While current_min_rank > 1:
+   a. Count unavailable players in current range
+   b. Calculate new_min_rank = base_minimum - total_unavailable
+   c. If new_min_rank < current_min_rank:
+      - Update current_min_rank = new_min_rank
+      - Continue iteration
+   d. Else: break (no further extension possible)
+4. Query all available players in final extended range
+5. Filter out players currently in active challenges
+6. Return eligible opponents list
+```
+
+### Key Business Rules in Code
+- **Range Extension**: Only counts unavailable players (available = 0)
+- **Challenge Filtering**: Excludes players in active challenges
+- **Time Blocking**: Respects block_opponent_until timestamps
+- **Self-Exclusion**: Player cannot challenge themselves
+
+## Security Considerations
+- All database queries use parameterized statements (SQL injection prevention)
+- Input validation on all player IDs and rank values
+- Time-based blocking prevents abuse of challenge system
+- Challenge expiration prevents indefinite locks
+
+## Performance Characteristics
+- **Iterative Loop**: Typically runs 1-3 iterations maximum
+- **Database Queries**: Optimized with indexes on rank and available columns
+- **Memory Usage**: Minimal - processes small result sets
+- **Scalability**: Efficient for up to 45 players per system design
+
+## Testing Scenarios
+
+### Standard Challenge
+- **Player**: Rank 15
+- **Normal Range**: 11-14
+- **No Unavailable Players**: Can challenge ranks 11, 12, 13, 14
+
+### Extended Challenge  
+- **Player**: Rank 15
+- **Unavailable**: Ranks 12, 13
+- **Extended Range**: 9-14
+- **Available Opponents**: Depends on who's not in active challenges
+
+### Maximum Extension
+- **Player**: Rank 45 (Row 9)
+- **Max Extension**: 8 positions + unavailable player extensions
+- **Potential Range**: Could extend significantly upward with many unavailable players
+
+This logic ensures fair, strategic gameplay while preventing system abuse and maintaining competitive balance in the tennis ranking pyramid.

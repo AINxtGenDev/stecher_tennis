@@ -70,7 +70,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.42"
+APP_VERSION = "3.44"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -714,36 +714,34 @@ def eligible_opponents_for(challenger):
     else:
         max_rank_diff = 0
     original_min_eligible_rank = max(1, challenger_rank - max_rank_diff)
-    
+
     # Iteratively count unavailable players and extend the range
     # Each unavailable player in the current range allows extending by 1 position
     current_min_rank = original_min_eligible_rank
     previous_min_rank = None
-    
+
     # Keep extending while we find new unavailable players in the extended range
     while current_min_rank != previous_min_rank and current_min_rank > 1:
         previous_min_rank = current_min_rank
-        
+
         # Count unavailable players in the current range
         query_unavailable_count = (
             "SELECT COUNT(*) as unavailable_count FROM players "
             "WHERE rank >= ? AND rank < ? AND available = 0"
         )
-        cur = db.execute(
-            query_unavailable_count, (current_min_rank, challenger_rank)
-        )
+        cur = db.execute(query_unavailable_count, (current_min_rank, challenger_rank))
         unavailable_count = cur.fetchone()["unavailable_count"]
-        
+
         # Extend the range by the number of unavailable players
         # But still respect the original max_rank_diff limit for eligible opponents
         new_min_rank = max(1, original_min_eligible_rank - unavailable_count)
-        
+
         # If we found new unavailable players in the extended range, continue
         if new_min_rank < current_min_rank:
             current_min_rank = new_min_rank
         else:
             break
-    
+
     adjusted_min_eligible_rank = current_min_rank
     query = (
         "SELECT * FROM players WHERE rank >= ? AND rank < ? AND available = 1 "
@@ -819,7 +817,8 @@ def resolve_expired_challenges():
             # Check which of the challengers were new players
             for challenge in expired_challenges:
                 challenger_cur = db.execute(
-                    "SELECT is_new FROM players WHERE id = ?", (challenge["challenger_id"],)
+                    "SELECT is_new FROM players WHERE id = ?",
+                    (challenge["challenger_id"],),
                 )
                 challenger = challenger_cur.fetchone()
                 if challenger and challenger["is_new"] == 1:
@@ -850,7 +849,8 @@ def resolve_expired_challenges():
             )
             # Invalidate cache and emit update *after* commit
             emit_data_update(
-                "expired_challenges_resolved", {"resolved_ids": challenge_ids_to_resolve}
+                "expired_challenges_resolved",
+                {"resolved_ids": challenge_ids_to_resolve},
             )
 
     except sqlite3.Error as e:
