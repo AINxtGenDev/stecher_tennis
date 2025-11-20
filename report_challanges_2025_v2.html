@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tennis Challenge Report 2025 – Interactive Dashboard</title>
+
+    <!-- Chart.js for advanced visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Modern Color Palette */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            --danger-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --dark-gradient: linear-gradient(135deg, #30303a 0%, #1a1a2a 100%);
+
+            --bg-primary: #0f0f1e;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #252540;
+            --bg-hover: #2e2e4a;
+
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8c8;
+            --text-muted: #8888a8;
+
+            --border-color: #3a3a5a;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --glow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(245, 87, 108, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(86, 171, 47, 0.1) 0%, transparent 50%);
+            animation: floatBackground 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes floatBackground {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-20px, -20px) rotate(1deg); }
+            66% { transform: translate(20px, -10px) rotate(-1deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Section */
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            margin-bottom: 40px;
+            background: var(--primary-gradient);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '🎾';
+            position: absolute;
+            font-size: 200px;
+            opacity: 0.1;
+            top: -50px;
+            right: -50px;
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #fff, #ffd700);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--glow);
+        }
+
+        .stat-card.success::before { background: var(--success-gradient); }
+        .stat-card.danger::before { background: var(--danger-gradient); }
+        .stat-card.warning::before { background: var(--warning-gradient); }
+        .stat-card.info::before { background: var(--info-gradient); }
+
+        .stat-card .icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        .stat-card .value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card .label {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .change {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 0.85em;
+        }
+
+        .change.positive { color: #56ab2f; }
+        .change.negative { color: #f5576c; }
+
+        /* Chart Containers */
+        .chart-section {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-section h2 {
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container.small {
+            height: 250px;
+        }
+
+        /* Rankings Table */
+        .rankings-section {
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .rankings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .rank-card {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rank-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+
+        .rank-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .rank-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .rank-number {
+            font-size: 2em;
+            font-weight: bold;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .rank-card.gold .rank-number { background: linear-gradient(135deg, #FFD700, #FFA500); -webkit-background-clip: text; background-clip: text; }
+        .rank-card.silver .rank-number { background: linear-gradient(135deg, #C0C0C0, #808080); -webkit-background-clip: text; background-clip: text; }
+        .rank-card.bronze .rank-number { background: linear-gradient(135deg, #CD7F32, #8B4513); -webkit-background-clip: text; background-clip: text; }
+
+        .player-name {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .player-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: var(--text-secondary);
+        }
+
+        .player-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Challenges Table */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--bg-secondary);
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-badge.open {
+            background: var(--info-gradient);
+            color: white;
+        }
+
+        .status-badge.won {
+            background: var(--success-gradient);
+            color: white;
+        }
+
+        .status-badge.lost {
+            background: var(--danger-gradient);
+            color: white;
+        }
+
+        .status-badge.missed {
+            background: var(--warning-gradient);
+            color: white;
+        }
+
+        /* Filters Section */
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .filter-btn:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .filter-btn.active {
+            background: var(--primary-gradient);
+            border-color: transparent;
+        }
+
+        /* Timeline Section */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            padding: 20px;
+            margin-bottom: 20px;
+            width: calc(50% - 30px);
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .timeline-item:hover {
+            transform: scale(1.02);
+            box-shadow: var(--glow);
+        }
+
+        .timeline-item:nth-child(odd) {
+            margin-left: auto;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            top: 30px;
+        }
+
+        .timeline-item:nth-child(odd)::before {
+            left: -30px;
+        }
+
+        .timeline-item:nth-child(even)::before {
+            right: -30px;
+        }
+
+        .timeline-date {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .timeline-content {
+            color: var(--text-primary);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            margin-top: 60px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease forwards;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline::before {
+                left: 30px;
+            }
+
+            .timeline-item {
+                width: calc(100% - 60px);
+                margin-left: 60px !important;
+            }
+
+            .timeline-item::before {
+                left: -30px !important;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header animate-in">
+            <h1>🎾 Tennis Challenge Dashboard 2025</h1>
+            <div class="subtitle">Interaktive Analyse und Statistiken</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Charts Section -->
+        <div class="chart-section animate-in">
+            <h2>📊 Challenge-Verlauf 2025</h2>
+            <div class="chart-container">
+                <canvas id="challengeTimeline"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section animate-in">
+            <h2>🏆 Erfolgsstatistiken</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                <div class="chart-container small">
+                    <canvas id="outcomeChart"></canvas>
+                </div>
+                <div class="chart-container small">
+                    <canvas id="playerPerformance"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rankings Section -->
+        <div class="rankings-section animate-in">
+            <h2>🥇 Top Rankings</h2>
+            <div class="rankings-grid" id="topRankings"></div>
+        </div>
+
+        <!-- Active Challenges -->
+        <div class="chart-section animate-in">
+            <h2>⚡ Aktive Challenges</h2>
+            <div class="filters">
+                <button class="filter-btn active" onclick="filterChallenges('all')">Alle</button>
+                <button class="filter-btn" onclick="filterChallenges('open')">Offen</button>
+                <button class="filter-btn" onclick="filterChallenges('resolved')">Abgeschlossen</button>
+                <button class="filter-btn" onclick="filterChallenges('recent')">Letzter Monat</button>
+            </div>
+            <div class="table-container">
+                <table id="challengesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Herausforderer</th>
+                            <th>Gegner</th>
+                            <th>Datum</th>
+                            <th>Status</th>
+                            <th>Ergebnis</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="challengesBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Complete Player Rankings -->
+        <div class="chart-section animate-in">
+            <h2>📋 Komplette Spieler-Rangliste</h2>
+            <div class="table-container">
+                <table id="fullRankingsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Rang</th>
+                            <th>Name</th>
+                            <th>Siege</th>
+                            <th>Niederlagen</th>
+                            <th>Gesamt Spiele</th>
+                            <th>Siegrate</th>
+                            <th>Aktive Challenges</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullRankingsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="chart-section animate-in">
+            <h2>📅 Timeline der letzten Ereignisse</h2>
+            <div class="timeline" id="timeline"></div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2025 Tennis Challenge System | Generiert am <span id="generateDate"></span></p>
+            <p>Datenquelle: tennis.db | Stand: 23.10.2025</p>
+        </div>
+    </div>
+
+    <script>
+        // Data from the existing HTML
+        const challengeData = [{"id":1,"challenger":"Ch. Kramer","opponent":"A. Klarer","timestamp":"2025-07-04 10:55:30.812942","deadline":"2025-07-14 10:55:30.812942","resolved_at":"2025-07-05 02:27:03.516291","resolved":1,"result":"challenger_wins","score_details":"2:6 7:5 6:2","scheduled_play_date":"2025-07-04 16:00:00"},{"id":3,"challenger":"Ph. Scheida","opponent":"St. Farkas","timestamp":"2025-07-04 10:56:42.269559","deadline":"2025-07-14 10:56:42.269559","resolved_at":"2025-07-15 10:55:02.681409","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-07-11 15:00:00"},{"id":4,"challenger":"M. Kova","opponent":"Ch. Bartsch","timestamp":"2025-07-04 10:56:54.889916","deadline":"2025-07-14 10:56:54.889916","resolved_at":"2025-07-12 10:21:54.432583","resolved":1,"result":"challenger_wins","score_details":"6:1 6:0","scheduled_play_date":"2025-07-11 13:00:00"},{"id":5,"challenger":"W. Knotek","opponent":"M. Strausberger","timestamp":"2025-07-04 10:57:32.765994","deadline":"2025-07-14 10:57:32.765994","resolved_at":"2025-07-15 11:00:09.746645","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-07-07 15:00:00"},{"id":6,"challenger":"M. Manninger","opponent":"Ch. Tendl","timestamp":"2025-07-04 10:58:26.238522","deadline":"2025-07-14 10:58:26.238522","resolved_at":"2025-07-15 11:06:13.168294","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-07-10 16:00:00"},{"id":7,"challenger":"R. Haschke","opponent":"M. Nechvatal","timestamp":"2025-07-04 10:58:59.978921","deadline":"2025-07-14 10:58:59.978921","resolved_at":"2025-07-17 01:06:21.340354","resolved":1,"result":"opponent_wins","score_details":"2:6 4:6","scheduled_play_date":"2025-07-13 17:00:00"},{"id":8,"challenger":"A. Peya","opponent":"M. Schmid","timestamp":"2025-07-04 10:59:19.502603","deadline":"2025-07-14 10:59:19.502603","resolved_at":"2025-07-12 10:26:11.986178","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-07-11 10:00:00"},{"id":10,"challenger":"F. Binder","opponent":"H. Brandt","timestamp":"2025-07-04 11:00:50.451344","deadline":"2025-07-14 11:00:50.451344","resolved_at":"2025-07-07 22:55:31.325841","resolved":1,"result":"challenger_wins","score_details":"7:5 7:5","scheduled_play_date":"2025-07-07 17:00:00"},{"id":11,"challenger":"M. Mularz","opponent":"S. Hofbauer","timestamp":"2025-07-04 11:01:12.450098","deadline":"2025-07-14 11:01:12.450098","resolved_at":"2025-07-09 17:19:18.503030","resolved":1,"result":"opponent_wins","score_details":"6:2 3:6 3:6","scheduled_play_date":"2025-07-08 17:00:00"},{"id":12,"challenger":"L. Slid","opponent":"T. Hofer","timestamp":"2025-07-04 11:01:49.042441","deadline":"2025-07-14 11:01:49.042441","resolved_at":"2025-07-07 22:55:55.372134","resolved":1,"result":"opponent_wins","score_details":"1:6 0:6","scheduled_play_date":"2025-07-06 14:00:00"},{"id":13,"challenger":"R. Binder","opponent":"F. Berger","timestamp":"2025-07-07 06:34:32.469729","deadline":"2025-07-17 06:34:32.469729","resolved_at":"2025-07-07 06:37:53.134744","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":14,"challenger":"St. Nitschmann","opponent":"F. Zechmeister","timestamp":"2025-07-07 06:34:45.206041","deadline":"2025-07-17 06:34:45.206041","resolved_at":"2025-07-07 06:37:04.868404","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":15,"challenger":"St. Nitschmann","opponent":"M. Hofbauer","timestamp":"2025-07-10 07:18:01.771123","deadline":"2025-07-20 07:18:01.771123","resolved_at":"2025-07-21 11:21:47.803268","resolved":1,"result":"challenger_wins","score_details":"7:5 6:1","scheduled_play_date":"2025-07-20 00:00:00"},{"id":16,"challenger":"Ch. Kraft","opponent":"F. Zechmeister","timestamp":"2025-07-10 07:32:43.478885","deadline":"2025-07-20 07:32:43.478885","resolved_at":"2025-07-18 12:21:47.595009","resolved":1,"result":"opponent_wins","score_details":"6:3 3:6 4:6","scheduled_play_date":"2025-07-17 18:00:00"},{"id":17,"challenger":"M. Frey","opponent":"H. Brandt","timestamp":"2025-07-10 07:33:47.777444","deadline":"2025-07-20 07:33:47.777444","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-18 16:00:00"},{"id":18,"challenger":"T. Hofer","opponent":"Ch. Bartsch","timestamp":"2025-07-12 10:22:12.566173","deadline":"2025-07-22 10:22:12.566173","resolved_at":"2025-07-15 10:50:47.176761","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-07-15 17:00:00"},{"id":19,"challenger":"A. Peya","opponent":"M. Schmid","timestamp":"2025-07-12 10:26:29.540534","deadline":"2025-07-22 10:26:29.540534","resolved_at":"2025-07-15 11:04:49.889275","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":20,"challenger":"H. Slunsky","opponent":"Ch. Kramer","timestamp":"2025-07-15 10:51:37.088055","deadline":"2025-07-25 10:51:37.088055","resolved_at":"2025-07-17 01:05:53.620578","resolved":1,"result":"opponent_wins","score_details":"0:6 1:6","scheduled_play_date":"2025-07-16 17:00:00"},{"id":22,"challenger":"W. Knotek","opponent":"M. Strausberger","timestamp":"2025-07-15 11:01:20.763066","deadline":"2025-07-25 11:01:20.763066","resolved_at":"2025-07-17 01:06:49.660662","resolved":1,"result":"challenger_wins","score_details":"6:3 6:3","scheduled_play_date":"2025-07-16 15:00:00"},{"id":23,"challenger":"A. Peya","opponent":"M. Schmid","timestamp":"2025-07-15 11:04:59.764278","deadline":"2025-07-25 11:04:59.764278","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-25 10:00:00"},{"id":24,"challenger":"M. Manninger","opponent":"Ch. Tendl","timestamp":"2025-07-15 11:06:26.792478","deadline":"2025-07-25 11:06:26.792478","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-24 17:00:00"},{"id":25,"challenger":"Ph. Scheida","opponent":"St. Farkas","timestamp":"2025-07-15 11:08:59.839427","deadline":"2025-07-25 11:08:59.839427","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-24 16:00:00"},{"id":26,"challenger":"M. Kova","opponent":"H. Slunsky","timestamp":"2025-07-17 10:45:14.898338","deadline":"2025-07-27 10:45:14.898338","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-22 17:00:00"},{"id":27,"challenger":"W. Knotek","opponent":"Ch. Bartsch","timestamp":"2025-07-18 12:20:36.151761","deadline":"2025-07-28 12:20:36.151761","resolved_at":"2025-07-24 12:10:26.826898","resolved":1,"result":"opponent_wins","score_details":"1:6 0:6","scheduled_play_date":"2025-07-23 15:00:00"},{"id":28,"challenger":"A. Klarer","opponent":"P. Krauskopf","timestamp":"2025-07-21 11:28:13.360259","deadline":"2025-07-31 11:28:13.360259","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-30 17:30:00"},{"id":29,"challenger":"M. Kudilek","opponent":"R. Haschke","timestamp":"2025-07-21 11:31:45.329944","deadline":"2025-07-31 11:31:45.329944","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-25 14:00:00"},{"id":30,"challenger":"L. Slid","opponent":"M. Hofbauer","timestamp":"2025-07-21 12:10:07.778218","deadline":"2025-07-31 12:10:07.778218","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-28 17:00:00"},{"id":31,"challenger":"A. Harbarth","opponent":"E. Werner","timestamp":"2025-07-22 13:44:45.035298","deadline":"2025-08-01 13:44:45.035298","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-07-25 18:00:00"},{"id":32,"challenger":"H. Novak","opponent":"Ch. Kramer","timestamp":"2025-07-22 13:48:39.794256","deadline":"2025-08-01 13:48:39.794256","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":33,"challenger":"St. Nitschmann","opponent":"S. Hofbauer","timestamp":"2025-07-24 12:10:54.369116","deadline":"2025-08-03 12:10:54.369116","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":34,"challenger":"M. Nechvatal","opponent":"M. Manninger","timestamp":"2025-07-25 13:42:26.235364","deadline":"2025-08-04 13:42:26.235364","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":36,"challenger":"M. Nechvatal","opponent":"M. Manninger","timestamp":"2025-08-05 08:04:45.580373","deadline":"2025-08-15 08:04:45.580373","resolved_at":"2025-08-05 08:05:18.302422","resolved":1,"result":"challenger_wins","score_details":"6:1 6:4","scheduled_play_date":""},{"id":37,"challenger":"A. Peya","opponent":"M. Schmid","timestamp":"2025-08-05 08:15:58.851556","deadline":"2025-08-15 08:15:58.851556","resolved_at":"2025-08-05 08:16:22.137802","resolved":1,"result":"challenger_wins","score_details":"6:0 6:2","scheduled_play_date":""},{"id":38,"challenger":"L. Slid","opponent":"M. Hofbauer","timestamp":"2025-08-05 08:17:27.955864","deadline":"2025-08-15 08:17:27.955864","resolved_at":"2025-08-05 08:18:07.613511","resolved":1,"result":"challenger_wins","score_details":"3:6 6:3 6:2","scheduled_play_date":""},{"id":39,"challenger":"Ch. Kraft","opponent":"M. Kudilek","timestamp":"2025-08-05 08:20:31.080707","deadline":"2025-08-15 08:20:31.080707","resolved_at":"2025-08-05 19:53:49.560219","resolved":1,"result":"opponent_wins","score_details":"3:6 6:3 2:6","scheduled_play_date":"2025-08-05 18:00:00"},{"id":40,"challenger":"M. Kova","opponent":"H. Slunsky","timestamp":"2025-08-05 08:26:47.655350","deadline":"2025-08-15 08:26:47.655350","resolved_at":"2025-08-05 08:27:10.063180","resolved":1,"result":"challenger_wins","score_details":"6:1 6:2","scheduled_play_date":""},{"id":41,"challenger":"M. Kova","opponent":"M. Bachmayer","timestamp":"2025-08-05 08:28:04.455838","deadline":"2025-08-15 08:28:04.455838","resolved_at":"2025-08-06 19:21:12.449749","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-08-07 17:00:00"},{"id":42,"challenger":"A. Harbarth","opponent":"E. Werner","timestamp":"2025-08-05 08:28:32.259153","deadline":"2025-08-15 08:28:32.259153","resolved_at":"2025-08-05 08:30:46.737188","resolved":1,"result":"challenger_wins","score_details":"6:3 6:1","scheduled_play_date":""},{"id":43,"challenger":"Ch. Tendl","opponent":"M. Stecher","timestamp":"2025-08-05 08:33:01.840939","deadline":"2025-08-15 08:33:01.840939","resolved_at":"2025-08-12 14:49:12.490208","resolved":1,"result":"opponent_wins","score_details":"6:4 3:6 4:6","scheduled_play_date":"2025-08-12 10:00:00"},{"id":44,"challenger":"St. Nitschmann","opponent":"S. Hofbauer","timestamp":"2025-08-05 08:42:08.190637","deadline":"2025-08-15 08:42:08.190637","resolved_at":"2025-08-12 12:08:15.324656","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-08-15 00:00:00"},{"id":45,"challenger":"F. Zechmeister","opponent":"R. Haschke","timestamp":"2025-08-05 08:48:48.915374","deadline":"2025-08-15 08:48:48.915374","resolved_at":"2025-08-09 18:16:19.696968","resolved":1,"result":"challenger_wins","score_details":"Aufgabe","scheduled_play_date":"2025-08-08 17:00:00"},{"id":46,"challenger":"A. Prohaska","opponent":"M. Mularz","timestamp":"2025-08-05 09:54:32.552128","deadline":"2025-08-15 09:54:32.552128","resolved_at":"2025-08-09 18:13:58.326744","resolved":1,"result":"opponent_wins","score_details":"2:6 1:6","scheduled_play_date":""},{"id":47,"challenger":"M. Kronberger","opponent":"H. Slunsky","timestamp":"2025-08-06 19:21:51.799830","deadline":"2025-08-16 19:21:51.799830","resolved_at":"2025-08-06 19:22:21.514372","resolved":1,"result":"challenger_wins","score_details":"6:1 6:2","scheduled_play_date":""},{"id":48,"challenger":"M. Kronberger","opponent":"M. Bachmayer","timestamp":"2025-08-06 19:22:46.759094","deadline":"2025-08-16 19:22:46.759094","resolved_at":"2025-08-12 23:46:53.335846","resolved":1,"result":"opponent_wins","score_details":"6:1 2:6 4:6","scheduled_play_date":"2025-08-12 16:00:00"},{"id":49,"challenger":"M. Mularz","opponent":"L. Slid","timestamp":"2025-08-09 18:17:21.832432","deadline":"2025-08-19 18:17:21.832432","resolved_at":"2025-08-12 23:47:10.791893","resolved":1,"result":"challenger_wins","score_details":"6:1 6:0","scheduled_play_date":"2025-08-12 18:00:00"},{"id":50,"challenger":"A. Harbarth","opponent":"P. Krauskopf","timestamp":"2025-08-09 18:18:18.842839","deadline":"2025-08-19 18:18:18.842839","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":51,"challenger":"M. Nechvatal","opponent":"W. Knotek","timestamp":"2025-08-09 18:22:02.499573","deadline":"2025-08-19 18:22:02.499573","resolved_at":"2025-08-13 23:55:55.337868","resolved":1,"result":"challenger_wins","score_details":"6:3 6:4","scheduled_play_date":"2025-08-13 17:00:00"},{"id":52,"challenger":"M. Kudilek","opponent":"R. Binder","timestamp":"2025-08-09 18:24:12.970662","deadline":"2025-08-19 18:24:12.970662","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-08-19 00:00:00"},{"id":53,"challenger":"M. Frey","opponent":"M. Hofbauer","timestamp":"2025-08-12 12:13:07.742992","deadline":"2025-08-22 12:13:07.742992","resolved_at":"2025-08-19 23:45:46.631996","resolved":1,"result":"opponent_wins","score_details":"2:6 3:6","scheduled_play_date":"2025-08-19 17:00:00"},{"id":54,"challenger":"M. Schmid","opponent":"M. Manninger","timestamp":"2025-08-12 12:16:38.020128","deadline":"2025-08-22 12:16:38.020128","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-08-21 17:00:00"},{"id":55,"challenger":"F. Binder","opponent":"Ch. Tendl","timestamp":"2025-08-12 14:49:37.821481","deadline":"2025-08-22 14:49:37.821481","resolved_at":"2025-08-19 23:39:48.291056","resolved":1,"result":"challenger_wins","score_details":"6:1 6:1","scheduled_play_date":"2025-08-19 10:00:00"},{"id":56,"challenger":"Ch. Kraft","opponent":"L. Slid","timestamp":"2025-08-12 23:54:56.751794","deadline":"2025-08-22 23:54:56.751794","resolved_at":"2025-08-19 07:30:35.060440","resolved":1,"result":"challenger_wins","score_details":"6:1 2:6 6:2","scheduled_play_date":"2025-08-18 18:00:00"},{"id":57,"challenger":"M. Stecher","opponent":"M. Kronberger","timestamp":"2025-08-13 13:39:53.467772","deadline":"2025-08-23 13:39:53.467772","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-08-21 12:00:00"},{"id":58,"challenger":"M. Nechvatal","opponent":"H. Slunsky","timestamp":"2025-08-13 23:56:15.341817","deadline":"2025-08-23 23:56:15.341817","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":59,"challenger":"M. Mularz","opponent":"F. Zechmeister","timestamp":"2025-08-13 23:59:57.406776","deadline":"2025-08-23 23:59:57.406776","resolved_at":"2025-08-21 08:16:06.596712","resolved":1,"result":"challenger_wins","score_details":"4:6 6:4 6:4","scheduled_play_date":"2025-08-20 17:00:00"},{"id":60,"challenger":"E. Werner","opponent":"M. Bachmayer","timestamp":"2025-08-18 08:16:56.437828","deadline":"2025-08-28 08:16:56.437828","resolved_at":"2025-08-21 08:16:23.050259","resolved":1,"result":"challenger_wins","score_details":"6:1 6:2","scheduled_play_date":"2025-08-20 15:00:00"},{"id":61,"challenger":"R. Haschke","opponent":"H. Brandt","timestamp":"2025-08-18 08:17:22.388656","deadline":"2025-08-28 08:17:22.388656","resolved_at":"2025-08-19 07:30:55.080788","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":62,"challenger":"A. Prohaska","opponent":"S. Binder","timestamp":"2025-08-19 07:35:51.449902","deadline":"2025-08-29 07:35:51.449902","resolved_at":"2025-08-26 12:16:44.322189","resolved":1,"result":"opponent_wins","score_details":"3:6 0:6","scheduled_play_date":"2025-08-25 18:00:00"},{"id":63,"challenger":"M. Hofbauer","opponent":"L. Slid","timestamp":"2025-08-19 23:48:34.637669","deadline":"2025-08-29 23:48:34.637669","resolved_at":"2025-08-26 12:15:36.878522","resolved":1,"result":"challenger_wins","score_details":"4:6 6:4 6:2","scheduled_play_date":"2025-08-25 16:00:00"},{"id":64,"challenger":"F. Binder","opponent":"St. Farkas","timestamp":"2025-08-19 23:50:20.571891","deadline":"2025-08-29 23:50:20.571891","resolved_at":"2025-08-29 13:22:12.164524","resolved":1,"result":"challenger_wins","score_details":"7:5 6:3","scheduled_play_date":"2025-08-28 17:00:00"},{"id":65,"challenger":"M. Kudilek","opponent":"R. Binder","timestamp":"2025-08-19 23:50:59.382877","deadline":"2025-08-29 23:50:59.382877","resolved_at":"2025-08-19 23:51:53.491168","resolved":1,"result":"opponent_wins","score_details":"4:6 2:6","scheduled_play_date":"2025-08-19 19:00:00"},{"id":66,"challenger":"M. Schmid","opponent":"M. Manninger","timestamp":"2025-08-24 23:30:54.142071","deadline":"2025-09-03 23:30:54.142071","resolved_at":"2025-08-24 23:32:03.064126","resolved":1,"result":"opponent_wins","score_details":"7:5 2:6 2:6","scheduled_play_date":"2025-08-24 16:00:00"},{"id":67,"challenger":"Ch. Kraft","opponent":"M. Mularz","timestamp":"2025-08-24 23:37:04.058539","deadline":"2025-09-03 23:37:04.058539","resolved_at":"2025-08-30 09:35:53.726606","resolved":1,"result":"opponent_wins","score_details":"1:6 3:6","scheduled_play_date":"2025-08-29 18:00:00"},{"id":68,"challenger":"R. Haschke","opponent":"M. Schmid","timestamp":"2025-08-24 23:42:19.574385","deadline":"2025-09-03 23:42:19.574385","resolved_at":"2025-09-03 23:23:07.488312","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":69,"challenger":"A. Harbarth","opponent":"P. Krauskopf","timestamp":"2025-08-24 23:43:19.469558","deadline":"2025-09-03 23:43:19.469558","resolved_at":"2025-08-27 09:24:37.992354","resolved":1,"result":"challenger_wins","score_details":"6:3 6:0","scheduled_play_date":"2025-08-28 17:00:00"},{"id":70,"challenger":"M. Kova","opponent":"M. Bachmayer","timestamp":"2025-08-24 23:45:21.648068","deadline":"2025-09-03 23:45:21.648068","resolved_at":"2025-09-03 23:24:00.402945","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":71,"challenger":"M. Stecher","opponent":"M. Kronberger","timestamp":"2025-08-24 23:45:56.482219","deadline":"2025-09-03 23:45:56.482219","resolved_at":"2025-08-29 13:23:07.507510","resolved":1,"result":"opponent_wins","score_details":"1:6 5:7","scheduled_play_date":"2025-08-29 10:00:00"},{"id":72,"challenger":"M. Nechvatal","opponent":"H. Slunsky","timestamp":"2025-08-24 23:47:37.500610","deadline":"2025-09-03 23:47:37.500610","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-08-31 17:00:00"},{"id":73,"challenger":"M. Frey","opponent":"R. Binder","timestamp":"2025-08-27 09:19:16.236087","deadline":"2025-09-06 09:19:16.236087","resolved_at":"2025-09-03 23:17:49.045403","resolved":1,"result":"opponent_wins","score_details":"1:6 2:6","scheduled_play_date":"2025-09-03 18:00:00"},{"id":74,"challenger":"S. Binder","opponent":"F. Berger","timestamp":"2025-08-27 09:25:43.324628","deadline":"2025-09-06 09:25:43.324628","resolved_at":"2025-09-03 23:20:58.344389","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-09-05 14:00:00"},{"id":75,"challenger":"T. Pospisil","opponent":"Ph. Scheida","timestamp":"2025-08-27 09:36:19.802602","deadline":"2025-09-06 09:36:19.802602","resolved_at":"2025-09-03 23:18:18.069572","resolved":1,"result":"opponent_wins","score_details":"3:6 1:6","scheduled_play_date":"2025-09-03 16:00:00"},{"id":76,"challenger":"Ch. Tendl","opponent":"St. Farkas","timestamp":"2025-08-29 13:23:34.057917","deadline":"2025-09-08 13:23:34.057917","resolved_at":"2025-09-03 23:21:06.738550","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":77,"challenger":"A. Prohaska","opponent":"L. Slid","timestamp":"2025-08-29 13:24:16.447557","deadline":"2025-09-08 13:24:16.447557","resolved_at":"2025-09-04 19:22:03.857657","resolved":1,"result":"challenger_wins","score_details":"6:2 6:4","scheduled_play_date":"2025-09-04 18:00:00"},{"id":78,"challenger":"F. Zechmeister","opponent":"M. Manninger","timestamp":"2025-08-29 13:32:05.011506","deadline":"2025-09-08 13:32:05.011506","resolved_at":"2025-08-31 09:01:59.314590","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":79,"challenger":"M. Manninger","opponent":"H. Brandt","timestamp":"2025-08-31 09:05:50.049109","deadline":"2025-09-10 09:05:50.049109","resolved_at":"2025-09-08 08:59:20.116997","resolved":1,"result":"opponent_wins","score_details":"1:6 4:6","scheduled_play_date":"2025-09-07 16:00:00"},{"id":80,"challenger":"M. Mularz","opponent":"W. Knotek","timestamp":"2025-08-31 09:07:51.644971","deadline":"2025-09-10 09:07:51.644971","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-09-10 00:00:00"},{"id":81,"challenger":"Ch. Tendl","opponent":"St. Farkas","timestamp":"2025-09-03 23:21:26.568249","deadline":"2025-09-13 23:21:26.568249","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-09-11 17:00:00"},{"id":82,"challenger":"S. Binder","opponent":"Ch. Kraft","timestamp":"2025-09-03 23:21:45.020179","deadline":"2025-09-13 23:21:45.020179","resolved_at":"2025-09-04 19:00:05.560337","resolved":1,"result":"challenger_wins","score_details":"6:2 6:3","scheduled_play_date":"2025-09-04 15:00:00"},{"id":83,"challenger":"R. Haschke","opponent":"M. Schmid","timestamp":"2025-09-03 23:23:22.324715","deadline":"2025-09-13 23:23:22.324715","resolved_at":"2025-09-08 08:59:56.653517","resolved":1,"result":"opponent_wins","score_details":"4:6 3:6","scheduled_play_date":"2025-09-05 16:00:00"},{"id":84,"challenger":"M. Kova","opponent":"M. Bachmayer","timestamp":"2025-09-03 23:24:14.342356","deadline":"2025-09-13 23:24:14.342356","resolved_at":"2025-09-08 09:04:57.449940","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":85,"challenger":"Ph. Scheida","opponent":"Ch. Bartsch","timestamp":"2025-09-04 19:02:20.118028","deadline":"2025-09-14 19:02:20.118028","resolved_at":"2025-09-09 19:24:10.079077","resolved":1,"result":"challenger_wins","score_details":"3:6 6:4 6:4","scheduled_play_date":"2025-09-09 16:00:00"},{"id":86,"challenger":"M. Kova","opponent":"M. Bachmayer","timestamp":"2025-09-08 09:05:13.608017","deadline":"2025-09-18 09:05:13.608017","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-09-16 16:00:00"},{"id":87,"challenger":"A. Prohaska","opponent":"M. Hofbauer","timestamp":"2025-09-08 09:06:15.338582","deadline":"2025-09-18 09:06:15.338582","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-09-17 17:00:00"},{"id":88,"challenger":"M. Frey","opponent":"L. Slid","timestamp":"2025-09-08 09:07:36.498256","deadline":"2025-09-18 09:07:36.498256","resolved_at":"2025-09-09 19:24:50.042455","resolved":1,"result":"opponent_wins","score_details":"5:7 1:6","scheduled_play_date":"2025-09-08 17:00:00"},{"id":89,"challenger":"F. Zechmeister","opponent":"M. Manninger","timestamp":"2025-09-08 09:08:06.536993","deadline":"2025-09-18 09:08:06.536993","resolved_at":"2025-09-15 09:12:44.854001","resolved":1,"result":"challenger_wins","score_details":"6:4 5:7 6:3","scheduled_play_date":"2025-09-15 17:00:00"},{"id":90,"challenger":"M. Nechvatal","opponent":"H. Slunsky","timestamp":"2025-09-08 09:10:32.580111","deadline":"2025-09-18 09:10:32.580111","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":91,"challenger":"M. Schmid","opponent":"T. Hofer","timestamp":"2025-09-08 10:58:58.137538","deadline":"2025-09-18 10:58:58.137538","resolved_at":"2025-09-15 09:10:13.304269","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-09-10 17:00:00"},{"id":92,"challenger":"L. Slid","opponent":"Ch. Kraft","timestamp":"2025-09-09 19:25:07.373516","deadline":"2025-09-19 19:25:07.373516","resolved_at":"2025-09-15 09:16:38.294511","resolved":1,"result":"opponent_wins","score_details":"6:3 5:7 3:6","scheduled_play_date":"2025-09-12 14:00:00"},{"id":93,"challenger":"Ch. Tendl","opponent":"St. Farkas","timestamp":"2025-09-15 09:08:58.189511","deadline":"2025-09-25 09:08:58.189511","resolved_at":"2025-09-15 09:09:59.606535","resolved":1,"result":"opponent_wins","score_details":"6:3 3:6 5:7","scheduled_play_date":"2025-09-15 10:00:00"},{"id":94,"challenger":"M. Schmid","opponent":"T. Hofer","timestamp":"2025-09-15 09:10:35.049847","deadline":"2025-09-25 09:10:35.049847","resolved_at":"2025-09-20 14:14:16.369320","resolved":1,"result":"opponent_wins","score_details":"1:6 0:6","scheduled_play_date":"2025-09-19 14:00:00"},{"id":95,"challenger":"Daniel Krejc","opponent":"L. Slid","timestamp":"2025-09-15 09:18:29.684830","deadline":"2025-09-25 09:18:29.684830","resolved_at":"2025-09-20 14:16:44.138185","resolved":1,"result":"challenger_wins","score_details":"6:3 6:3","scheduled_play_date":"2025-09-19 16:00:00"},{"id":96,"challenger":"M. Mularz","opponent":"W. Knotek","timestamp":"2025-09-15 09:24:04.673147","deadline":"2025-09-25 09:24:04.673147","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":97,"challenger":"A. Klarer","opponent":"E. Werner","timestamp":"2025-09-15 13:32:43.031536","deadline":"2025-09-25 13:32:43.031536","resolved_at":"2025-09-20 14:06:48.638640","resolved":1,"result":"opponent_wins","score_details":"3:6 3:6","scheduled_play_date":"2025-09-18 17:00:00"},{"id":98,"challenger":"F. Zechmeister","opponent":"Ch. Bartsch","timestamp":"2025-09-15 13:33:32.742616","deadline":"2025-09-25 13:33:32.742616","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":"2025-09-23 16:00:00"},{"id":99,"challenger":"H. Brandt","opponent":"Ch. Tendl","timestamp":"2025-09-15 13:35:47.694615","deadline":"2025-09-25 13:35:47.694615","resolved_at":"2025-09-20 14:05:13.698899","resolved":1,"result":"opponent_wins","score_details":"3:6 3:6","scheduled_play_date":"2025-09-19 14:00:00"},{"id":100,"challenger":"P. Krauskopf","opponent":"A. Harbarth","timestamp":"2025-09-20 14:17:00.501537","deadline":"2025-09-30 14:17:00.501537","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":101,"challenger":"T. Hofer","opponent":"Ph. Scheida","timestamp":"2025-09-20 14:17:13.734316","deadline":"2025-09-30 14:17:13.734316","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":102,"challenger":"St. Farkas","opponent":"M. Kova","timestamp":"2025-09-20 14:17:29.772847","deadline":"2025-09-30 14:17:29.772847","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":103,"challenger":"L. Syrch","opponent":"M. Frey","timestamp":"2025-09-20 14:18:34.155323","deadline":"2025-09-30 14:18:34.155323","resolved_at":"2025-09-29 15:50:57.188997","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":"2025-09-24 17:00:00"},{"id":104,"challenger":"M. Kudilek","opponent":"M. Hofbauer","timestamp":"2025-09-20 14:23:09.908684","deadline":"2025-09-30 14:23:09.908684","resolved_at":"2025-09-29 15:51:14.886596","resolved":1,"result":"challenger_wins","score_details":"6:3 6:4","scheduled_play_date":""},{"id":105,"challenger":"M. Stecher","opponent":"H. Slunsky","timestamp":"2025-09-20 14:25:14.336496","deadline":"2025-09-30 14:25:14.336496","resolved_at":"2025-09-29 15:51:31.848568","resolved":1,"result":"challenger_wins","score_details":"6:3 6:3","scheduled_play_date":""},{"id":106,"challenger":"S. Binder","opponent":"M. Schmid","timestamp":"2025-09-20 14:34:41.319789","deadline":"2025-09-30 14:34:41.319789","resolved_at":"2025-09-29 15:51:51.737822","resolved":1,"result":"challenger_wins","score_details":"6:2 6:3","scheduled_play_date":""},{"id":107,"challenger":"Ch. Kramer","opponent":"E. Werner","timestamp":"2025-09-29 15:52:07.771818","deadline":"2025-10-09 15:52:07.771818","resolved_at":"2025-10-01 10:03:30.827349","resolved":1,"result":"challenger_wins","score_details":"6:4 6:3","scheduled_play_date":""},{"id":108,"challenger":"M. Manninger","opponent":"M. Nechvatal","timestamp":"2025-09-29 15:52:27.188409","deadline":"2025-10-09 15:52:27.188409","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":109,"challenger":"H. Novak","opponent":"M. Bachmayer","timestamp":"2025-09-29 15:54:07.233831","deadline":"2025-10-09 15:54:07.233831","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":110,"challenger":"A. Prohaska","opponent":"S. Hofbauer","timestamp":"2025-09-29 15:56:06.317554","deadline":"2025-10-09 15:56:06.317554","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":111,"challenger":"M. Frey","opponent":"Daniel Krejc","timestamp":"2025-09-29 15:56:37.818284","deadline":"2025-10-09 15:56:37.818284","resolved_at":"2025-10-02 13:33:48.438566","resolved":1,"result":"opponent_wins","score_details":"6:7(3:7) 1:6","scheduled_play_date":""},{"id":112,"challenger":"M. Kudilek","opponent":"R. Haschke","timestamp":"2025-10-01 10:04:54.226156","deadline":"2025-10-11 10:04:54.226156","resolved_at":"2025-10-01 11:06:21.485179","resolved":1,"result":"not_happened","score_details":"Nicht stattgefunden","scheduled_play_date":""},{"id":113,"challenger":"Ch. Tendl","opponent":"St. Farkas","timestamp":"2025-10-01 10:05:16.283720","deadline":"2025-10-11 10:05:16.283720","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":114,"challenger":"Ch. Bartsch","opponent":"H. Slunsky","timestamp":"2025-10-01 10:06:07.276591","deadline":"2025-10-11 10:06:07.276591","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":115,"challenger":"P. Krauskopf","opponent":"A. Harbarth","timestamp":"2025-10-02 13:34:30.280913","deadline":"2025-10-12 13:34:30.280913","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":116,"challenger":"T. Hofer","opponent":"Ph. Scheida","timestamp":"2025-10-23 09:39:16.721133","deadline":"2025-11-02 09:39:16.721133","resolved_at":"2025-10-23 09:46:24.265147","resolved":1,"result":"challenger_wins","score_details":"6:1 6:2","scheduled_play_date":"2025-10-23 07:00:00"},{"id":117,"challenger":"Ch. Tendl","opponent":"St. Farkas","timestamp":"2025-10-23 09:46:39.255483","deadline":"2025-11-02 09:46:39.255483","resolved_at":"2025-10-23 09:47:46.676488","resolved":1,"result":"opponent_wins","score_details":"4:6 4:6","scheduled_play_date":""},{"id":118,"challenger":"M. Manninger","opponent":"M. Nechvatal","timestamp":"2025-10-23 09:46:49.714513","deadline":"2025-11-02 09:46:49.714513","resolved_at":"2025-10-23 09:48:16.201546","resolved":1,"result":"challenger_wins","score_details":"7:6(7:5) 6:2","scheduled_play_date":""},{"id":119,"challenger":"T. Hofer","opponent":"H. Slunsky","timestamp":"2025-10-23 09:47:01.111405","deadline":"2025-11-02 09:47:01.111405","resolved_at":"2025-10-23 09:49:07.532727","resolved":1,"result":"challenger_wins","score_details":"7:6(7:5) 6:7(5:7) 7:6(7:5)","scheduled_play_date":""},{"id":120,"challenger":"M. Frey","opponent":"A. Prohaska","timestamp":"2025-10-23 09:47:11.175579","deadline":"2025-11-02 09:47:11.175579","resolved_at":"2025-10-23 09:49:33.427336","resolved":1,"result":"challenger_wins","score_details":"3:6 6:3 6:1","scheduled_play_date":""},{"id":121,"challenger":"M. Manninger","opponent":"Ch. Bartsch","timestamp":"2025-10-23 09:49:49.037846","deadline":"2025-11-02 09:49:49.037846","resolved_at":"2025-10-23 09:50:15.374161","resolved":1,"result":"challenger_wins","score_details":"6:3 7:6(7:5)","scheduled_play_date":""},{"id":122,"challenger":"M. Schmid","opponent":"F. Zechmeister","timestamp":"2025-10-23 09:50:44.895876","deadline":"2025-11-02 09:50:44.895876","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""},{"id":123,"challenger":"L. Slid","opponent":"Ch. Kraft","timestamp":"2025-10-23 09:50:59.728019","deadline":"2025-11-02 09:50:59.728019","resolved_at":null,"resolved":0,"result":null,"score_details":"","scheduled_play_date":""}];
+
+        const players = [{"id":8,"name":"A. Harbarth","rank":1},{"id":0,"name":"P. Krauskopf","rank":2},{"id":6,"name":"Ch. Kramer","rank":3},{"id":2,"name":"E. Werner","rank":4},{"id":1,"name":"M. Bachmayer","rank":5},{"id":3,"name":"A. Klarer","rank":6},{"id":14,"name":"M. Kova","rank":7},{"id":13,"name":"M. Kronberger","rank":8},{"id":9,"name":"M. Stecher","rank":9},{"id":17,"name":"T. Hofer","rank":10},{"id":4,"name":"H. Slunsky","rank":11},{"id":10,"name":"H. Novak","rank":12},{"id":23,"name":"F. Binder","rank":13},{"id":7,"name":"St. Farkas","rank":14},{"id":15,"name":"Ph. Scheida","rank":15},{"id":22,"name":"M. Manninger","rank":16},{"id":11,"name":"Ch. Bartsch","rank":17},{"id":12,"name":"Ch. Tendl","rank":18},{"id":20,"name":"M. Nechvatal","rank":19},{"id":21,"name":"W. Knotek","rank":20},{"id":16,"name":"M. Strausberger","rank":21},{"id":18,"name":"H. Brandt","rank":22},{"id":31,"name":"F. Zechmeister","rank":23},{"id":30,"name":"A. Peya","rank":24},{"id":36,"name":"S. Binder","rank":25},{"id":24,"name":"M. Schmid","rank":26},{"id":35,"name":"M. Mularz","rank":27},{"id":25,"name":"R. Haschke","rank":28},{"id":26,"name":"F. Berger","rank":29},{"id":27,"name":"S. Hofbauer","rank":30},{"id":28,"name":"R. Binder","rank":31},{"id":34,"name":"St. Nitschmann","rank":32},{"id":38,"name":"Ch. Kraft","rank":33},{"id":32,"name":"M. Kudilek","rank":34},{"id":29,"name":"M. Hofbauer","rank":35},{"id":39,"name":"M. Frey","rank":36},{"id":40,"name":"A. Prohaska","rank":37},{"id":42,"name":"Daniel Krejc","rank":38},{"id":37,"name":"L. Slid","rank":39},{"id":41,"name":"T. Pospisil","rank":40},{"id":43,"name":"L. Syrch","rank":41}];
+
+        // Initialize
+        document.getElementById('generateDate').textContent = new Date().toLocaleString('de-DE');
+
+        // Calculate statistics
+        const stats = {
+            total: challengeData.length,
+            resolved: challengeData.filter(c => c.resolved).length,
+            open: challengeData.filter(c => !c.resolved).length,
+            challengerWins: challengeData.filter(c => c.result === 'challenger_wins').length,
+            opponentWins: challengeData.filter(c => c.result === 'opponent_wins').length,
+            notHappened: challengeData.filter(c => c.result === 'not_happened').length,
+            winRate: 0,
+            avgDuration: 0
+        };
+
+        stats.winRate = stats.resolved > 0 ?
+            ((stats.challengerWins / (stats.challengerWins + stats.opponentWins)) * 100).toFixed(1) : 0;
+
+        // Calculate average resolution time
+        const durations = challengeData
+            .filter(c => c.resolved && c.resolved_at && c.result !== 'not_happened')
+            .map(c => {
+                const start = new Date(c.timestamp.replace(' ', 'T'));
+                const end = new Date(c.resolved_at.replace(' ', 'T'));
+                return (end - start) / (1000 * 60 * 60 * 24); // Days
+            });
+
+        stats.avgDuration = durations.length > 0 ?
+            (durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1) : 0;
+
+        // Render Stats Grid
+        const statsGrid = document.getElementById('statsGrid');
+        statsGrid.innerHTML = `
+            <div class="stat-card animate-in">
+                <div class="icon">📊</div>
+                <div class="value">${stats.total}</div>
+                <div class="label">Gesamt Challenges</div>
+                <div class="change positive">+${challengeData.filter(c => {
+                    const date = new Date(c.timestamp.replace(' ', 'T'));
+                    return date >= new Date('2025-10-01');
+                }).length} im Oktober</div>
+            </div>
+            <div class="stat-card success animate-in" style="animation-delay: 0.1s;">
+                <div class="icon">✅</div>
+                <div class="value">${stats.resolved}</div>
+                <div class="label">Abgeschlossen</div>
+                <div class="change">${((stats.resolved / stats.total) * 100).toFixed(1)}% Quote</div>
+            </div>
+            <div class="stat-card info animate-in" style="animation-delay: 0.2s;">
+                <div class="icon">⏳</div>
+                <div class="value">${stats.open}</div>
+                <div class="label">Noch offen</div>
+                <div class="change">${stats.avgDuration} Tage Ø Dauer</div>
+            </div>
+            <div class="stat-card warning animate-in" style="animation-delay: 0.3s;">
+                <div class="icon">🏆</div>
+                <div class="value">${stats.winRate}%</div>
+                <div class="label">Herausforderer-Siegrate</div>
+                <div class="change">${stats.challengerWins} von ${stats.challengerWins + stats.opponentWins} Spielen</div>
+            </div>
+        `;
+
+        // Timeline Chart
+        const timelineCtx = document.getElementById('challengeTimeline').getContext('2d');
+
+        // Process data for timeline
+        const monthlyData = {};
+        challengeData.forEach(c => {
+            const date = new Date(c.timestamp.replace(' ', 'T'));
+            const monthKey = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+
+            if (!monthlyData[monthKey]) {
+                monthlyData[monthKey] = { total: 0, resolved: 0, open: 0 };
+            }
+            monthlyData[monthKey].total++;
+            if (c.resolved) {
+                monthlyData[monthKey].resolved++;
+            } else {
+                monthlyData[monthKey].open++;
+            }
+        });
+
+        const sortedMonths = Object.keys(monthlyData).sort();
+
+        new Chart(timelineCtx, {
+            type: 'line',
+            data: {
+                labels: sortedMonths.map(m => {
+                    const [year, month] = m.split('-');
+                    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+                    return monthNames[parseInt(month) - 1] + ' ' + year;
+                }),
+                datasets: [
+                    {
+                        label: 'Gesamt',
+                        data: sortedMonths.map(m => monthlyData[m].total),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Abgeschlossen',
+                        data: sortedMonths.map(m => monthlyData[m].resolved),
+                        borderColor: '#56ab2f',
+                        backgroundColor: 'rgba(86, 171, 47, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Offen',
+                        data: sortedMonths.map(m => monthlyData[m].open),
+                        borderColor: '#f5576c',
+                        backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: { color: '#b8b8c8' }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#b8b8c8',
+                        borderColor: '#3a3a5a',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(58, 58, 90, 0.3)' },
+                        ticks: { color: '#8888a8' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(58, 58, 90, 0.3)' },
+                        ticks: { color: '#8888a8' }
+                    }
+                }
+            }
+        });
+
+        // Outcome Chart
+        const outcomeCtx = document.getElementById('outcomeChart').getContext('2d');
+        new Chart(outcomeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Herausforderer gewinnt', 'Gegner gewinnt', 'Nicht ausgetragen', 'Offen'],
+                datasets: [{
+                    data: [stats.challengerWins, stats.opponentWins, stats.notHappened, stats.open],
+                    backgroundColor: [
+                        'rgba(86, 171, 47, 0.8)',
+                        'rgba(245, 87, 108, 0.8)',
+                        'rgba(249, 115, 22, 0.8)',
+                        'rgba(79, 172, 254, 0.8)'
+                    ],
+                    borderColor: [
+                        '#56ab2f',
+                        '#f5576c',
+                        '#f97316',
+                        '#4facfe'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#b8b8c8', padding: 15 }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#b8b8c8'
+                    }
+                }
+            }
+        });
+
+        // Player Performance Chart
+        const performanceCtx = document.getElementById('playerPerformance').getContext('2d');
+
+        // Calculate top performers
+        const playerPerformance = {};
+        challengeData.forEach(c => {
+            if (c.result === 'challenger_wins') {
+                playerPerformance[c.challenger] = (playerPerformance[c.challenger] || 0) + 1;
+            } else if (c.result === 'opponent_wins') {
+                playerPerformance[c.opponent] = (playerPerformance[c.opponent] || 0) + 1;
+            }
+        });
+
+        const topPerformers = Object.entries(playerPerformance)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        new Chart(performanceCtx, {
+            type: 'bar',
+            data: {
+                labels: topPerformers.map(p => p[0]),
+                datasets: [{
+                    label: 'Siege',
+                    data: topPerformers.map(p => p[1]),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 26, 46, 0.95)',
+                        titleColor: '#fff',
+                        bodyColor: '#b8b8c8'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(58, 58, 90, 0.3)' },
+                        ticks: { color: '#8888a8', stepSize: 1 }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#8888a8' }
+                    }
+                }
+            }
+        });
+
+        // Render Top Rankings
+        const topRankings = document.getElementById('topRankings');
+        const topPlayers = players.slice(0, 9);
+
+        topRankings.innerHTML = topPlayers.map((player, index) => {
+            let cardClass = '';
+            if (index === 0) cardClass = 'gold';
+            else if (index === 1) cardClass = 'silver';
+            else if (index === 2) cardClass = 'bronze';
+
+            const playerChallenges = challengeData.filter(c =>
+                c.challenger === player.name || c.opponent === player.name
+            );
+            const wins = playerChallenges.filter(c =>
+                (c.result === 'challenger_wins' && c.challenger === player.name) ||
+                (c.result === 'opponent_wins' && c.opponent === player.name)
+            ).length;
+            const losses = playerChallenges.filter(c =>
+                (c.result === 'challenger_wins' && c.opponent === player.name) ||
+                (c.result === 'opponent_wins' && c.challenger === player.name)
+            ).length;
+
+            return `
+                <div class="rank-card ${cardClass} animate-in" style="animation-delay: ${index * 0.05}s;">
+                    <div class="rank-number">#${player.rank}</div>
+                    <div class="player-name">${player.name}</div>
+                    <div class="player-stats">
+                        <div class="player-stat">🏆 ${wins} Siege</div>
+                        <div class="player-stat">❌ ${losses} Niederlagen</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Render Challenges Table
+        let currentFilter = 'all';
+        let filteredData = [...challengeData];
+
+        function renderTable() {
+            const tbody = document.getElementById('challengesBody');
+            tbody.innerHTML = filteredData.map(c => {
+                let statusBadge = '';
+                if (!c.resolved) {
+                    statusBadge = '<span class="status-badge open">Offen</span>';
+                } else if (c.result === 'challenger_wins') {
+                    statusBadge = '<span class="status-badge won">Herausforderer gewinnt</span>';
+                } else if (c.result === 'opponent_wins') {
+                    statusBadge = '<span class="status-badge lost">Gegner gewinnt</span>';
+                } else {
+                    statusBadge = '<span class="status-badge missed">Nicht ausgetragen</span>';
+                }
+
+                const date = new Date(c.timestamp.replace(' ', 'T'));
+                const formattedDate = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `
+                    <tr>
+                        <td>#${c.id}</td>
+                        <td>${c.challenger}</td>
+                        <td>${c.opponent}</td>
+                        <td>${formattedDate}</td>
+                        <td>${statusBadge}</td>
+                        <td>${c.result ? (c.result === 'not_happened' ? '-' :
+                            (c.result === 'challenger_wins' ? '✅' : '❌')) : '⏳'}</td>
+                        <td>${c.score_details || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.filterChallenges = function(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (filter === 'all') {
+                filteredData = [...challengeData];
+            } else if (filter === 'open') {
+                filteredData = challengeData.filter(c => !c.resolved);
+            } else if (filter === 'resolved') {
+                filteredData = challengeData.filter(c => c.resolved);
+            } else if (filter === 'recent') {
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+                filteredData = challengeData.filter(c => {
+                    const date = new Date(c.timestamp.replace(' ', 'T'));
+                    return date >= oneMonthAgo;
+                });
+            }
+
+            renderTable();
+        };
+
+        renderTable();
+
+        // Render Complete Player Rankings Table
+        function renderFullRankings() {
+            const rankingsBody = document.getElementById('fullRankingsBody');
+
+            // Calculate statistics for each player
+            const playerStats = players.map(player => {
+                const playerChallenges = challengeData.filter(c =>
+                    c.challenger === player.name || c.opponent === player.name
+                );
+
+                const wins = playerChallenges.filter(c =>
+                    (c.result === 'challenger_wins' && c.challenger === player.name) ||
+                    (c.result === 'opponent_wins' && c.opponent === player.name)
+                ).length;
+
+                const losses = playerChallenges.filter(c =>
+                    (c.result === 'challenger_wins' && c.opponent === player.name) ||
+                    (c.result === 'opponent_wins' && c.challenger === player.name)
+                ).length;
+
+                const activeChallenges = challengeData.filter(c =>
+                    !c.resolved && (c.challenger === player.name || c.opponent === player.name)
+                ).length;
+
+                const totalGames = wins + losses;
+                const winRate = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : '0.0';
+
+                return {
+                    ...player,
+                    wins,
+                    losses,
+                    totalGames,
+                    winRate,
+                    activeChallenges
+                };
+            });
+
+            // Render the table
+            rankingsBody.innerHTML = playerStats.map((player, index) => {
+                let rankBadge = '';
+                let rowClass = '';
+
+                if (player.rank === 1) {
+                    rankBadge = '🥇';
+                    rowClass = 'style="background: linear-gradient(90deg, rgba(255,215,0,0.1), transparent);"';
+                } else if (player.rank === 2) {
+                    rankBadge = '🥈';
+                    rowClass = 'style="background: linear-gradient(90deg, rgba(192,192,192,0.1), transparent);"';
+                } else if (player.rank === 3) {
+                    rankBadge = '🥉';
+                    rowClass = 'style="background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent);"';
+                } else if (player.rank <= 10) {
+                    rowClass = 'style="background: rgba(102,126,234,0.05);"';
+                }
+
+                const winRateColor = player.winRate >= 60 ? '#56ab2f' :
+                                    player.winRate >= 40 ? '#f97316' : '#f5576c';
+
+                return `
+                    <tr ${rowClass}>
+                        <td>
+                            <strong style="color: var(--text-primary); font-size: 1.1em;">
+                                ${rankBadge} #${player.rank}
+                            </strong>
+                        </td>
+                        <td style="font-weight: 600; color: var(--text-primary);">${player.name}</td>
+                        <td style="color: #56ab2f;">${player.wins}</td>
+                        <td style="color: #f5576c;">${player.losses}</td>
+                        <td>${player.totalGames}</td>
+                        <td>
+                            <span style="color: ${winRateColor}; font-weight: 600;">
+                                ${player.winRate}%
+                            </span>
+                        </td>
+                        <td>
+                            ${player.activeChallenges > 0 ?
+                                `<span class="status-badge open" style="font-size: 0.8em;">${player.activeChallenges}</span>` :
+                                '<span style="color: var(--text-muted);">-</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        renderFullRankings();
+
+        // Timeline Events
+        const timeline = document.getElementById('timeline');
+        const recentEvents = challengeData
+            .filter(c => c.resolved)
+            .sort((a, b) => new Date(b.resolved_at.replace(' ', 'T')) - new Date(a.resolved_at.replace(' ', 'T')))
+            .slice(0, 10);
+
+        timeline.innerHTML = recentEvents.map((event, index) => {
+            const date = new Date(event.resolved_at.replace(' ', 'T'));
+            const formattedDate = date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+
+            let eventText = '';
+            if (event.result === 'challenger_wins') {
+                eventText = `🏆 ${event.challenger} besiegt ${event.opponent}`;
+            } else if (event.result === 'opponent_wins') {
+                eventText = `🎯 ${event.opponent} verteidigt gegen ${event.challenger}`;
+            } else {
+                eventText = `⚠️ Challenge zwischen ${event.challenger} und ${event.opponent} nicht ausgetragen`;
+            }
+
+            return `
+                <div class="timeline-item animate-in" style="animation-delay: ${index * 0.1}s;">
+                    <div class="timeline-date">${formattedDate}</div>
+                    <div class="timeline-content">
+                        ${eventText}
+                        ${event.score_details && event.result !== 'not_happened' ?
+                            `<br><small style="color: var(--text-muted);">Score: ${event.score_details}</small>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    </script>
+</body>
+</html>
