@@ -67,7 +67,7 @@
             </span>
             <div>
               <a href="{{ url_for('index') }}" class="btn btn-sm btn-outline-primary {% if request.endpoint == 'index' %}active{% endif %}">Rangliste</a>
-              <a href="{{ url_for('admin') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'admin' %}active{% endif %}">Admin-Bereich</a>
+              <a href="{{ url_for('admin') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'admin' %}active{% endif %}">Herausforderungen</a>
               {% if current_user.privilege_level == 'superadmin' %}
                 <a href="{{ url_for('db_settings') }}" class="btn btn-sm btn-outline-secondary {% if request.endpoint == 'db_settings' %}active{% endif %}">DB-Einstellungen</a>
               {% endif %}
