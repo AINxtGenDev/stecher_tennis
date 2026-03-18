@@ -434,6 +434,11 @@ def init_db():
         else:
             logger.info("Database tables already exist. Skipping initialization.")
             db.execute("PRAGMA foreign_keys = ON")
+        # Ensure app_settings table exists (for existing databases)
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)"
+        )
+        db.commit()
     except Exception as e:
         logger.exception("Error during database initialization.")
         db.rollback()
@@ -518,7 +523,24 @@ def get_active_challenges():
 def get_completed_challenges(limit=50):
     db = get_db()
     try:
-        cur = db.execute("SELECT * FROM completed_challenges_view LIMIT ?", (limit,))
+        hidden_before = None
+        try:
+            row = db.execute(
+                "SELECT value FROM app_settings WHERE key = 'completed_challenges_hidden_before'"
+            ).fetchone()
+            if row:
+                hidden_before = row["value"]
+        except sqlite3.Error:
+            pass
+        if hidden_before:
+            cur = db.execute(
+                "SELECT * FROM completed_challenges_view WHERE resolved_at > ? LIMIT ?",
+                (hidden_before, limit),
+            )
+        else:
+            cur = db.execute(
+                "SELECT * FROM completed_challenges_view LIMIT ?", (limit,)
+            )
         challenges_raw = cur.fetchall()
         challenges_processed = []
         for row in challenges_raw:
@@ -2442,6 +2464,40 @@ def change_password():
         )
 
 
+@app.route("/reset_completed_challenges_display", methods=["POST"])
+@superadmin_required
+def reset_completed_challenges_display():
+    db = get_db()
+    try:
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(
+            "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('completed_challenges_hidden_before', ?)",
+            (now_str,),
+        )
+        db.commit()
+        logger.info(
+            f"Completed challenges display reset by superadmin {current_user.username} at {now_str}."
+        )
+        emit_data_update("challenges_display_reset")
+        return jsonify(
+            {
+                "success": True,
+                "message": "Durchgeführte Herausforderungen wurden zurückgesetzt.",
+            }
+        )
+    except sqlite3.Error as e:
+        logger.exception("Database error resetting completed challenges display.")
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": f"Datenbankfehler: {e}",
+                }
+            ),
+            500,
+        )
+
+
 @app.route("/reset_database", methods=["POST"])
 @superadmin_required
 def reset_database():
@@ -2454,6 +2510,7 @@ def reset_database():
             db.execute("DROP VIEW IF EXISTS completed_challenges_view;")
             db.execute("DROP TABLE IF EXISTS challenges;")
             db.execute("DROP TABLE IF EXISTS players;")
+            db.execute("DROP TABLE IF EXISTS app_settings;")
             logger.info("Existing tables and views dropped.")
 
             init_db()

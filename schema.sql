@@ -54,6 +54,11 @@ JOIN players p2 ON c.opponent_id = p2.id
 WHERE c.resolved = 1
 ORDER BY c.resolved_at DESC;
 
+CREATE TABLE app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_players_rank ON players(rank);
 CREATE INDEX IF NOT EXISTS idx_challenges_resolved ON challenges(resolved);
 CREATE INDEX IF NOT EXISTS idx_challenges_deadline ON challenges(deadline);

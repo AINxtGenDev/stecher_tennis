@@ -105,6 +105,11 @@
                 </table>
             </div>
         </div>
+        <div class="challenge-container" style="border-color: #0d6efd;">
+            <h2>Herausforderungen</h2>
+            <p>Setzt die Anzeige der durchgeführten Herausforderungen auf 0 zurück. Alle Daten bleiben in der Datenbank gespeichert.</p>
+            <button id="reset-completed-btn" class="btn" style="background-color: #0d6efd; color: #fff; border-color: #0d6efd;">Durchgeführte Herausforderungen zurücksetzen</button>
+        </div>
         <div class="challenge-container danger-zone">
             <h2>Gefahrenzone</h2>
             <p><strong>Achtung:</strong> Diese Aktion löscht die gesamte Datenbank (alle Spieler, Herausforderungen, Ergebnisse) und setzt sie auf den ursprünglichen Zustand zurück. Diese Aktion kann nicht rückgängig gemacht werden.</p>
@@ -274,6 +279,21 @@
               $('#passwordChangeForm')[0].reset();
               $('.password-feedback').hide();
               $('#savePasswordChangeBtn').prop('disabled', true);
+          });
+
+          // --- Reset Completed Challenges Display ---
+          $('#reset-completed-btn').on('click', function() {
+              if (confirm('Möchtest du die Anzeige der durchgeführten Herausforderungen wirklich zurücksetzen? Die Daten bleiben in der Datenbank erhalten.')) {
+                  $(this).prop('disabled', true).text('Wird zurückgesetzt...');
+                  $.post('/reset_completed_challenges_display').done(function(response) {
+                      showAlert(response.message, 'success');
+                      $('#reset-completed-btn').prop('disabled', false).text('Durchgeführte Herausforderungen zurücksetzen');
+                  }).fail(function(xhr) {
+                      const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                      showAlert(errorMsg, 'danger');
+                      $('#reset-completed-btn').prop('disabled', false).text('Durchgeführte Herausforderungen zurücksetzen');
+                  });
+              }
           });
 
           // --- Database Reset and Socket Listeners (unchanged) ---
