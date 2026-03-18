@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GSD Workflow Guide — stecher_tennis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg-card: #12121a;
+    --bg-card-hover: #181824;
+    --bg-code: #1a1a2e;
+    --border: #2a2a3e;
+    --border-glow: #6c5ce740;
+    --text: #e8e6f0;
+    --text-muted: #8b89a0;
+    --text-dim: #5a587a;
+    --accent-purple: #6c5ce7;
+    --accent-blue: #0984e3;
+    --accent-cyan: #00cec9;
+    --accent-green: #00b894;
+    --accent-yellow: #fdcb6e;
+    --accent-orange: #e17055;
+    --accent-pink: #fd79a8;
+    --accent-red: #d63031;
+    --gradient-hero: linear-gradient(135deg, #6c5ce7 0%, #0984e3 50%, #00cec9 100%);
+    --gradient-card: linear-gradient(135deg, #6c5ce720 0%, #0984e320 100%);
+    --gradient-green: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+    --gradient-orange: linear-gradient(135deg, #e17055 0%, #fdcb6e 100%);
+    --gradient-pink: linear-gradient(135deg, #fd79a8 0%, #6c5ce7 100%);
+    --shadow-card: 0 4px 24px rgba(0,0,0,0.3);
+    --shadow-glow: 0 0 40px rgba(108,92,231,0.15);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ---- Scrollbar ---- */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-purple); }
+
+  /* ---- Layout ---- */
+  .container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ---- Hero ---- */
+  .hero {
+    position: relative;
+    padding: 60px 0 50px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, #6c5ce720, transparent),
+                radial-gradient(ellipse 60% 50% at 80% 20%, #0984e318, transparent),
+                radial-gradient(ellipse 50% 40% at 20% 30%, #00cec912, transparent);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent-cyan);
+    margin-bottom: 24px;
+    letter-spacing: 0.04em;
+  }
+  .hero-badge .dot {
+    width: 8px; height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #00b89480; }
+    50% { opacity: .7; box-shadow: 0 0 0 6px #00b89400; }
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    background: var(--gradient-hero);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+  .hero .subtitle {
+    font-size: clamp(1rem, 2.5vw, 1.15rem);
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto 32px;
+    font-weight: 400;
+  }
+  .hero .project-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent-yellow);
+  }
+  .hero .project-tag svg { flex-shrink: 0; }
+
+  /* ---- Nav (sticky TOC) ---- */
+  .toc {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: #0a0a0fe8;
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .toc-inner {
+    display: flex;
+    gap: 4px;
+    padding: 10px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    white-space: nowrap;
+  }
+  .toc a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .toc a:hover {
+    color: var(--text);
+    background: var(--bg-card);
+    border-color: var(--border);
+  }
+  .toc a .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: var(--accent-purple);
+    color: #fff;
+  }
+
+  /* ---- Section ---- */
+  section {
+    padding: 56px 0 24px;
+  }
+  section:last-of-type {
+    padding-bottom: 80px;
+  }
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .section-label .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+  .section-label.purple { color: var(--accent-purple); }
+  .section-label.purple .icon { background: #6c5ce720; }
+  .section-label.blue { color: var(--accent-blue); }
+  .section-label.blue .icon { background: #0984e320; }
+  .section-label.cyan { color: var(--accent-cyan); }
+  .section-label.cyan .icon { background: #00cec920; }
+  .section-label.green { color: var(--accent-green); }
+  .section-label.green .icon { background: #00b89420; }
+  .section-label.orange { color: var(--accent-orange); }
+  .section-label.orange .icon { background: #e1705520; }
+  .section-label.pink { color: var(--accent-pink); }
+  .section-label.pink .icon { background: #fd79a820; }
+  .section-label.yellow { color: var(--accent-yellow); }
+  .section-label.yellow .icon { background: #fdcb6e20; }
+  .section-label.red { color: var(--accent-red); }
+  .section-label.red .icon { background: #d6303120; }
+
+  section h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  section .section-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+    max-width: 650px;
+  }
+
+  /* ---- Card ---- */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover {
+    border-color: var(--border-glow);
+    box-shadow: var(--shadow-glow);
+    background: var(--bg-card-hover);
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: var(--radius) var(--radius) 0 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card.purple::before { background: var(--gradient-hero); }
+  .card.green::before { background: var(--gradient-green); }
+  .card.orange::before { background: var(--gradient-orange); }
+  .card.pink::before { background: var(--gradient-pink); }
+
+  .card h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card h3 .emoji { font-size: 1.2rem; }
+  .card p, .card li {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .card ul {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0;
+  }
+  .card li {
+    padding: 4px 0 4px 20px;
+    position: relative;
+  }
+  .card li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 12px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent-purple);
+  }
+
+  /* ---- Code blocks ---- */
+  .code-block {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin: 14px 0;
+    overflow-x: auto;
+    position: relative;
+  }
+  .code-block::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 0; right: 0;
+    padding: 3px 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    background: var(--border);
+    border-radius: 0 var(--radius-sm) 0 var(--radius-xs);
+  }
+  .code-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    color: var(--text);
+    white-space: pre;
+    display: block;
+  }
+  .code-block .cmd { color: var(--accent-cyan); }
+  .code-block .flag { color: var(--accent-yellow); }
+  .code-block .comment { color: var(--text-dim); font-style: italic; }
+  .code-block .str { color: var(--accent-green); }
+  .code-block .kw { color: var(--accent-pink); }
+
+  /* ---- Inline code ---- */
+  code.inline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82em;
+    padding: 2px 8px;
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    color: var(--accent-cyan);
+  }
+
+  /* ---- Flow diagram ---- */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 24px 0;
+  }
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 32px;
+  }
+  .flow-step:last-child { padding-bottom: 0; }
+  .flow-step:last-child .flow-line { display: none; }
+
+  .flow-marker {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 44px;
+  }
+  .flow-dot {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fff;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .flow-dot.purple { background: var(--accent-purple); }
+  .flow-dot.blue { background: var(--accent-blue); }
+  .flow-dot.cyan { background: var(--accent-cyan); color: var(--bg); }
+  .flow-dot.green { background: var(--accent-green); color: var(--bg); }
+  .flow-dot.orange { background: var(--accent-orange); }
+  .flow-dot.pink { background: var(--accent-pink); }
+  .flow-dot.yellow { background: var(--accent-yellow); color: var(--bg); }
+  .flow-dot.red { background: var(--accent-red); }
+
+  .flow-line {
+    width: 2px;
+    flex-grow: 1;
+    background: linear-gradient(to bottom, var(--border), transparent);
+    margin-top: 4px;
+  }
+
+  .flow-content {
+    flex: 1;
+    min-width: 0;
+    padding-top: 8px;
+  }
+  .flow-content h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .flow-content p {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
+  /* ---- Tip / Warning boxes ---- */
+  .callout {
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin: 18px 0;
+    font-size: 0.88rem;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .callout .callout-icon {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .callout.tip {
+    background: #00b89410;
+    border: 1px solid #00b89430;
+    color: var(--accent-green);
+  }
+  .callout.tip .callout-icon { background: #00b89420; }
+  .callout.warn {
+    background: #fdcb6e10;
+    border: 1px solid #fdcb6e30;
+    color: var(--accent-yellow);
+  }
+  .callout.warn .callout-icon { background: #fdcb6e20; }
+  .callout.info {
+    background: #0984e310;
+    border: 1px solid #0984e330;
+    color: var(--accent-blue);
+  }
+  .callout.info .callout-icon { background: #0984e320; }
+
+  /* ---- Decision matrix ---- */
+  .decision-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 18px 0;
+  }
+  @media (min-width: 600px) {
+    .decision-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .decision-item {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+  }
+  .decision-item h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .decision-item p {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+  }
+  .decision-item code.inline { font-size: 0.78em; }
+
+  /* ---- Comparison table ---- */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 0.85rem;
+  }
+  .compare-table th, .compare-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-table th {
+    font-weight: 700;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: var(--bg-code);
+  }
+  .compare-table td { color: var(--text-muted); }
+  .compare-table tr:hover td { background: var(--bg-card); }
+  .compare-table .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .tag.quick { background: #00cec920; color: var(--accent-cyan); }
+  .tag.phase { background: #6c5ce720; color: var(--accent-purple); }
+  .tag.milestone { background: #fd79a820; color: var(--accent-pink); }
+
+  /* ---- Footer ---- */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+  footer a {
+    color: var(--accent-purple);
+    text-decoration: none;
+  }
+  footer a:hover { text-decoration: underline; }
+
+  /* ---- Responsive ---- */
+  @media (max-width: 600px) {
+    .hero { padding: 40px 0 36px; }
+    section { padding: 40px 0 16px; }
+    .card { padding: 18px; }
+    .code-block { padding: 14px 16px; }
+    .flow-step { gap: 12px; }
+    .flow-dot { width: 36px; height: 36px; font-size: 0.7rem; border-radius: 10px; }
+    .flow-marker { width: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======== HERO ======== -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      GSD Plugin v1.25.1
+    </div>
+    <h1>GSD Workflow Guide</h1>
+    <p class="subtitle">
+      A step-by-step workflow for adding smaller changes to your existing project using the Get Shit Done plugin in Claude Code.
+    </p>
+    <div class="project-tag">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2.5A2.5 2.5 0 014.5 0h8.75a.75.75 0 01.75.75v12.5a.75.75 0 01-.75.75h-2.5a.75.75 0 110-1.5h1.75v-2h-8a1 1 0 00-.714 1.7.75.75 0 01-1.072 1.05A2.495 2.495 0 012 11.5v-9zm10.5-1h-8a1 1 0 00-1 1v6.708A2.486 2.486 0 014.5 9h8V1.5z"/></svg>
+      AINxtGenDev/stecher_tennis
+    </div>
+  </div>
+</header>
+
+<!-- ======== TOC ======== -->
+<nav class="toc">
+  <div class="toc-inner">
+    <a href="#overview"><span class="num">0</span> Overview</a>
+    <a href="#decide"><span class="num">1</span> Decide</a>
+    <a href="#quick"><span class="num">2</span> Quick</a>
+    <a href="#milestone"><span class="num">3</span> Milestone</a>
+    <a href="#discuss"><span class="num">4</span> Discuss</a>
+    <a href="#plan"><span class="num">5</span> Plan</a>
+    <a href="#execute"><span class="num">6</span> Execute</a>
+    <a href="#verify"><span class="num">7</span> Verify</a>
+    <a href="#tips"><span class="num">8</span> Tips</a>
+  </div>
+</nav>
+
+<!-- ======== 0 OVERVIEW ======== -->
+<section id="overview">
+  <div class="container">
+    <div class="section-label purple">
+      <span class="icon">&#9670;</span> OVERVIEW
+    </div>
+    <h2>How GSD Fits Into Your Workflow</h2>
+    <p class="section-desc">
+      GSD structures your work into <strong>milestones</strong> (release cycles) containing <strong>phases</strong> (features/changes) broken down into <strong>plans</strong> (task lists). For smaller changes, you can skip the ceremony and use quick mode.
+    </p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-marker">
+          <div class="flow-dot purple">1</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>Decide the Scope</h4>
+          <p>Is this a one-off tweak or a meaningful feature? Pick the right path: <code class="inline">/gsd:quick</code> for small tasks, <code class="inline">/gsd:add-phase</code> for bigger changes.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-marker">
+          <div class="flow-dot blue">2</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>Discuss &amp; Plan</h4>
+          <p>Clarify implementation decisions, then GSD creates a structured task breakdown with verification criteria.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-marker">
+          <div class="flow-dot cyan">3</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>Execute</h4>
+          <p>GSD agents implement each task with atomic commits. Every change is tracked and recoverable.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-marker">
+          <div class="flow-dot green">4</div>
+          <div class="flow-line"></div>
+        </div>
+        <div class="flow-content">
+          <h4>Verify &amp; Ship</h4>
+          <p>Automated verification checks that the goal was achieved, not just that tasks completed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 1 DECIDE ======== -->
+<section id="decide">
+  <div class="container">
+    <div class="section-label yellow">
+      <span class="icon">&#9733;</span> STEP 1
+    </div>
+    <h2>Decide: Quick Task or Phase?</h2>
+    <p class="section-desc">
+      Not every change needs the full ceremony. Use this decision matrix to pick the right approach for your stecher_tennis project.
+    </p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Change Type</th>
+          <th>Example</th>
+          <th>Approach</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bug fix, typo, config tweak</td>
+          <td>Fix score display rounding</td>
+          <td><span class="tag quick">QUICK</span></td>
+        </tr>
+        <tr>
+          <td>Small feature (1-3 files)</td>
+          <td>Add match duration tracking</td>
+          <td><span class="tag quick">QUICK</span></td>
+        </tr>
+        <tr>
+          <td>Medium feature (4-10 files)</td>
+          <td>Player statistics dashboard</td>
+          <td><span class="tag phase">PHASE</span></td>
+        </tr>
+        <tr>
+          <td>Cross-cutting concern</td>
+          <td>Add authentication layer</td>
+          <td><span class="tag phase">PHASE</span></td>
+        </tr>
+        <tr>
+          <td>Multiple related features</td>
+          <td>Season management + rankings</td>
+          <td><span class="tag milestone">MILESTONE</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout tip">
+      <div class="callout-icon">&#10003;</div>
+      <div><strong>Rule of thumb:</strong> If you can describe the change in one sentence and it touches fewer than 3 files, use <code class="inline">/gsd:quick</code>. Otherwise, use a phase.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 2 QUICK ======== -->
+<section id="quick">
+  <div class="container">
+    <div class="section-label cyan">
+      <span class="icon">&#9889;</span> STEP 2A
+    </div>
+    <h2>Path A: Quick Tasks</h2>
+    <p class="section-desc">
+      The fastest way to ship a small change. One command, minimal overhead, full GSD guarantees (atomic commits, state tracking).
+    </p>
+
+    <div class="card purple">
+      <h3>Basic Quick Task</h3>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="cmd">/gsd:quick</span> <span class="str">"Fix the tiebreak scoring logic to handle 7-6 correctly"</span></code>
+      </div>
+      <p>GSD will plan and execute the fix in a single flow. No discussion, no research.</p>
+    </div>
+
+    <div class="card green">
+      <h3>Quick Task with Extras</h3>
+      <p>Add flags when you want more rigor:</p>
+      <div class="code-block" data-label="Flags">
+        <code><span class="comment"># Want to discuss approach first?</span>
+<span class="cmd">/gsd:quick</span> <span class="flag">--discuss</span> <span class="str">"Add player ranking calculation"</span>
+
+<span class="comment"># Need GSD to research best practices first?</span>
+<span class="cmd">/gsd:quick</span> <span class="flag">--research</span> <span class="str">"Add WebSocket for live scores"</span>
+
+<span class="comment"># Want full verification after completion?</span>
+<span class="cmd">/gsd:quick</span> <span class="flag">--full</span> <span class="str">"Refactor match model validation"</span>
+
+<span class="comment"># Combine all three for maximum rigor</span>
+<span class="cmd">/gsd:quick</span> <span class="flag">--discuss --research --full</span> <span class="str">"Add match history export"</span></code>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">i</div>
+      <div>Quick tasks create their own directory in <code class="inline">.planning/quick/</code> so they are tracked but don't clutter your main roadmap.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 3 MILESTONE ======== -->
+<section id="milestone">
+  <div class="container">
+    <div class="section-label pink">
+      <span class="icon">&#9673;</span> STEP 2B
+    </div>
+    <h2>Path B: Set Up a Milestone</h2>
+    <p class="section-desc">
+      For bigger changes, you need structure. If GSD hasn't been initialized on your project yet, start here. Otherwise skip to adding phases.
+    </p>
+
+    <div class="card pink">
+      <h3>First-Time Setup (One-Time)</h3>
+      <p>If this is your first time using GSD on stecher_tennis:</p>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># Navigate to your project</span>
+<span class="kw">cd</span> ~/stecher_tennis
+
+<span class="comment"># Initialize GSD &mdash; it will detect existing code</span>
+<span class="cmd">/gsd:new-project</span></code>
+      </div>
+      <ul>
+        <li>GSD scans your codebase and asks clarifying questions</li>
+        <li>Creates PROJECT.md capturing your vision and constraints</li>
+        <li>Defines requirements with traceable REQ-IDs</li>
+        <li>Generates a roadmap with phases and success criteria</li>
+      </ul>
+    </div>
+
+    <div class="card orange">
+      <h3>Starting a New Feature Set</h3>
+      <p>Already set up? Add a new milestone for your next batch of features:</p>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># Start a new milestone (v1.1, v2.0, etc.)</span>
+<span class="cmd">/gsd:new-milestone</span></code>
+      </div>
+      <p>This inherits your existing project context and extends the roadmap without re-asking questions you've already answered.</p>
+    </div>
+
+    <div class="card green">
+      <h3>Adding a Single Phase</h3>
+      <p>Just need to add one feature to the current milestone?</p>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># Add a phase to the existing roadmap</span>
+<span class="cmd">/gsd:add-phase</span> <span class="str">"Add tournament bracket visualization"</span></code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 4 DISCUSS ======== -->
+<section id="discuss">
+  <div class="container">
+    <div class="section-label blue">
+      <span class="icon">&#9881;</span> STEP 3
+    </div>
+    <h2>Discuss: Clarify the Approach</h2>
+    <p class="section-desc">
+      Before GSD plans anything, it identifies "gray areas" &mdash; implementation decisions where your preference matters. This prevents rework.
+    </p>
+
+    <div class="card purple">
+      <h3>Run Discussion</h3>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># For a specific phase number</span>
+<span class="cmd">/gsd:discuss-phase</span> <span class="flag">4</span>
+
+<span class="comment"># Auto-mode: Claude picks sensible defaults for each question</span>
+<span class="cmd">/gsd:discuss-phase</span> <span class="flag">4 --auto</span></code>
+      </div>
+    </div>
+
+    <div class="decision-grid">
+      <div class="decision-item">
+        <h4 style="color: var(--accent-purple);">What It Asks</h4>
+        <p>Layout choices, error handling strategy, API design patterns, data modeling decisions, UX flows</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-green);">What It Produces</h4>
+        <p>A <code class="inline">CONTEXT.md</code> file with locked decisions that downstream agents must follow</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">!</div>
+      <div><strong>Skip discussion with <code class="inline">--auto</code></strong> if you trust Claude's defaults. The discuss step is most valuable when you have specific opinions about how something should be built.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 5 PLAN ======== -->
+<section id="plan">
+  <div class="container">
+    <div class="section-label green">
+      <span class="icon">&#9998;</span> STEP 4
+    </div>
+    <h2>Plan: Create the Task Breakdown</h2>
+    <p class="section-desc">
+      GSD generates detailed, executable plans with acceptance criteria for each task. Plans are verified before execution begins.
+    </p>
+
+    <div class="card green">
+      <h3>Generate Plans</h3>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># Plan a phase (reads CONTEXT.md from discussion)</span>
+<span class="cmd">/gsd:plan-phase</span> <span class="flag">4</span>
+
+<span class="comment"># Include research step for unfamiliar territory</span>
+<span class="cmd">/gsd:plan-phase</span> <span class="flag">4 --research</span>
+
+<span class="comment"># After verification finds gaps, create fix plans</span>
+<span class="cmd">/gsd:plan-phase</span> <span class="flag">4 --gaps</span></code>
+      </div>
+    </div>
+
+    <div class="card purple">
+      <h3>What a Plan Contains</h3>
+      <ul>
+        <li><strong>Wave assignment</strong> &mdash; which plans can run in parallel</li>
+        <li><strong>File dependencies</strong> &mdash; files the executor must read first</li>
+        <li><strong>Tasks</strong> with acceptance criteria (grep-verifiable conditions)</li>
+        <li><strong>Must-haves</strong> &mdash; observable truths proving the goal was achieved</li>
+        <li><strong>Requirement tracing</strong> &mdash; which REQ-IDs each plan addresses</li>
+      </ul>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">&#10003;</div>
+      <div>A plan-checker agent automatically reviews the plan quality before you execute. If it finds issues, GSD iterates up to 3 times to fix them.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 6 EXECUTE ======== -->
+<section id="execute">
+  <div class="container">
+    <div class="section-label orange">
+      <span class="icon">&#9654;</span> STEP 5
+    </div>
+    <h2>Execute: Build It</h2>
+    <p class="section-desc">
+      GSD agents implement each plan task-by-task with atomic commits. Parallel plans run simultaneously for speed.
+    </p>
+
+    <div class="card orange">
+      <h3>Run Execution</h3>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># Execute all plans in a phase</span>
+<span class="cmd">/gsd:execute-phase</span> <span class="flag">4</span></code>
+      </div>
+      <p>This is where the actual code changes happen. Each task produces an atomic commit with a descriptive message.</p>
+    </div>
+
+    <div class="decision-grid">
+      <div class="decision-item">
+        <h4 style="color: var(--accent-cyan);">Atomic Commits</h4>
+        <p>Every task = one commit. If something breaks mid-phase, you can roll back to any task boundary.</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-yellow);">Checkpoints</h4>
+        <p>Some tasks pause for your confirmation (visual checks, architecture decisions, manual actions like OAuth setup).</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-green);">Parallel Waves</h4>
+        <p>Independent plans execute simultaneously. Dependent plans wait for their prerequisites.</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-pink);">Auto-Recovery</h4>
+        <p>If a task fails verification, GSD retries with adjusted approach (up to 2 attempts) before escalating.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <div class="callout-icon">!</div>
+      <div><strong>Context resets?</strong> If your session expires mid-execution, run <code class="inline">/gsd:resume-work</code> to pick up exactly where you left off.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 7 VERIFY ======== -->
+<section id="verify">
+  <div class="container">
+    <div class="section-label green">
+      <span class="icon">&#10004;</span> STEP 6
+    </div>
+    <h2>Verify: Confirm It Works</h2>
+    <p class="section-desc">
+      Verification is automatic after execution. GSD checks that the phase <em>goal</em> was achieved &mdash; not just that tasks were completed.
+    </p>
+
+    <div class="card green">
+      <h3>What Gets Verified</h3>
+      <ul>
+        <li><strong>Observable truths</strong> &mdash; e.g., "User can view match history"</li>
+        <li><strong>Artifacts exist</strong> &mdash; files created, imported, and wired together</li>
+        <li><strong>Key connections</strong> &mdash; component calls API, API queries DB</li>
+        <li><strong>Requirement coverage</strong> &mdash; each REQ-ID satisfied</li>
+        <li><strong>Anti-patterns</strong> &mdash; scans for TODOs, stubs, empty handlers</li>
+      </ul>
+    </div>
+
+    <div class="card orange">
+      <h3>If Gaps Are Found</h3>
+      <div class="code-block" data-label="Claude Code">
+        <code><span class="comment"># GSD identifies gaps and suggests fix plans</span>
+<span class="cmd">/gsd:plan-phase</span> <span class="flag">4 --gaps</span>
+
+<span class="comment"># Then re-execute to close the gaps</span>
+<span class="cmd">/gsd:execute-phase</span> <span class="flag">4</span></code>
+      </div>
+      <p>Gap closure creates targeted fix plans for specific issues &mdash; no need to re-plan the entire phase.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======== 8 TIPS ======== -->
+<section id="tips">
+  <div class="container">
+    <div class="section-label red">
+      <span class="icon">&#9733;</span> TIPS
+    </div>
+    <h2>Pro Tips &amp; Useful Commands</h2>
+    <p class="section-desc">
+      Shortcuts and patterns for working efficiently with GSD on stecher_tennis.
+    </p>
+
+    <div class="card purple">
+      <h3>Essential Commands Cheat Sheet</h3>
+      <div class="code-block" data-label="Reference">
+        <code><span class="comment"># Check progress and get routed to next action</span>
+<span class="cmd">/gsd:progress</span>
+
+<span class="comment"># Natural language routing ("just tell GSD what you want")</span>
+<span class="cmd">/gsd:do</span> <span class="str">"add a feature to export match results as CSV"</span>
+
+<span class="comment"># Pause work with full context preservation</span>
+<span class="cmd">/gsd:pause-work</span>
+
+<span class="comment"># Resume in a new session</span>
+<span class="cmd">/gsd:resume-work</span>
+
+<span class="comment"># Run autonomous mode (discuss+plan+execute per phase)</span>
+<span class="cmd">/gsd:autonomous</span>
+
+<span class="comment"># Insert an urgent fix between existing phases</span>
+<span class="cmd">/gsd:insert-phase</span> <span class="str">"Fix critical scoring bug"</span>
+
+<span class="comment"># Capture an idea without acting on it</span>
+<span class="cmd">/gsd:note</span> <span class="str">"Consider adding doubles match support"</span>
+
+<span class="comment"># Check and work on pending ideas</span>
+<span class="cmd">/gsd:check-todos</span></code>
+      </div>
+    </div>
+
+    <div class="decision-grid">
+      <div class="decision-item">
+        <h4 style="color: var(--accent-green);">Use <code class="inline">/gsd:do</code></h4>
+        <p>When in doubt, just describe what you want in plain English. GSD routes it to the right command automatically.</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-cyan);">Use <code class="inline">/gsd:progress</code></h4>
+        <p>Start every session with this. It shows where you are and suggests the next action based on project state.</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-yellow);">Use <code class="inline">/gsd:pause-work</code></h4>
+        <p>Always pause before ending a session. This creates a handoff file so the next session has full context.</p>
+      </div>
+      <div class="decision-item">
+        <h4 style="color: var(--accent-pink);">Use <code class="inline">/gsd:debug</code></h4>
+        <p>For stubborn bugs, GSD's debug mode uses scientific method with persistent state across session resets.</p>
+      </div>
+    </div>
+
+    <div class="callout tip">
+      <div class="callout-icon">&#10003;</div>
+      <div>
+        <strong>Recommended flow for small changes on stecher_tennis:</strong><br>
+        <code class="inline">/gsd:progress</code> &rarr; <code class="inline">/gsd:quick "your change"</code> &rarr; done.<br>
+        That's it. Two commands for most small work.
+      </div>
+    </div>
+
+    <div class="callout info">
+      <div class="callout-icon">i</div>
+      <div>
+        <strong>Full command reference:</strong> Run <code class="inline">/gsd:help</code> in Claude Code to see all available commands with descriptions and usage examples.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======== FOOTER ======== -->
+<footer>
+  <div class="container">
+    <p>GSD Plugin Workflow Guide &mdash; Generated for <a href="https://github.com/AINxtGenDev/stecher_tennis">stecher_tennis</a></p>
+    <p style="margin-top: 8px;">Built with the <a href="https://github.com/glittercowboy/get-shit-done">Get Shit Done</a> plugin for Claude Code</p>
+  </div>
+</footer>
+
+</body>
+</html>
