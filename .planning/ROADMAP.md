@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Container process runs as a non-root user (verify with `docker exec ... whoami`)
   4. Setting `DB_PATH=/app/data/tennis.db` in the environment causes the app to read/write SQLite at that path
   5. Gunicorn starts with exactly 1 worker and eventlet worker class (visible in container startup logs)
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 01-01: Write multi-stage Dockerfile (builder + runtime stages, non-root user, .dockerignore, gunicorn CMD)
-- [ ] 01-02: Add /health endpoint to Flask app, configure DB_PATH env var, verify eventlet smoke test
+- [ ] 01-01-PLAN.md — Create Docker infrastructure (Dockerfile, entrypoint.sh, docker-requirements.txt, .dockerignore) and modify app.py (DB_PATH + /health endpoint)
+- [ ] 01-02-PLAN.md — Create test infrastructure (pytest + unit tests) and validate Docker image with smoke tests
 
 ### Phase 2: Compose Stack
 **Goal**: Both app and Caddy containers start together, app is reachable through Caddy on the local machine, and SQLite data survives docker compose down/up cycles
@@ -85,7 +85,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. App Container | 0/2 | Not started | - |
+| 1. App Container | 0/2 | Planned | - |
 | 2. Compose Stack | 0/2 | Not started | - |
 | 3. HTTPS via Caddy | 0/2 | Not started | - |
 | 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
