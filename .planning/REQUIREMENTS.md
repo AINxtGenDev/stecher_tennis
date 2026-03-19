@@ -20,7 +20,7 @@ Requirements for initial Docker deployment. Each maps to roadmap phases.
 - [x] **COMP-01**: `docker-compose.yml` defines two services: app and caddy
 - [x] **COMP-02**: App and Caddy communicate on an internal bridge network (app port not exposed to host)
 - [x] **COMP-03**: SQLite database persisted via named Docker volume mounted at `/app/data`
-- [ ] **COMP-04**: `.env.example` documents all configurable environment variables
+- [x] **COMP-04**: `.env.example` documents all configurable environment variables
 
 ### HTTPS & Reverse Proxy
 
@@ -73,7 +73,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-01 | Phase 2 | Complete |
 | COMP-02 | Phase 2 | Complete |
 | COMP-03 | Phase 2 | Complete |
-| COMP-04 | Phase 2 | Pending |
+| COMP-04 | Phase 2 | Complete |
 | HTTP-01 | Phase 3 | Pending |
 | HTTP-02 | Phase 3 | Pending |
 | HTTP-03 | Phase 3 | Pending |

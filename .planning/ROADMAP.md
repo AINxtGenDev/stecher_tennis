@@ -13,7 +13,7 @@ Four sequential phases containerize an existing working Flask-SocketIO applicati
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: App Container** - Working Docker image for the Flask app with correct gunicorn, permissions, and volume path
-- [ ] **Phase 2: Compose Stack** - Full two-container stack running locally via docker compose up, data persisted across restarts
+- [x] **Phase 2: Compose Stack** - Full two-container stack running locally via docker compose up, data persisted across restarts
 - [ ] **Phase 3: HTTPS via Caddy** - Automatic TLS working end-to-end via DuckDNS DNS-01 challenge
 - [ ] **Phase 4: Multi-Arch & RPi Deploy** - Image builds for ARM64 + AMD64; verified deployment on Raspberry Pi
 
@@ -44,11 +44,11 @@ Plans:
   2. HTTP request to the Caddy port reaches the Flask app (WebSocket connect also succeeds)
   3. Creating data in the app, running `docker compose down && docker compose up -d`, and verifying data still exists confirms volume persistence
   4. App container port 5000 is not reachable directly from the host (only through Caddy)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
-- [ ] 02-01-PLAN.md — Create docker-compose.yml (two services, internal network, named volumes) and Caddyfile (HTTP reverse proxy to app:5000 with WebSocket headers)
-- [ ] 02-02-PLAN.md — Create .env.example documenting all env vars; validate full Compose stack with smoke tests (COMP-01 through COMP-04)
+- [x] 02-01-PLAN.md — Create docker-compose.yml (two services, internal network, named volumes) and Caddyfile (HTTP reverse proxy to app:5000 with WebSocket headers)
+- [x] 02-02-PLAN.md — Create .env.example documenting all env vars; validate full Compose stack with smoke tests (COMP-01 through COMP-04)
 
 ### Phase 3: HTTPS via Caddy
 **Goal**: The app is reachable over HTTPS at the DuckDNS domain with a valid Let's Encrypt certificate obtained via DNS-01 challenge
@@ -86,6 +86,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Container | 2/2 | Complete | 2026-03-19 |
-| 2. Compose Stack | 1/2 | In Progress|  |
+| 2. Compose Stack | 2/2 | Complete | 2026-03-19 |
 | 3. HTTPS via Caddy | 0/2 | Not started | - |
 | 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
