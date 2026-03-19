@@ -74,27 +74,41 @@ The database is initialized with a set of players from `initial_players.json`.
 
 #### Project Structure
 ```
-tennis-ranking-app/
-├── app.py                   # Main Flask application
-├── schema.sql               # Database schema
-├── initial_players.json     # Default player data
-├── environment.yml          # Conda environment specification
-├── requirements.txt         # Python dependencies (pip)
-├── prod-requirements.txt    # Python dependencies for production
-├── README.md                # Project description
-├── .env                     # Environment configuration
-├── backup_tennis _db.sh     # backup database script
-├── check_db.sh              # script to check database healthy
-├── templates/               # HTML templates
-│   ├── login_tennis.html    # Login page
-│   ├── index.html           # Main ranking display
-│   ├── admin.html           # Admin interface
-│   ├── db_settings.html     # Database management
-│   └── error.html           # Error pages
-├── static/                  # Static assets
-│   ├── 01_tennis_racket.png # image used withih github
-│   └── a1_duck_11.png       # image used within index.html
-└── tennis.db                # SQLite database (auto-created)
+stecher_tennis/
+├── app.py                     # Main Flask application
+├── schema.sql                 # Database schema
+├── initial_players.json       # Default player data
+├── environment.yml            # Conda environment specification
+├── requirements.txt           # Python dependencies (pip)
+├── prod-requirements.txt      # Python dependencies for production
+├── docker-requirements.txt    # Pinned production dependencies for Docker
+├── README.md                  # Project description
+├── .env.example               # Environment configuration template
+├── backup_tennis_db.sh        # Backup database script
+├── check_db.sh                # Script to check database health
+├── Dockerfile                 # Multi-stage app container (python:3.12-slim)
+├── Dockerfile.caddy           # Custom Caddy build with DuckDNS module
+├── docker-compose.yml         # Production stack (pulls from GHCR)
+├── docker-compose.build.yml   # Local build override for development
+├── Caddyfile                  # Caddy reverse proxy + HTTPS config
+├── entrypoint.sh              # Container entrypoint (init_db + gunicorn)
+├── build-and-push.sh          # Multi-arch build + GHCR push script
+├── deploy.sh                  # RPi deployment/cutover script
+├── pytest.ini                 # Test configuration
+├── templates/                 # HTML templates
+│   ├── login_tennis.html      # Login page
+│   ├── index.html             # Main ranking display
+│   ├── admin.html             # Admin interface
+│   ├── db_settings.html       # Database management
+│   └── error.html             # Error pages
+├── static/                    # Static assets
+│   ├── 01_tennis_racket.png   # Image used within GitHub
+│   └── a1_duck_11.png         # Image used within index.html
+├── tests/                     # Test suite
+│   ├── conftest.py            # Pytest fixtures
+│   ├── test_health.py         # Health endpoint tests
+│   └── test_db_path.py        # DB_PATH configuration tests
+└── tennis.db                  # SQLite database (auto-created)
 ```
 
 ## 🚀 Installation & Setup
@@ -470,92 +484,186 @@ These routes are for system-level database management and are restricted to user
 
 ---
 
-## 🐧 Raspberry Pi Deployment
+## 🐳 Docker Deployment (Recommended)
 
-### System Requirements
+The application runs as a Docker Compose stack with two containers:
+- **app** — Flask + Gunicorn + eventlet (single worker)
+- **caddy** — Custom Caddy build with DuckDNS module for automatic HTTPS via DNS-01 ACME
+
+Pre-built multi-arch images (AMD64 + ARM64) are available on GHCR:
+- `ghcr.io/ainxtgendev/stecher-tennis-app:latest`
+- `ghcr.io/ainxtgendev/stecher-tennis-caddy:latest`
+
+### Raspberry Pi — Step-by-Step Installation (Clean Install)
+
+#### Prerequisites
 - Raspberry Pi 4 or newer
-- Raspberry Pi OS (64-bit)
-- Internet connection for SSL certificates
+- Raspberry Pi OS **64-bit** (required for ARM64 Docker images)
+- Internet connection
+- A DuckDNS account with a registered domain (free at [duckdns.org](https://www.duckdns.org))
+- Router port forwarding configured (external port 10443 → RPi internal port 443, external port 80 → RPi port 80)
 
-### Production Deployment
+#### Step 1: Install Docker
 
-1. **System Setup**
 ```bash
-sudo apt-get update && sudo apt-get upgrade -y
-sudo apt-get install python3-pip python3-venv libatlas-base-dev libsqlite3-dev -y
+# Install Docker using the convenience script
+curl -fsSL https://get.docker.com | sh
+
+# Add your user to the docker group (replace 'stecher' with your username)
+sudo usermod -aG docker stecher
+
+# Log out and back in for group membership to take effect
+exit
 ```
 
-2. **Application Setup**
+Log back in via SSH, then verify:
 ```bash
-cd /home/pi
-python3 -m venv tennis_app
-cd tennis_app
-source bin/activate
-pip install -r requirements.txt
+docker --version
+docker compose version
 ```
 
-3. **Environment Configuration**
+#### Step 2: Enable Docker on Boot
+
 ```bash
-sudo nano /home/pi/tennis_app/.env
-```
-```env
-SECRET_KEY=your-production-secret-key
-CORS_ALLOWED_ORIGINS=https://your-domain.com:10443
+sudo systemctl enable docker
 ```
 
-4. **Systemd Service**
+#### Step 3: Clone the Repository
+
 ```bash
-sudo nano /etc/systemd/system/tennis-app.service
-```
-```ini
-[Unit]
-Description=Tennis Ranking Application
-After=network.target
-
-[Service]
-User=pi
-Group=www-data
-WorkingDirectory=/home/pi/tennis_app
-EnvironmentFile=/home/pi/tennis_app/.env
-ExecStart=/home/pi/tennis_app/bin/gunicorn --workers 1 --worker-class eventlet --bind 127.0.0.1:8000 --timeout 120 app:app
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+cd ~
+git clone -b docker https://github.com/AINxtGenDev/stecher_tennis.git
+cd stecher_tennis
 ```
 
-5. **Caddy Reverse Proxy**
+#### Step 4: Create the Environment File
+
 ```bash
-# Install Caddy
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update && sudo apt install caddy
-
-# Configure Caddy
-sudo nano /etc/caddy/Caddyfile
-```
-```caddy
-your-domain.com {
-    tls your-email@example.com
-    reverse_proxy localhost:8000 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
-    }
-}
+cp .env.example .env
+nano .env
 ```
 
-6. **Start Services**
+Fill in the **required** values:
+
+| Variable | What to set | Example |
+|----------|------------|---------|
+| `SECRET_KEY` | Random string for session encryption | Generate with: `python3 -c "import secrets; print(secrets.token_hex(32))"` |
+| `DUCKDNS_DOMAIN` | Your DuckDNS subdomain (without .duckdns.org) | `nechvatal` |
+| `DUCKDNS_TOKEN` | Your DuckDNS API token (36-char UUID) | `f5035eb4-6739-4f5e-b0e7-xxxxxxxxxxxx` |
+| `ACME_EMAIL` | Your email for Let's Encrypt | `your-email@gmail.com` |
+| `ACME_CA` | Start with staging, switch to production later | `https://acme-staging-v02.api.letsencrypt.org/directory` |
+| `CORS_ALLOWED_ORIGINS` | Must match user-facing URL | `https://nechvatal.duckdns.org:10443` |
+
+#### Step 5: Pull and Start the Stack
+
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable tennis-app.service caddy
-sudo systemctl start tennis-app.service caddy
+docker compose pull
+docker compose up -d
 ```
 
-### Network Configuration
-Configure your router to forward port 443 (HTTPS) to your Raspberry Pi for external access.
+Wait for the containers to start. Check status:
+```bash
+docker compose ps
+```
+
+Both containers should show `Up` and the app should be `(healthy)`.
+
+#### Step 6: Verify with Staging Certificate
+
+Visit `https://your-domain.duckdns.org:10443` in a browser. You will see a certificate warning (this is expected with staging certs). Accept the warning and verify the app loads correctly.
+
+Check Caddy logs to confirm the staging certificate was obtained:
+```bash
+docker compose logs caddy | grep "certificate obtained"
+```
+
+#### Step 7: Switch to Production Certificate
+
+Once staging works, switch to a real Let's Encrypt certificate:
+
+```bash
+# 1. Update ACME_CA in .env
+sed -i 's|acme-staging-v02|acme-v02|' .env
+
+# 2. Stop the stack
+docker compose down
+
+# 3. Clear cached staging certificates
+docker volume rm $(docker volume ls -q | grep caddy_data)
+
+# 4. Start with production certs
+docker compose up -d
+```
+
+Wait 1-2 minutes for the production certificate to be issued. Then visit `https://your-domain.duckdns.org:10443` — no browser warning this time.
+
+#### Step 8: Verify Everything Works
+
+```bash
+# Check containers are running
+docker compose ps
+
+# Check Caddy obtained production cert
+docker compose logs caddy | grep "certificate obtained"
+
+# Check app health
+docker compose exec -T app python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
+```
+
+Also verify:
+- Login works in the browser
+- Real-time updates work (open two browser tabs, make a change in one)
+- Reboot the RPi (`sudo reboot`) and confirm the app comes back automatically after 1-2 minutes
+
+### Updating the Deployment
+
+When a new version is available:
+
+```bash
+cd ~/stecher_tennis
+git pull
+docker compose pull
+docker compose up -d
+```
+
+### Viewing Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# App only
+docker compose logs -f app
+
+# Caddy only
+docker compose logs -f caddy
+```
+
+### Building Images Locally (Development)
+
+If you want to build images from source instead of pulling from GHCR:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
+### Building and Pushing Multi-Arch Images
+
+To build for both AMD64 and ARM64 and push to GHCR (requires a GitHub PAT with `write:packages` scope):
+
+```bash
+export GHCR_TOKEN=ghp_your_token_here
+./build-and-push.sh
+```
+
+### Network Configuration (Router)
+
+Configure your router to forward these ports to the Raspberry Pi:
+
+| External Port | Internal Port | Protocol | Purpose |
+|--------------|---------------|----------|---------|
+| 10443 | 443 | TCP | HTTPS (Caddy TLS) |
+| 80 | 80 | TCP | HTTP → HTTPS redirect |
 
 ## 🔧 Development
 
@@ -662,17 +770,32 @@ python app.py
 - Monitor memory usage with large player counts
 - Consider upgrading to Raspberry Pi 4 for better performance
 
+**Docker Container Issues**
+- Ensure Docker is installed and the user is in the `docker` group
+- Check container status: `docker compose ps`
+- Check logs: `docker compose logs -f`
+- If Caddy fails to obtain a certificate, verify the `DUCKDNS_TOKEN` is a valid 36-character UUID
+- If ACME email is rejected, ensure `ACME_EMAIL` is a real email address (not `example.com`)
+- After changing `.env`, restart the stack: `docker compose down && docker compose up -d`
+- To clear cached certificates: `docker volume rm $(docker volume ls -q | grep caddy_data)`
+
+**NAT Hairpinning**
+- If HTTPS works from external networks (mobile data) but not from the same LAN as the RPi, your router does not support NAT hairpinning. This is a router limitation, not an app issue. Access via the RPi's local IP won't work for HTTPS (certificate is bound to the DuckDNS domain).
+
 ### Logs and Monitoring
 
 ```bash
-# Service logs
-sudo journalctl -u tennis-app.service -f
+# Docker container logs
+docker compose logs -f
 
-# Caddy logs
-sudo journalctl -u caddy -f
+# App container only
+docker compose logs -f app
 
-# Application logs
-tail -f /var/log/caddy/access.log
+# Caddy container only
+docker compose logs -f caddy
+
+# Container status
+docker compose ps
 ```
 ## ✨ Total Lines of Code (LOC)
 
