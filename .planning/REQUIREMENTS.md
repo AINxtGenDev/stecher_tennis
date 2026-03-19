@@ -24,10 +24,10 @@ Requirements for initial Docker deployment. Each maps to roadmap phases.
 
 ### HTTPS & Reverse Proxy
 
-- [ ] **HTTP-01**: Custom Caddy image built with xcaddy + caddy-dns/duckdns module
-- [ ] **HTTP-02**: Caddy serves HTTPS with automatic certificate via DuckDNS DNS-01 ACME challenge
-- [ ] **HTTP-03**: WebSocket connections pass through Caddy to Flask-SocketIO
-- [ ] **HTTP-04**: Toggle between Let's Encrypt staging and production ACME endpoints via env var
+- [x] **HTTP-01**: Custom Caddy image built with xcaddy + caddy-dns/duckdns module
+- [x] **HTTP-02**: Caddy serves HTTPS with automatic certificate via DuckDNS DNS-01 ACME challenge
+- [x] **HTTP-03**: WebSocket connections pass through Caddy to Flask-SocketIO
+- [x] **HTTP-04**: Toggle between Let's Encrypt staging and production ACME endpoints via env var
 
 ### Operations
 
@@ -74,10 +74,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-02 | Phase 2 | Complete |
 | COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 2 | Complete |
-| HTTP-01 | Phase 3 | Pending |
-| HTTP-02 | Phase 3 | Pending |
-| HTTP-03 | Phase 3 | Pending |
-| HTTP-04 | Phase 3 | Pending |
+| HTTP-01 | Phase 3 | Complete |
+| HTTP-02 | Phase 3 | Complete |
+| HTTP-03 | Phase 3 | Complete |
+| HTTP-04 | Phase 3 | Complete |
 | OPS-01 | Phase 1 | Complete |
 | OPS-02 | Phase 1 | Complete |
 | OPS-03 | Phase 1 | Complete |

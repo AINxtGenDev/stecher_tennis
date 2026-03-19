@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 3 context gathered
-last_updated: "2026-03-19T08:13:29.810Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-19T09:03:37.626Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** One-command deployment — `docker compose up -d` brings up the full stack (app + HTTPS) on any Linux server, ARM or x86
-**Current focus:** Phase 03 — HTTPS via Caddy
+**Current focus:** Phase 03 — https-via-caddy
 
 ## Current Position
 
-Phase: 02 (compose-stack) — COMPLETE
-Plan: 2 of 2 (all complete)
+Phase: 03 (https-via-caddy) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: 2 of 2 (all complete)
 - Trend: stabilizing
 
 *Updated after each plan completion*
+| Phase 03 P01 | 2 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [02-02]: FLASK_HOST/FLASK_PORT excluded from .env.example — gunicorn controls bind address, not Flask env vars
 - [02-02]: CORS_ALLOWED_ORIGINS defaults to http://localhost:80 — matches Phase 2 Caddy on port 80
 - [02-02]: No Phase 3 variables in .env.example — per CONTEXT.md locked decision "Phase 2 vars only"
+- [Phase 03]: ACME_CA always required (Option B): empty value causes Caddy parse error; must set staging or production URL
+- [Phase 03]: Manual HTTP-to-HTTPS redirect: Caddy auto-redirect omits non-standard port in Location header
+- [Phase 03]: Parse-time {dollar-sign-VAR} env substitution in Caddyfile, not runtime {env.VAR} placeholders
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T08:13:29.807Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-https-via-caddy/03-CONTEXT.md
+Last session: 2026-03-19T09:03:37.623Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None
