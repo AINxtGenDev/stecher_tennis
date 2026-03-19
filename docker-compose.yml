@@ -11,14 +11,18 @@ services:
     # No ports: block — port 5000 only reachable inside Docker network (COMP-02)
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     networks:
       - tennis_net
     ports:
+      - "${HTTPS_PORT:-10443}:${HTTPS_PORT:-10443}"
       - "80:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+    env_file: .env
     restart: unless-stopped
     depends_on:
       app:
