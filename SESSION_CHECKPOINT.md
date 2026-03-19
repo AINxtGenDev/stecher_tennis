@@ -240,6 +240,9 @@
 - **CORS fix:** Added `http://192.168.1.8:5000` to `CORS_ALLOWED_ORIGINS` in `.env` — Socket.IO was failing with 400 because only the production origin was allowed
 - **Killed stale processes:** 3 `python3 app.py` instances were competing for port 5000; force-killed the suspended ones
 - **UI tweak:** Shortened date/time dropdown placeholders in `index.html` — "Datum wählen..." → "Datum", "Zeit wählen..." → "Uhrzeit" for better readability
+- **Nav button consistency:** Changed "Herausforderungen" and "DB-Einstellungen" from `btn-outline-secondary` (gray) to `btn-outline-primary` (blue) across all 3 templates — now matches "Rangliste" style. "Abmelden" stays red outlined.
+- **Version bumped:** 3.46 → 3.47 • 19. März 2026
+- Commits: `1038eeb`, `1c11b20`
 
 ### 23. RPi Health Check (2026-03-19)
 - Verified RPi deployment is fully operational:
@@ -251,10 +254,10 @@
 
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
-- **Latest commit:** `ed4576d` — docs: add database location and restore instructions to README
+- **Latest commit:** `1c11b20` — ui: unify nav button styles and bump version to 3.47
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
 - **RPi status:** Running Docker stack, production HTTPS, auto-restart on reboot, verified healthy 2026-03-19
-- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.46` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.46` (public)
+- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.47` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.47` (public)
 - **RPi housekeeping:** `~/stecher_tennis` clean (git-tracked files only), `~/stecher_tennis.bak` kept (500MB, old bare-metal install)
 
 ## Key Info
