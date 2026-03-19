@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-19T09:03:37.626Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-03-19T09:18:27.593Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,20 +19,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** One-command deployment — `docker compose up -d` brings up the full stack (app + HTTPS) on any Linux server, ARM or x86
-**Current focus:** Phase 03 — https-via-caddy
+**Current focus:** Phase 04 — multi-arch-rpi-deploy
 
 ## Current Position
 
-Phase: 03 (https-via-caddy) — EXECUTING
-Plan: 2 of 2
+Phase: 03 (https-via-caddy) — COMPLETE
+Plan: 2 of 2 (all plans complete)
+Next: Phase 04 (multi-arch-rpi-deploy)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
-- Average duration: 7.3 min
-- Total execution time: 0.43 hours
+- Total plans completed: 6
+- Average duration: 7.2 min
+- Total execution time: 0.72 hours
 
 **By Phase:**
 
@@ -40,14 +41,14 @@ Plan: 2 of 2
 |-------|-------|-------|----------|
 | 01-app-container | 2 | 17 min | 8.5 min |
 | 02-compose-stack | 2 | 9 min | 4.5 min |
+| 03-https-via-caddy | 2 | 17 min | 8.5 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 7.3 min avg
-- Trend: stabilizing
+- Last 5 plans: 7.2 min avg
+- Trend: stable
 
 *Updated after each plan completion*
-| Phase 03 P01 | 2 | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,7 @@ Recent decisions affecting current work:
 - [Phase 03]: ACME_CA always required (Option B): empty value causes Caddy parse error; must set staging or production URL
 - [Phase 03]: Manual HTTP-to-HTTPS redirect: Caddy auto-redirect omits non-standard port in Location header
 - [Phase 03]: Parse-time {dollar-sign-VAR} env substitution in Caddyfile, not runtime {env.VAR} placeholders
+- [Phase 03-02]: Explicit DNS servers (8.8.8.8, 8.8.4.4) added to caddy service for reliable ACME DNS-01 challenge resolution
 
 ### Pending Todos
 
@@ -88,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T09:03:37.623Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-03-19T09:18:27.590Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None

@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: App Container** - Working Docker image for the Flask app with correct gunicorn, permissions, and volume path
 - [x] **Phase 2: Compose Stack** - Full two-container stack running locally via docker compose up, data persisted across restarts
-- [ ] **Phase 3: HTTPS via Caddy** - Automatic TLS working end-to-end via DuckDNS DNS-01 challenge
+- [x] **Phase 3: HTTPS via Caddy** - Automatic TLS working end-to-end via DuckDNS DNS-01 challenge (completed 2026-03-19)
 - [ ] **Phase 4: Multi-Arch & RPi Deploy** - Image builds for ARM64 + AMD64; verified deployment on Raspberry Pi
 
 ## Phase Details
@@ -59,11 +59,11 @@ Plans:
   2. WebSocket connections to the HTTPS domain connect and receive real-time updates
   3. HTTP requests to port 80 redirect automatically to HTTPS
   4. Setting `ACME_CA_URL` env var switches between Let's Encrypt staging and production endpoints without Caddyfile edits
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 03-01-PLAN.md — Create Dockerfile.caddy (xcaddy + caddy-dns/duckdns), rewrite Caddyfile for HTTPS with DNS-01 ACME, update docker-compose.yml and .env.example
-- [ ] 03-02-PLAN.md — Build custom Caddy image, validate duckdns module, smoke test full HTTPS stack with staging certificate
+- [x] 03-01-PLAN.md — Create Dockerfile.caddy (xcaddy + caddy-dns/duckdns), rewrite Caddyfile for HTTPS with DNS-01 ACME, update docker-compose.yml and .env.example
+- [x] 03-02-PLAN.md — Build custom Caddy image, validate duckdns module, smoke test full HTTPS stack with staging certificate
 
 ### Phase 4: Multi-Arch & RPi Deploy
 **Goal**: A single `docker compose pull && docker compose up -d` on the Raspberry Pi brings up the full working stack using a multi-architecture image
@@ -87,5 +87,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. App Container | 2/2 | Complete | 2026-03-19 |
 | 2. Compose Stack | 2/2 | Complete | 2026-03-19 |
-| 3. HTTPS via Caddy | 0/2 | Not started | - |
+| 3. HTTPS via Caddy | 2/2 | Complete   | 2026-03-19 |
 | 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
