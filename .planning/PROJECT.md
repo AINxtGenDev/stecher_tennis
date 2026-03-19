@@ -32,7 +32,7 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 
 ### Active
 
-- [ ] Multi-architecture support (ARM64 + AMD64)
+- ✓ Multi-architecture support (ARM64 + AMD64) — Validated in Phase 4: Multi-Arch & RPi Deploy
 
 ### Out of Scope
 
@@ -69,6 +69,6 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 ---
 ## Current State
 
-Phases 1–3 complete. App containerized (Phase 1), Compose stack with Caddy reverse proxy and SQLite volume (Phase 2), HTTPS via custom Caddy build with DuckDNS DNS-01 ACME (Phase 3). Staging TLS certs validated. Next: Phase 4 (Multi-Arch & RPi Deploy).
+All 4 phases complete. App containerized (Phase 1), Compose stack with Caddy reverse proxy and SQLite volume (Phase 2), HTTPS via custom Caddy build with DuckDNS DNS-01 ACME (Phase 3), multi-arch images on GHCR and live RPi deployment with production HTTPS (Phase 4). Milestone v1.0 delivered.
 
-*Last updated: 2026-03-19 after Phase 3 completion*
+*Last updated: 2026-03-19 after Phase 4 completion*
