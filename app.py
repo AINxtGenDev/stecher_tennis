@@ -88,7 +88,16 @@ if app.secret_key == "a-very-long-and-super-secret-key-for-dev":
         "SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production."
     )
 
-app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
+_db_path = os.environ.get("DB_PATH")
+if _db_path:
+    # Docker mode: use configured path, auto-create parent dirs
+    _db_dir = os.path.dirname(_db_path)
+    if _db_dir:
+        os.makedirs(_db_dir, exist_ok=True)
+    app.config["DATABASE"] = _db_path
+else:
+    # Non-Docker mode: keep current behavior (project root)
+    app.config["DATABASE"] = os.path.join(app.root_path, "tennis.db")
 
 # --- NEW/CRITICAL: Explicit configuration for CSRF protection behind a proxy ---
 # This is the definitive fix for the "referrer does not match host" error.
@@ -113,6 +122,13 @@ else:
 
 # --- NEW: CSRF Protection ---
 csrf = CSRFProtect(app)
+
+
+@app.route("/health")
+@csrf.exempt
+def health():
+    return jsonify({"status": "ok"}), 200
+
 
 # --- NEW: Flask-Login Configuration ---
 login_manager = LoginManager()

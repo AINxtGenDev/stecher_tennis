@@ -12,7 +12,7 @@ set -euo pipefail
 
 # Configuration
 # NOTE: Ensure this script is run by a user with read/write access to these directories.
-SOURCE_DB="/home/stecher/stecher_tennis/tennis.db"
+SOURCE_DB="${DB_PATH:-/home/stecher/stecher_tennis/tennis.db}"
 BACKUP_DIR="/home/stecher/stecher_tennis/backup"
 DATETIME=$(date +"%Y%m%d_%H%M")
 BACKUP_FILE="${BACKUP_DIR}/backup_tennisdb.${DATETIME}.zip"
