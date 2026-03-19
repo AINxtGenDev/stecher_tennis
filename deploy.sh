@@ -20,7 +20,7 @@ set -euo pipefail
 # --- Configuration ---
 RPI_HOST="stecher"
 REMOTE_DIR="~/stecher_tennis"
-REPO_URL="https://github.com/ainxtgendev/stecher-tennis.git"
+REPO_URL="https://github.com/AINxtGenDev/stecher_tennis.git"
 ACME_PRODUCTION="https://acme-v02.api.letsencrypt.org/directory"
 ACME_STAGING="https://acme-staging-v02.api.letsencrypt.org/directory"
 HEALTH_URL="https://nechvatal.duckdns.org:10443/health"
@@ -97,7 +97,15 @@ remote "sudo systemctl enable docker"
 # =============================================================================
 echo ""
 echo "==> Updating repository on RPi..."
-remote "if [ -d ${REMOTE_DIR}/.git ]; then cd ${REMOTE_DIR} && git pull; else git clone ${REPO_URL} ${REMOTE_DIR}; fi"
+remote "if [ -d ${REMOTE_DIR}/.git ]; then
+    cd ${REMOTE_DIR} && git checkout docker && git pull
+elif [ -d ${REMOTE_DIR} ]; then
+    echo '    Existing non-git directory found — backing up to ${REMOTE_DIR}.bak'
+    mv ${REMOTE_DIR} ${REMOTE_DIR}.bak
+    git clone -b docker ${REPO_URL} ${REMOTE_DIR}
+else
+    git clone -b docker ${REPO_URL} ${REMOTE_DIR}
+fi"
 
 # =============================================================================
 # 5. Check .env exists
@@ -134,7 +142,7 @@ remote "cd ${REMOTE_DIR} && docker compose up -d"
 echo ""
 echo "==> Waiting for app to become healthy..."
 for i in $(seq 1 30); do
-    if remote "curl -sf http://localhost:5000/health" > /dev/null 2>&1; then
+    if remote "cd ~/stecher_tennis && docker compose exec -T app python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\"" > /dev/null 2>&1; then
         echo "    Health check passed!"
         break
     fi
