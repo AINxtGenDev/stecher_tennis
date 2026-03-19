@@ -12,7 +12,7 @@ Four sequential phases containerize an existing working Flask-SocketIO applicati
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: App Container** - Working Docker image for the Flask app with correct gunicorn, permissions, and volume path
+- [x] **Phase 1: App Container** - Working Docker image for the Flask app with correct gunicorn, permissions, and volume path
 - [ ] **Phase 2: Compose Stack** - Full two-container stack running locally via docker compose up, data persisted across restarts
 - [ ] **Phase 3: HTTPS via Caddy** - Automatic TLS working end-to-end via DuckDNS DNS-01 challenge
 - [ ] **Phase 4: Multi-Arch & RPi Deploy** - Image builds for ARM64 + AMD64; verified deployment on Raspberry Pi
@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Container process runs as a non-root user (verify with `docker exec ... whoami`)
   4. Setting `DB_PATH=/app/data/tennis.db` in the environment causes the app to read/write SQLite at that path
   5. Gunicorn starts with exactly 1 worker and eventlet worker class (visible in container startup logs)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md — Create Docker infrastructure (Dockerfile, entrypoint.sh, docker-requirements.txt, .dockerignore) and modify app.py (DB_PATH + /health endpoint)
-- [ ] 01-02-PLAN.md — Create test infrastructure (pytest + unit tests) and validate Docker image with smoke tests
+- [x] 01-01-PLAN.md — Create Docker infrastructure (Dockerfile, entrypoint.sh, docker-requirements.txt, .dockerignore) and modify app.py (DB_PATH + /health endpoint)
+- [x] 01-02-PLAN.md — Create test infrastructure (pytest + unit tests) and validate Docker image with smoke tests
 
 ### Phase 2: Compose Stack
 **Goal**: Both app and Caddy containers start together, app is reachable through Caddy on the local machine, and SQLite data survives docker compose down/up cycles
@@ -85,7 +85,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. App Container | 1/2 | In Progress|  |
+| 1. App Container | 2/2 | Complete | 2026-03-19 |
 | 2. Compose Stack | 0/2 | Not started | - |
 | 3. HTTPS via Caddy | 0/2 | Not started | - |
 | 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
