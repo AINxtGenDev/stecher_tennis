@@ -1,9 +1,5 @@
-
-user: MStecher
-psw: SuperSecretDevPassword!
-
 #######################################################################
-## 
+## GSD
 #######################################################################
 https://github.com/gsd-build/get-shit-done
 
@@ -17,17 +13,17 @@ Here's the right sequence:
   3. /gsd:plan-phase 1 — create the execution plan
   4. /gsd:execute-phase 1 — build it
 
-
 /gsd:settings
 /gsd:set-profile quality
 
-change my remote repository https://github.com/AINxtGenDev/stecher_tennis/tree/docker to public
-
-update @SESSION_CHECKPOINT.md
+update SESSION_CHECKPOINT.md
 /clear
 
 @SESSION_CHECKPOINT.md /gsd:execute-phase 4
 
+
+Personal access tokens (classic): ghp_................
+export GHCR_TOKEN=ghp_...........
 
 Use the alias “stecher” from ~/.bash_aliases to check the configuration of the production Caddy, for example.
 Please exercise extreme caution when doing so, as this server is in production and is part of the critical infrastructure.
