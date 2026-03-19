@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-19T09:42:48.252Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-19T10:56:36.865Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -23,9 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Phase: 03 (https-via-caddy) — COMPLETE
-Plan: 2 of 2 (all plans complete)
-Next: Phase 04 (multi-arch-rpi-deploy)
+Phase: 04 (multi-arch-rpi-deploy) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -49,6 +48,7 @@ Next: Phase 04 (multi-arch-rpi-deploy)
 - Trend: stable
 
 *Updated after each plan completion*
+| Phase 04 P01 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 03]: Manual HTTP-to-HTTPS redirect: Caddy auto-redirect omits non-standard port in Location header
 - [Phase 03]: Parse-time {dollar-sign-VAR} env substitution in Caddyfile, not runtime {env.VAR} placeholders
 - [Phase 03-02]: Explicit DNS servers (8.8.8.8, 8.8.4.4) added to caddy service for reliable ACME DNS-01 challenge resolution
+- [Phase 04-01]: Literal GHCR image URLs in variable assignments for grep-verifiable build script
+- [Phase 04-01]: Build override pattern: docker-compose.build.yml restores local build via -f flag
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T09:42:48.250Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-multi-arch-rpi-deploy/04-CONTEXT.md
+Last session: 2026-03-19T10:56:36.862Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None

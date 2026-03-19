@@ -13,7 +13,7 @@ Requirements for initial Docker deployment. Each maps to roadmap phases.
 - [x] **CONT-02**: Container runs as non-root user with correct file permissions
 - [x] **CONT-03**: `.dockerignore` excludes `.git`, `__pycache__`, `documentation/`, `*.db`, dev files
 - [x] **CONT-04**: Database path is configurable via `DB_PATH` env var (default: `data/tennis.db`)
-- [ ] **CONT-05**: Docker image builds for both ARM64 and AMD64 via `docker buildx`
+- [x] **CONT-05**: Docker image builds for both ARM64 and AMD64 via `docker buildx`
 
 ### Docker Compose
 
@@ -69,7 +69,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONT-02 | Phase 1 | Complete |
 | CONT-03 | Phase 1 | Complete |
 | CONT-04 | Phase 1 | Complete |
-| CONT-05 | Phase 4 | Pending |
+| CONT-05 | Phase 4 | Complete |
 | COMP-01 | Phase 2 | Complete |
 | COMP-02 | Phase 2 | Complete |
 | COMP-03 | Phase 2 | Complete |
