@@ -252,9 +252,17 @@
   - HTTP→HTTPS redirect working (308)
   - App logs clean — only health checks and normal requests
 
+### 24. v3.47 Deployed to Production RPi (2026-03-19)
+- Built multi-arch images (amd64+arm64) via `build-and-push.sh`
+- Pushed to GHCR: `stecher-tennis-app:v3.47` + `stecher-tennis-caddy:v3.47`
+- Deployed: `git pull && docker compose pull && docker compose up -d`
+- Verified: both containers healthy, `/health` returns 200 via HTTPS
+- **Rollback:** v3.46 images still available on GHCR
+- Commit: `0a5f7f6`
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
-- **Latest commit:** `1c11b20` — ui: unify nav button styles and bump version to 3.47
+- **Latest commit:** `0a5f7f6` — docs: update session checkpoint with v3.47 deployment
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
 - **RPi status:** Running Docker stack, production HTTPS, auto-restart on reboot, verified healthy 2026-03-19
 - **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.47` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.47` (public)
