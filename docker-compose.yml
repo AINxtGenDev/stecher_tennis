@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    image: tennis-app:latest
+    networks:
+      - tennis_net
+    volumes:
+      - tennis_data:/app/data
+    env_file: .env
+    restart: unless-stopped
+    # No ports: block — port 5000 only reachable inside Docker network (COMP-02)
+
+  caddy:
+    image: caddy:2-alpine
+    networks:
+      - tennis_net
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  tennis_net:
+    driver: bridge
+
+volumes:
+  tennis_data:   # SQLite persistence — survives compose down (COMP-03)
+  caddy_data:    # Caddy state — needed for Phase 3 TLS certs
