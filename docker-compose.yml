@@ -1,7 +1,6 @@
 services:
   app:
-    build: .
-    image: tennis-app:latest
+    image: ghcr.io/ainxtgendev/stecher-tennis-app:latest
     networks:
       - tennis_net
     volumes:
@@ -11,9 +10,7 @@ services:
     # No ports: block — port 5000 only reachable inside Docker network (COMP-02)
 
   caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
+    image: ghcr.io/ainxtgendev/stecher-tennis-caddy:latest
     networks:
       - tennis_net
     ports:
