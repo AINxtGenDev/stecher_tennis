@@ -236,7 +236,12 @@
 - All 4 phases, 8 plans, 16 requirements delivered
 - App running on RPi as Docker Compose stack with production HTTPS
 
-### 22. RPi Health Check (2026-03-19)
+### 22. Local Dev Fixes (2026-03-19)
+- **CORS fix:** Added `http://192.168.1.8:5000` to `CORS_ALLOWED_ORIGINS` in `.env` — Socket.IO was failing with 400 because only the production origin was allowed
+- **Killed stale processes:** 3 `python3 app.py` instances were competing for port 5000; force-killed the suspended ones
+- **UI tweak:** Shortened date/time dropdown placeholders in `index.html` — "Datum wählen..." → "Datum", "Zeit wählen..." → "Uhrzeit" for better readability
+
+### 23. RPi Health Check (2026-03-19)
 - Verified RPi deployment is fully operational:
   - Both containers up and healthy (`app` + `caddy`)
   - `/health` returns `200 {"status":"ok"}` internally and externally
