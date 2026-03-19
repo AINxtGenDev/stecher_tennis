@@ -73,10 +73,11 @@ Plans:
   1. `docker buildx build --platform linux/amd64,linux/arm64` completes without error for both platforms
   2. The app runs correctly on the Raspberry Pi after pulling the published image (HTTPS works, data persists, WebSocket connects)
   3. A reboot of the Raspberry Pi causes both containers to restart automatically without manual intervention
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: Set up docker buildx, resolve ARM64 gcc dependencies, publish multi-arch image to registry, deploy and verify on RPi
+- [ ] 04-01-PLAN.md — Create build-and-push.sh (multi-arch build + GHCR push), update docker-compose.yml to GHCR image refs, create docker-compose.build.yml local override
+- [ ] 04-02-PLAN.md — Create deploy.sh (RPi cutover script), verify full deployment on RPi (HTTPS, WebSocket, reboot resilience)
 
 ## Progress
 
@@ -88,4 +89,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. App Container | 2/2 | Complete | 2026-03-19 |
 | 2. Compose Stack | 2/2 | Complete | 2026-03-19 |
 | 3. HTTPS via Caddy | 2/2 | Complete   | 2026-03-19 |
-| 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
+| 4. Multi-Arch & RPi Deploy | 0/2 | Not started | - |
