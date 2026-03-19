@@ -1,14 +1,28 @@
-# Phase 2: Plain HTTP reverse proxy — no TLS (Phase 3 adds DuckDNS ACME)
-:80 {
-    log {
-        output stderr
-        level ERROR
-    }
+# Phase 3: HTTPS reverse proxy with DuckDNS DNS-01 ACME
+# Env vars: DUCKDNS_DOMAIN, DUCKDNS_TOKEN, ACME_EMAIL, ACME_CA, HTTPS_PORT
+{
+	acme_ca {$ACME_CA}
+	email   {$ACME_EMAIL}
+}
 
-    reverse_proxy app:5000 {
-        header_up Host              {http.request.host}
-        header_up X-Real-IP        {http.request.remote}
-        header_up X-Forwarded-For  {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
-    }
+{$DUCKDNS_DOMAIN}.duckdns.org:{$HTTPS_PORT} {
+	tls {
+		dns duckdns {$DUCKDNS_TOKEN}
+	}
+
+	log {
+		output stderr
+		level ERROR
+	}
+
+	reverse_proxy app:5000 {
+		header_up Host              {http.request.host}
+		header_up X-Real-IP         {http.request.remote}
+		header_up X-Forwarded-For   {http.request.remote}
+		header_up X-Forwarded-Proto {http.request.scheme}
+	}
+}
+
+:80 {
+	redir https://{$DUCKDNS_DOMAIN}.duckdns.org:{$HTTPS_PORT}{uri} permanent
 }
