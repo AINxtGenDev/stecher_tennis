@@ -615,6 +615,29 @@ Also verify:
 - Real-time updates work (open two browser tabs, make a change in one)
 - Reboot the RPi (`sudo reboot`) and confirm the app comes back automatically after 1-2 minutes
 
+### Database Location
+
+The SQLite database is stored in a Docker named volume, **not** in the git repository directory:
+
+```
+/var/lib/docker/volumes/stecher_tennis_tennis_data/_data/tennis.db
+```
+
+This volume persists across `docker compose down` / `up` cycles. The `tennis.db` in `~/stecher_tennis/` is the default from git and is **not** used by the running containers.
+
+To restore a database backup:
+```bash
+# Stop the app
+cd ~/stecher_tennis && docker compose stop app
+
+# Copy backup into the volume
+sudo cp /path/to/your/backup.db /var/lib/docker/volumes/stecher_tennis_tennis_data/_data/tennis.db
+sudo chown 1000:1000 /var/lib/docker/volumes/stecher_tennis_tennis_data/_data/tennis.db
+
+# Restart the app
+docker compose start app
+```
+
 ### Updating the Deployment
 
 When a new version is available:
