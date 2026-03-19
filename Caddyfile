@@ -5,7 +5,7 @@
 	email   {$ACME_EMAIL}
 }
 
-{$DUCKDNS_DOMAIN}.duckdns.org:{$HTTPS_PORT} {
+{$DUCKDNS_DOMAIN}.duckdns.org {
 	tls {
 		dns duckdns {$DUCKDNS_TOKEN}
 	}
