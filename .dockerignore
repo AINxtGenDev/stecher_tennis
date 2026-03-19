@@ -1,0 +1,55 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Development dependencies
+requirements.txt
+environment.yml
+
+# Database files (never bake into image)
+*.db
+*.sqlite
+*.sqlite3
+
+# Documentation
+documentation/
+*.html
+*.md
+!CLAUDE.md
+
+# Dev tools and config
+.env
+.env.*
+.planning/
+.claude/
+
+# Backup artifacts
+backup/
+
+# Tests
+test/
+tests/
+pytest.ini
+setup.cfg
+pyproject.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS artifacts
+.DS_Store
+Thumbs.db
