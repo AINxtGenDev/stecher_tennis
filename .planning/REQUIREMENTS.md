@@ -9,10 +9,10 @@ Requirements for initial Docker deployment. Each maps to roadmap phases.
 
 ### Containerization
 
-- [ ] **CONT-01**: App runs in a Docker container using `python:3.12-slim` multi-stage build
-- [ ] **CONT-02**: Container runs as non-root user with correct file permissions
-- [ ] **CONT-03**: `.dockerignore` excludes `.git`, `__pycache__`, `documentation/`, `*.db`, dev files
-- [ ] **CONT-04**: Database path is configurable via `DB_PATH` env var (default: `data/tennis.db`)
+- [x] **CONT-01**: App runs in a Docker container using `python:3.12-slim` multi-stage build
+- [x] **CONT-02**: Container runs as non-root user with correct file permissions
+- [x] **CONT-03**: `.dockerignore` excludes `.git`, `__pycache__`, `documentation/`, `*.db`, dev files
+- [x] **CONT-04**: Database path is configurable via `DB_PATH` env var (default: `data/tennis.db`)
 - [ ] **CONT-05**: Docker image builds for both ARM64 and AMD64 via `docker buildx`
 
 ### Docker Compose
@@ -31,9 +31,9 @@ Requirements for initial Docker deployment. Each maps to roadmap phases.
 
 ### Operations
 
-- [ ] **OPS-01**: `/health` endpoint returns app status for Docker health check
-- [ ] **OPS-02**: Gunicorn configured with `--workers 1 --worker-class eventlet --timeout 120`
-- [ ] **OPS-03**: Application logs to stdout for `docker logs` collection
+- [x] **OPS-01**: `/health` endpoint returns app status for Docker health check
+- [x] **OPS-02**: Gunicorn configured with `--workers 1 --worker-class eventlet --timeout 120`
+- [x] **OPS-03**: Application logs to stdout for `docker logs` collection
 
 ## v2 Requirements
 
@@ -65,10 +65,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONT-01 | Phase 1 | Pending |
-| CONT-02 | Phase 1 | Pending |
-| CONT-03 | Phase 1 | Pending |
-| CONT-04 | Phase 1 | Pending |
+| CONT-01 | Phase 1 | Complete |
+| CONT-02 | Phase 1 | Complete |
+| CONT-03 | Phase 1 | Complete |
+| CONT-04 | Phase 1 | Complete |
 | CONT-05 | Phase 4 | Pending |
 | COMP-01 | Phase 2 | Pending |
 | COMP-02 | Phase 2 | Pending |
@@ -78,9 +78,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HTTP-02 | Phase 3 | Pending |
 | HTTP-03 | Phase 3 | Pending |
 | HTTP-04 | Phase 3 | Pending |
-| OPS-01 | Phase 1 | Pending |
-| OPS-02 | Phase 1 | Pending |
-| OPS-03 | Phase 1 | Pending |
+| OPS-01 | Phase 1 | Complete |
+| OPS-02 | Phase 1 | Complete |
+| OPS-03 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total

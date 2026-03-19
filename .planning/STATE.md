@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 1 context gathered
-last_updated: "2026-03-18T21:59:56.326Z"
-last_activity: 2026-03-18 — Roadmap created; requirements mapped to 4 phases
+status: executing
+stopped_at: "Completed 01-app-container/01-01-PLAN.md"
+last_updated: "2026-03-19T06:45:31Z"
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -21,35 +19,31 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** One-command deployment — `docker compose up -d` brings up the full stack (app + HTTPS) on any Linux server, ARM or x86
-**Current focus:** Phase 1 — App Container
+**Current focus:** Phase 01 — app-container
 
 ## Current Position
 
-Phase: 1 of 4 (App Container)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-18 — Roadmap created; requirements mapped to 4 phases
-
-Progress: [░░░░░░░░░░] 0%
+Phase: 01 (app-container) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 1
+- Average duration: 2 min
+- Total execution time: 0.03 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-app-container | 1 | 2 min | 2 min |
 
 **Recent Trend:**
 
-- Last 5 plans: -
-- Trend: -
+- Last 5 plans: 2 min
+- Trend: establishing baseline
 
 *Updated after each plan completion*
 
@@ -63,6 +57,9 @@ Recent decisions affecting current work:
 - [Setup]: Single worker constraint — gunicorn must use `--workers 1 --worker-class eventlet`; hard-coded in Dockerfile CMD with comment
 - [Setup]: Named volumes (not bind mounts) for SQLite to avoid host UID/GID permission mismatch
 - [Setup]: ACME staging endpoint for all Phase 3 iteration; switch to production only after DNS-01 confirmed working
+- [01-01]: No --preload flag with gunicorn — incompatible with eventlet worker class
+- [01-01]: entrypoint.sh triggers init_db() explicitly — gunicorn import never reaches __main__ block
+- [01-01]: /health has no DB connectivity check — fast startup, avoids circular dependency
 
 ### Pending Todos
 
@@ -70,13 +67,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 1] Eventlet version pinning: `prod-requirements.txt` must be audited for Python 3.12 compatibility; resolve via smoke test inside built container
-- [Phase 1] `DB_PATH` code change: app currently hardcodes `tennis.db`; exact change location in `app.py` not yet identified
-- [Phase 1] `init_db()` idempotency: must use `CREATE TABLE IF NOT EXISTS` to be safe on container restart against existing volume
+- [Phase 1] Eventlet version pinning: `prod-requirements.txt` must be audited for Python 3.12 compatibility; resolve via smoke test inside built container (Plan 02)
+- [Phase 1] ~~`DB_PATH` code change: app currently hardcodes `tennis.db`; exact change location in `app.py` not yet identified~~ RESOLVED in 01-01
+- [Phase 1] `init_db()` idempotency: existing guard in init_db() checks sqlite_master before running schema.sql — confirmed safe on container restart
 - [Phase 4] Registry choice: Docker Hub vs GHCR vs local registry not yet decided; must resolve before Phase 4
 
 ## Session Continuity
 
-Last session: 2026-03-18T21:59:56.323Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-app-container/01-CONTEXT.md
+Last session: 2026-03-19T06:45:31Z
+Stopped at: Completed 01-app-container/01-01-PLAN.md
+Resume file: .planning/phases/01-app-container/01-02-PLAN.md
