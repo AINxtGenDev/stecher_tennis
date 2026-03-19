@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-19T07:24:27.133Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-19T07:50:19Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** One-command deployment — `docker compose up -d` brings up the full stack (app + HTTPS) on any Linux server, ARM or x86
-**Current focus:** Phase 01 — app-container
+**Current focus:** Phase 02 — compose-stack
 
 ## Current Position
 
-Phase: 01 (app-container) — COMPLETE
-Plan: 2 of 2 (all plans done)
+Phase: 02 (compose-stack) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -39,6 +39,7 @@ Plan: 2 of 2 (all plans done)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-app-container | 2 | 17 min | 8.5 min |
+| 02-compose-stack | 1 | 4 min | 4 min |
 
 **Recent Trend:**
 
@@ -62,6 +63,10 @@ Recent decisions affecting current work:
 - [01-01]: /health has no DB connectivity check — fast startup, avoids circular dependency
 - [01-02]: importlib.reload() in DB_PATH tests — app.py reads env at module import time, not request time; tests must reload after setenv
 - [01-02]: Smoke test as checkpoint:human-verify — automation runs all checks, user approves, evidence in SUMMARY
+- [02-01]: No version: key in docker-compose.yml — deprecated in Compose v2, omitted to avoid warnings
+- [02-01]: Caddy :80 site address (not a domain) explicitly disables auto-HTTPS — Phase 3 will replace with DuckDNS ACME
+- [02-01]: caddy_data volume included now — Phase 3 TLS cert storage needs it pre-existing
+- [02-01]: App build: and image: both specified — build provides fallback; image: names the result for CI/CD
 
 ### Pending Todos
 
@@ -76,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T07:24:27.129Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-compose-stack/02-CONTEXT.md
+Last session: 2026-03-19T07:50:19Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: .planning/phases/02-compose-stack/02-02-PLAN.md

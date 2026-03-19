@@ -44,7 +44,7 @@ Plans:
   2. HTTP request to the Caddy port reaches the Flask app (WebSocket connect also succeeds)
   3. Creating data in the app, running `docker compose down && docker compose up -d`, and verifying data still exists confirms volume persistence
   4. App container port 5000 is not reachable directly from the host (only through Caddy)
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — Create docker-compose.yml (two services, internal network, named volumes) and Caddyfile (HTTP reverse proxy to app:5000 with WebSocket headers)
@@ -86,6 +86,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. App Container | 2/2 | Complete | 2026-03-19 |
-| 2. Compose Stack | 0/2 | Planned | - |
+| 2. Compose Stack | 1/2 | In Progress|  |
 | 3. HTTPS via Caddy | 0/2 | Not started | - |
 | 4. Multi-Arch & RPi Deploy | 0/1 | Not started | - |
