@@ -260,9 +260,15 @@
 - **Rollback:** v3.46 images still available on GHCR
 - Commit: `0a5f7f6`
 
+### 25. RPi Database Backup Automation (2026-03-19)
+- **`backup_tennis_db.sh`** — adapted for Docker: uses `sudo sqlite3 .backup` on volume path, zips to `~/stecher_tennis/backup/`, 7-day retention, logs to `backup.log`
+- **`check_db.sh`** — adapted for Docker: integrity check, foreign keys, schema & row counts via `sudo sqlite3`
+- **Cron:** every 3h (`0 */3 * * *`), logs to `~/stecher_tennis/backup/cron.log`
+- **Verified:** backup produces valid 12K zip with 41 players + 119 challenges matching live DB
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
-- **Latest commit:** `0a5f7f6` — docs: update session checkpoint with v3.47 deployment
+- **Latest commit:** `d6331cb` — chore: bump APP_VERSION to 3.47 and clean up readme
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
 - **RPi status:** Running Docker stack, production HTTPS, auto-restart on reboot, verified healthy 2026-03-19
 - **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.47` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.47` (public)
