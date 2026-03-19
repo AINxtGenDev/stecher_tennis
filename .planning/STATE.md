@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-19T10:56:36.865Z"
+status: complete
+stopped_at: Completed 04-02-PLAN.md (milestone v1.0 complete)
+last_updated: "2026-03-19T12:24:28.749Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,20 +19,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** One-command deployment — `docker compose up -d` brings up the full stack (app + HTTPS) on any Linux server, ARM or x86
-**Current focus:** Phase 04 — multi-arch-rpi-deploy
+**Current focus:** All phases complete -- milestone v1.0 delivered
 
 ## Current Position
 
-Phase: 04 (multi-arch-rpi-deploy) — EXECUTING
-Plan: 2 of 2
+Phase: 04 (multi-arch-rpi-deploy) — COMPLETE
+Plan: 2 of 2 (all plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
-- Average duration: 7.2 min
-- Total execution time: 0.72 hours
+- Total plans completed: 8
+- Average duration: 16.4 min
+- Total execution time: 2.18 hours
 
 **By Phase:**
 
@@ -41,14 +41,16 @@ Plan: 2 of 2
 | 01-app-container | 2 | 17 min | 8.5 min |
 | 02-compose-stack | 2 | 9 min | 4.5 min |
 | 03-https-via-caddy | 2 | 17 min | 8.5 min |
+| 04-multi-arch-rpi-deploy | 2 | 85 min | 42.5 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 7.2 min avg
-- Trend: stable
+- Phase 4 plans longer due to human-verify checkpoints (live RPi deployment)
+- Automated-only plans average ~7 min
 
 *Updated after each plan completion*
 | Phase 04 P01 | 3min | 2 tasks | 3 files |
+| Phase 04 P02 | 82min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -78,6 +80,10 @@ Recent decisions affecting current work:
 - [Phase 03-02]: Explicit DNS servers (8.8.8.8, 8.8.4.4) added to caddy service for reliable ACME DNS-01 challenge resolution
 - [Phase 04-01]: Literal GHCR image URLs in variable assignments for grep-verifiable build script
 - [Phase 04-01]: Build override pattern: docker-compose.build.yml restores local build via -f flag
+- [Phase 04-02]: Port 443 internal: FritzBox maps external 10443 to internal 443, so Caddy listens on 443 (not 10443)
+- [Phase 04-02]: Health check via docker compose exec: curl not available in slim container
+- [Phase 04-02]: Clone docker branch explicitly: Docker files live on docker branch, not main
+- [Phase 04-02]: Backup existing non-git dirs before clone to avoid data loss on RPi
 
 ### Pending Todos
 
@@ -88,10 +94,10 @@ None yet.
 - [Phase 1] ~~Eventlet version pinning: `prod-requirements.txt` must be audited for Python 3.12 compatibility; resolve via smoke test inside built container (Plan 02)~~ RESOLVED in 01-02 — eventlet 0.40.1 confirmed working inside built container
 - [Phase 1] ~~`DB_PATH` code change: app currently hardcodes `tennis.db`; exact change location in `app.py` not yet identified~~ RESOLVED in 01-01
 - [Phase 1] `init_db()` idempotency: existing guard in init_db() checks sqlite_master before running schema.sql — confirmed safe on container restart
-- [Phase 4] Registry choice: Docker Hub vs GHCR vs local registry not yet decided; must resolve before Phase 4
+- [Phase 4] ~~Registry choice: Docker Hub vs GHCR vs local registry not yet decided; must resolve before Phase 4~~ RESOLVED in 04-01 — GHCR selected and working
 
 ## Session Continuity
 
-Last session: 2026-03-19T10:56:36.862Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-19T12:24:28.745Z
+Stopped at: Completed 04-02-PLAN.md (milestone v1.0 complete)
 Resume file: None

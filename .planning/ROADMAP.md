@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: App Container** - Working Docker image for the Flask app with correct gunicorn, permissions, and volume path
 - [x] **Phase 2: Compose Stack** - Full two-container stack running locally via docker compose up, data persisted across restarts
 - [x] **Phase 3: HTTPS via Caddy** - Automatic TLS working end-to-end via DuckDNS DNS-01 challenge (completed 2026-03-19)
-- [ ] **Phase 4: Multi-Arch & RPi Deploy** - Image builds for ARM64 + AMD64; verified deployment on Raspberry Pi
+- [x] **Phase 4: Multi-Arch & RPi Deploy** - Image builds for ARM64 + AMD64; verified deployment on Raspberry Pi (completed 2026-03-19)
 
 ## Phase Details
 
@@ -73,11 +73,11 @@ Plans:
   1. `docker buildx build --platform linux/amd64,linux/arm64` completes without error for both platforms
   2. The app runs correctly on the Raspberry Pi after pulling the published image (HTTPS works, data persists, WebSocket connects)
   3. A reboot of the Raspberry Pi causes both containers to restart automatically without manual intervention
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 04-01-PLAN.md — Create build-and-push.sh (multi-arch build + GHCR push), update docker-compose.yml to GHCR image refs, create docker-compose.build.yml local override
-- [ ] 04-02-PLAN.md — Create deploy.sh (RPi cutover script), verify full deployment on RPi (HTTPS, WebSocket, reboot resilience)
+- [x] 04-01-PLAN.md — Create build-and-push.sh (multi-arch build + GHCR push), update docker-compose.yml to GHCR image refs, create docker-compose.build.yml local override
+- [x] 04-02-PLAN.md — Create deploy.sh (RPi cutover script), verify full deployment on RPi (HTTPS, WebSocket, reboot resilience)
 
 ## Progress
 
@@ -89,4 +89,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. App Container | 2/2 | Complete | 2026-03-19 |
 | 2. Compose Stack | 2/2 | Complete | 2026-03-19 |
 | 3. HTTPS via Caddy | 2/2 | Complete   | 2026-03-19 |
-| 4. Multi-Arch & RPi Deploy | 0/2 | Not started | - |
+| 4. Multi-Arch & RPi Deploy | 2/2 | Complete   | 2026-03-19 |
