@@ -21,18 +21,18 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 - ✓ CSRF protection via Flask-WTF — existing
 - ✓ Gunicorn production server support — existing
 - ✓ Caddy reverse proxy configuration (manual) — existing (documented in 99_rpi.txt)
+- ✓ Multi-stage Dockerfile for Python 3.12 + eventlet — Validated in Phase 1: App Container
+- ✓ Health check endpoint for container orchestration — Validated in Phase 1: App Container
+- ✓ Production-ready gunicorn configuration — Validated in Phase 1: App Container
+- ✓ Docker best practices (non-root user, minimal image, .dockerignore) — Validated in Phase 1: App Container
 
 ### Active
 
-- [ ] Multi-stage Dockerfile for Python 3.12 + eventlet
 - [ ] Docker Compose with app + Caddy services
 - [ ] SQLite database persisted via Docker volume mount
 - [ ] Multi-architecture support (ARM64 + AMD64)
 - [ ] Automatic HTTPS via Caddy with DuckDNS domain
 - [ ] Environment configuration via .env file
-- [ ] Health check endpoint for container orchestration
-- [ ] Production-ready gunicorn configuration
-- [ ] Docker best practices (non-root user, minimal image, .dockerignore)
 
 ### Out of Scope
 
@@ -62,9 +62,13 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 |----------|-----------|---------|
 | Volume mount for SQLite | Data must survive container rebuilds | — Pending |
 | Caddy in Docker Compose | Consistent deployment, no manual proxy config | — Pending |
-| Multi-stage Dockerfile | Smaller image, separate build and runtime dependencies | — Pending |
+| Multi-stage Dockerfile | Smaller image, separate build and runtime dependencies | ✓ Done (Phase 1) |
 | DuckDNS for HTTPS | Free dynamic DNS + automatic SSL, already in use | — Pending |
-| Non-root container user | Security best practice for production containers | — Pending |
+| Non-root container user | Security best practice for production containers | ✓ Done (Phase 1) |
 
 ---
-*Last updated: 2026-03-18 after initialization*
+## Current State
+
+Phase 1 (App Container) complete — Dockerfile, entrypoint, /health endpoint, DB_PATH env var, non-root user, 7 unit tests, all 7 requirements verified. Next: Phase 2 (Compose Stack).
+
+*Last updated: 2026-03-19 after Phase 1 completion*
