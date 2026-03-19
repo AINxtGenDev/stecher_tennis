@@ -59,11 +59,11 @@ Plans:
   2. WebSocket connections to the HTTPS domain connect and receive real-time updates
   3. HTTP requests to port 80 redirect automatically to HTTPS
   4. Setting `ACME_CA_URL` env var switches between Let's Encrypt staging and production endpoints without Caddyfile edits
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: Write custom Caddy Dockerfile using xcaddy with caddy-dns/duckdns module
-- [ ] 03-02: Update Caddyfile for DNS-01 ACME challenge with staging endpoint; validate certificate issuance; cut over to production endpoint
+- [ ] 03-01-PLAN.md — Create Dockerfile.caddy (xcaddy + caddy-dns/duckdns), rewrite Caddyfile for HTTPS with DNS-01 ACME, update docker-compose.yml and .env.example
+- [ ] 03-02-PLAN.md — Build custom Caddy image, validate duckdns module, smoke test full HTTPS stack with staging certificate
 
 ### Phase 4: Multi-Arch & RPi Deploy
 **Goal**: A single `docker compose pull && docker compose up -d` on the Raspberry Pi brings up the full working stack using a multi-architecture image
