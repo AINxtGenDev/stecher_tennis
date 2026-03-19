@@ -25,14 +25,14 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 - ✓ Health check endpoint for container orchestration — Validated in Phase 1: App Container
 - ✓ Production-ready gunicorn configuration — Validated in Phase 1: App Container
 - ✓ Docker best practices (non-root user, minimal image, .dockerignore) — Validated in Phase 1: App Container
+- ✓ Docker Compose with app + Caddy services — Validated in Phase 2: Compose Stack
+- ✓ SQLite database persisted via Docker volume mount — Validated in Phase 2: Compose Stack
+- ✓ Environment configuration via .env file — Validated in Phase 2: Compose Stack
+- ✓ Automatic HTTPS via Caddy with DuckDNS domain — Validated in Phase 3: HTTPS via Caddy
 
 ### Active
 
-- [ ] Docker Compose with app + Caddy services
-- [ ] SQLite database persisted via Docker volume mount
 - [ ] Multi-architecture support (ARM64 + AMD64)
-- [ ] Automatic HTTPS via Caddy with DuckDNS domain
-- [ ] Environment configuration via .env file
 
 ### Out of Scope
 
@@ -60,15 +60,15 @@ One-command deployment: `docker compose up -d` brings up the entire stack (app +
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Volume mount for SQLite | Data must survive container rebuilds | — Pending |
-| Caddy in Docker Compose | Consistent deployment, no manual proxy config | — Pending |
+| Volume mount for SQLite | Data must survive container rebuilds | ✓ Done (Phase 2) |
+| Caddy in Docker Compose | Consistent deployment, no manual proxy config | ✓ Done (Phase 2) |
 | Multi-stage Dockerfile | Smaller image, separate build and runtime dependencies | ✓ Done (Phase 1) |
-| DuckDNS for HTTPS | Free dynamic DNS + automatic SSL, already in use | — Pending |
+| DuckDNS for HTTPS | Free dynamic DNS + automatic SSL, already in use | ✓ Done (Phase 3) |
 | Non-root container user | Security best practice for production containers | ✓ Done (Phase 1) |
 
 ---
 ## Current State
 
-Phase 1 (App Container) complete — Dockerfile, entrypoint, /health endpoint, DB_PATH env var, non-root user, 7 unit tests, all 7 requirements verified. Next: Phase 2 (Compose Stack).
+Phases 1–3 complete. App containerized (Phase 1), Compose stack with Caddy reverse proxy and SQLite volume (Phase 2), HTTPS via custom Caddy build with DuckDNS DNS-01 ACME (Phase 3). Staging TLS certs validated. Next: Phase 4 (Multi-Arch & RPi Deploy).
 
-*Last updated: 2026-03-19 after Phase 1 completion*
+*Last updated: 2026-03-19 after Phase 3 completion*
