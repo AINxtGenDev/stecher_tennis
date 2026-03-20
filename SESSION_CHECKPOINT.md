@@ -285,11 +285,17 @@
 ### 28. Version Bumped (2026-03-20)
 - `templates/index.html`: Version 3.47 → **3.48 • 20. März 2026**
 
+### 29. v3.48 Deployed to Production RPi (2026-03-20)
+- Built multi-arch images (amd64+arm64) via `build-and-push.sh`
+- Pushed to GHCR: `stecher-tennis-app:v3.48` + `stecher-tennis-caddy:v3.48`
+- Deployed: `git pull && docker compose pull && docker compose up -d`
+- Verified: both containers healthy, `/health` returns 200 via HTTPS
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
-- **RPi status:** Running Docker stack, production HTTPS, auto-restart on reboot, verified healthy 2026-03-19
-- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.47` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.47` (public)
+- **RPi status:** Running Docker stack v3.48, production HTTPS, auto-restart on reboot, verified healthy 2026-03-20
+- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.48` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.48` (public)
 - **RPi housekeeping:** `~/stecher_tennis` clean (git-tracked files only), `~/stecher_tennis.bak` kept (500MB, old bare-metal install)
 
 ## Key Info
