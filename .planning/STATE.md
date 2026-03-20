@@ -96,8 +96,15 @@ None yet.
 - [Phase 1] `init_db()` idempotency: existing guard in init_db() checks sqlite_master before running schema.sql — confirmed safe on container restart
 - [Phase 4] ~~Registry choice: Docker Hub vs GHCR vs local registry not yet decided; must resolve before Phase 4~~ RESOLVED in 04-01 — GHCR selected and working
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260320-d5a | DB import/export settings card | 2026-03-20 | dca6d8f | [260320-d5a-db-import-export-settings-card](./quick/260320-d5a-db-import-export-settings-card/) |
+
 ## Session Continuity
 
+Last activity: 2026-03-20 - Completed quick task 260320-d5a: DB import/export settings card
 Last session: 2026-03-20T08:33:54.718Z
 Stopped at: Completed 260320-d5a (quick task: db import/export settings card)
 Resume file: None
