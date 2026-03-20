@@ -211,6 +211,38 @@
           margin-left: 0; /* Remove margin if stacked */
        }
     }
+
+    /* Landscape mode on phones: pyramid must fit in limited viewport height */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .ranking-list .player {
+        width: 10vh;
+        height: 10vh;
+        min-width: 35px;
+        min-height: 35px;
+        max-width: 70px;
+        max-height: 70px;
+        font-size: 0.20rem;
+        line-height: 1.0;
+        padding: 1px;
+        margin: 1px;
+        border-radius: 3px;
+        border-width: 1px;
+      }
+      .ranking-list .row {
+        margin: 1px 0;
+      }
+      .availability-toggle {
+        width: 8px;
+        height: 8px;
+        top: 2px;
+        right: 2px;
+        border-width: 1px;
+      }
+      h2 { font-size: 1rem; margin-bottom: 0.3rem !important; }
+      .legend-item { font-size: 0.6rem; margin: 1px 4px; }
+      .legend-color { width: 12px; height: 12px; }
+      .legend { margin-bottom: 5px; }
+    }
     /* --- MOBILE OPTIMIZATION END --- */
 
     .animation-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
@@ -384,7 +416,7 @@
         <div class="col-md-6 mb-3 mb-md-0"><h5>Kontaktinformationen</h5><p>Matthias Stecher<br /><a href="mailto:matthias.stecher@hpe.com">matthias.stecher@gmx.at</a><br />Mobile: 0699 177 822 76</p></div>
         <div class="col-md-6"><h5>Rechtliche Informationen</h5><p>© 2025 Matthias Stecher. Der Inhalt dieser Webseite ist urheberrechtlich geschützt.<br />Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.</p></div>
       </div>
-      <div class="row"><div class="col-12 text-center mt-3"><small>Version: 3.48 • 20. März 2026</small></div></div>
+      <div class="row"><div class="col-12 text-center mt-3"><small>Version: 3.49 • 20. März 2026</small></div></div>
       <img id="duckLogo" src="/static/a1_duck_11.png" alt="Duck Logo" width="46" height="46" style="position: absolute; bottom: 15px; right: 15px; cursor: pointer;" />
     </div>
   </footer>

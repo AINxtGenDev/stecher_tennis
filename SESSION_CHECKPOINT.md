@@ -291,10 +291,17 @@
 - Deployed: `git pull && docker compose pull && docker compose up -d`
 - Verified: both containers healthy, `/health` returns 200 via HTTPS
 
+### 30. UI Fixes & Mobile Landscape (2026-03-20)
+- **Login page title:** "Tennis Rangliste 2025 - Login" → "Tennis-Rangliste 2026 - Login" (`login_tennis.html`)
+- **Admin page title:** "Administrationsbereich" → "Herausforderungen" (`admin.html`)
+- **Version bumped:** 3.48 → **3.49 • 20. März 2026**
+- **Firewall:** Opened port 5000/tcp on NUC8 UFW for LAN access from mobile devices
+- **Mobile landscape fix:** Added `@media (max-height: 500px) and (orientation: landscape)` CSS rule in `index.html` — pyramid cards scale using `vh` units so the entire pyramid (including bottom row) fits in landscape viewport. Card size `10vh` / max `70px`, font `0.20rem` matching portrait mode.
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
-- **RPi status:** Running Docker stack v3.48, production HTTPS, auto-restart on reboot, verified healthy 2026-03-20
+- **RPi status:** Running Docker stack v3.48, production HTTPS, auto-restart on reboot, verified healthy 2026-03-20 (v3.49 not yet deployed)
 - **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.48` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.48` (public)
 - **RPi housekeeping:** `~/stecher_tennis` clean (git-tracked files only), `~/stecher_tennis.bak` kept (500MB, old bare-metal install)
 
