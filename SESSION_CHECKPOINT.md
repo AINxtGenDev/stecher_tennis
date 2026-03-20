@@ -298,11 +298,23 @@
 - **Firewall:** Opened port 5000/tcp on NUC8 UFW for LAN access from mobile devices
 - **Mobile landscape fix:** Added `@media (max-height: 500px) and (orientation: landscape)` CSS rule in `index.html` — pyramid cards scale using `vh` units so the entire pyramid (including bottom row) fits in landscape viewport. Card size `10vh` / max `70px`, font `0.20rem` matching portrait mode.
 
+### 31. v3.49 Deployed to Production RPi (2026-03-20)
+- Built multi-arch images (amd64+arm64) via `build-and-push.sh`
+- Pushed to GHCR: `stecher-tennis-app:v3.49` + `stecher-tennis-caddy:v3.49`
+- Deployed: `git pull && docker compose pull && docker compose up -d`
+- Verified: both containers healthy
+
+### 32. DuckDNS Script Restored (2026-03-20)
+- **Issue:** `https://nechvatal.duckdns.org:10443` unreachable — ISP changed public IP (`178.191.20.102` → `178.190.39.199`) but DuckDNS wasn't updating
+- **Root cause:** `/home/stecher/stecher_tennis/duckdns/duckstechertennis.sh` was lost during Docker re-clone of the repo
+- **Fix:** Recreated the script; cron job (`*/5 * * * *`) was already in place and now works again
+- Manually updated DuckDNS to correct IP; verified `OK`
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
-- **RPi status:** Running Docker stack v3.48, production HTTPS, auto-restart on reboot, verified healthy 2026-03-20 (v3.49 not yet deployed)
-- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.48` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.48` (public)
+- **RPi status:** Running Docker stack v3.49, production HTTPS, auto-restart on reboot, DuckDNS updating every 5min
+- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.49` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.49` (public)
 - **RPi housekeeping:** `~/stecher_tennis` clean (git-tracked files only), `~/stecher_tennis.bak` kept (500MB, old bare-metal install)
 
 ## Key Info
