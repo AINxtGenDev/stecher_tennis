@@ -106,6 +106,32 @@
             </div>
         </div>
         <div class="challenge-container" style="border-color: #0d6efd;">
+            <h2>Datenbank Import / Export</h2>
+
+            <!-- Export section -->
+            <div style="margin-bottom: 20px;">
+                <p>Erstellt eine vollständige Sicherungskopie der aktuellen Datenbank.</p>
+                <button id="export-db-btn" class="btn" style="background-color: #0d6efd; color: #fff; border-color: #0d6efd;">
+                    Datenbank herunterladen
+                </button>
+            </div>
+
+            <hr>
+
+            <!-- Import section -->
+            <div>
+                <p>Lädt eine Sicherungskopie hoch und ersetzt die aktuelle Datenbank.</p>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <input type="file" id="import-db-file" accept=".db" class="form-control" style="max-width: 350px;">
+                    <button id="import-db-btn" class="btn btn-danger" disabled>
+                        Datenbank importieren
+                    </button>
+                </div>
+                <div id="import-db-error" style="color: var(--error-color); margin-top: 10px; display: none;"></div>
+                <div id="import-db-success" style="color: var(--challenger-color); margin-top: 10px; display: none;"></div>
+            </div>
+        </div>
+        <div class="challenge-container" style="border-color: #0d6efd;">
             <h2>Herausforderungen</h2>
             <p>Setzt die Anzeige der durchgeführten Herausforderungen auf 0 zurück. Alle Daten bleiben in der Datenbank gespeichert.</p>
             <button id="reset-completed-btn" class="btn" style="background-color: #0d6efd; color: #fff; border-color: #0d6efd;">Durchgeführte Herausforderungen zurücksetzen</button>
@@ -294,6 +320,76 @@
                       $('#reset-completed-btn').prop('disabled', false).text('Durchgeführte Herausforderungen zurücksetzen');
                   });
               }
+          });
+
+          // --- Database Export ---
+          $('#export-db-btn').on('click', function() {
+              $(this).prop('disabled', true).text('Wird heruntergeladen...');
+              const link = document.createElement('a');
+              link.href = '/api/settings/db/export';
+              link.style.display = 'none';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              setTimeout(() => {
+                  $('#export-db-btn').prop('disabled', false).text('Datenbank herunterladen');
+              }, 2000);
+          });
+
+          // --- Database Import ---
+          $('#import-db-file').on('change', function() {
+              const file = this.files[0];
+              $('#import-db-error').hide();
+              $('#import-db-success').hide();
+              if (file && file.name.endsWith('.db')) {
+                  $('#import-db-btn').prop('disabled', false);
+              } else {
+                  $('#import-db-btn').prop('disabled', true);
+                  if (file) {
+                      $('#import-db-error').text('Nur .db-Dateien sind erlaubt.').show();
+                  }
+              }
+          });
+
+          $('#import-db-btn').on('click', function() {
+              if (!confirm('Achtung: Die bestehende Datenbank wird überschrieben. Möchten Sie fortfahren?')) {
+                  return;
+              }
+              const file = $('#import-db-file')[0].files[0];
+              if (!file) return;
+
+              const formData = new FormData();
+              formData.append('db_file', file);
+
+              $(this).prop('disabled', true).text('Wird importiert...');
+              $('#import-db-error').hide();
+              $('#import-db-success').hide();
+
+              $.ajax({
+                  url: '/api/settings/db/import',
+                  method: 'POST',
+                  data: formData,
+                  processData: false,
+                  contentType: false,
+                  headers: { 'X-CSRFToken': $('meta[name="csrf-token"]').attr('content') },
+                  success: function(response) {
+                      if (response.success) {
+                          $('#import-db-success').text(response.message).show();
+                          showAlert(response.message, 'success');
+                          setTimeout(() => window.location.reload(), 2000);
+                      } else {
+                          $('#import-db-error').text(response.message).show();
+                      }
+                  },
+                  error: function(xhr) {
+                      const errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Ein Serverfehler ist aufgetreten.';
+                      $('#import-db-error').text(errorMsg).show();
+                  },
+                  complete: function() {
+                      $('#import-db-btn').prop('disabled', false).text('Datenbank importieren');
+                      $('#import-db-file').val('');
+                  }
+              });
           });
 
           // --- Database Reset and Socket Listeners (unchanged) ---
