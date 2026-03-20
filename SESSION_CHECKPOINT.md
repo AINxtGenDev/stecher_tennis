@@ -1,4 +1,4 @@
-# Session Checkpoint — 2026-03-19
+# Session Checkpoint — 2026-03-20
 
 ## What Was Done
 
@@ -266,9 +266,27 @@
 - **Cron:** every 3h (`0 */3 * * *`), logs to `~/stecher_tennis/backup/cron.log`
 - **Verified:** backup produces valid 12K zip with 41 players + 119 challenges matching live DB
 
+### 26. Database Import/Export Feature (2026-03-20)
+- **New feature:** "Datenbank Import / Export" card in `db_settings.html` above the "Herausforderungen" card
+- **Export:** Download button triggers `GET /api/settings/db/export` — streams the SQLite file as `db_backup_<ISO-timestamp>.db` without page reload
+- **Import:** File input (`.db` only) + confirmation button with dialog ("Achtung: Die bestehende Datenbank wird überschrieben.") → `POST /api/settings/db/import` validates SQLite integrity before replacing DB
+- **Error handling:** Inline error/success messages for wrong file type, corrupt file, upload failures
+- **Auth:** Both endpoints require superadmin
+- **Files changed:** `app.py`, `templates/db_settings.html`
+- Commits: `b401a40`, `75ede20`, `dca6d8f`
+
+### 27. Backend Routes Fixed for DB Import/Export (2026-03-20)
+- **Bug fix:** The executor had created the frontend card and JS but never added the backend routes to `app.py`
+- Added `GET /api/settings/db/export` and `POST /api/settings/db/import` routes (superadmin only)
+- Export uses `send_file` with `app.config["DATABASE"]` — works in both Docker (`DB_PATH`) and local dev mode
+- Import validates SQLite integrity via `PRAGMA integrity_check` before replacing DB
+- Also created missing `app_settings` table in local dev DB (existed in `schema.sql` but not in pre-existing DB)
+
+### 28. Version Bumped (2026-03-20)
+- `templates/index.html`: Version 3.47 → **3.48 • 20. März 2026**
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
-- **Latest commit:** `d6331cb` — chore: bump APP_VERSION to 3.47 and clean up readme
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
 - **RPi status:** Running Docker stack, production HTTPS, auto-restart on reboot, verified healthy 2026-03-19
 - **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.47` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.47` (public)
