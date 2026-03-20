@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import re
 import os
+import shutil
+import tempfile
 from dotenv import load_dotenv
 import sqlite3
 import json
 import logging
 import time
 from datetime import datetime, timedelta, date
-from flask import Flask, g, request, jsonify, render_template, redirect, url_for, flash
+from flask import Flask, g, request, jsonify, render_template, redirect, url_for, flash, send_file
 from flask_socketio import (
     SocketIO,
     emit,
@@ -2555,6 +2557,150 @@ def reset_database():
             ),
             500,
         )
+
+
+@app.route("/api/settings/db/export")
+@superadmin_required
+def db_export():
+    tmp_path = None
+    try:
+        # Close the current request's DB connection to release WAL locks
+        db = g.pop("db", None)
+        if db is not None:
+            db.close()
+
+        # Copy the database to a temp file
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+        tmp_path = tmp.name
+        tmp.close()
+        shutil.copy2(app.config["DATABASE"], tmp_path)
+
+        # Generate download filename with ISO timestamp
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        filename = f"db_backup_{timestamp}.db"
+
+        logger.info(
+            f"Database exported by superadmin {current_user.username}"
+        )
+
+        return send_file(
+            tmp_path,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/x-sqlite3",
+        )
+    except Exception as e:
+        logger.exception("Error exporting database.")
+        return (
+            jsonify(
+                {"success": False, "message": f"Fehler beim Exportieren: {e}"}
+            ),
+            500,
+        )
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
+@app.route("/api/settings/db/import", methods=["POST"])
+@superadmin_required
+def db_import():
+    tmp_path = None
+    try:
+        if "db_file" not in request.files:
+            return (
+                jsonify(
+                    {"success": False, "message": "Keine Datei hochgeladen."}
+                ),
+                400,
+            )
+
+        file = request.files["db_file"]
+        if not file.filename or not file.filename.endswith(".db"):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Nur .db-Dateien sind erlaubt.",
+                    }
+                ),
+                400,
+            )
+
+        # Save uploaded file to temp path
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
+        tmp_path = tmp.name
+        tmp.close()
+        file.save(tmp_path)
+
+        # Validate: check it's a valid SQLite database
+        try:
+            validate_conn = sqlite3.connect(tmp_path)
+            result = validate_conn.execute("PRAGMA integrity_check").fetchone()
+            validate_conn.close()
+            if result[0] != "ok":
+                os.unlink(tmp_path)
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Die hochgeladene Datei ist keine gültige SQLite-Datenbank.",
+                        }
+                    ),
+                    400,
+                )
+        except sqlite3.DatabaseError:
+            os.unlink(tmp_path)
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Die hochgeladene Datei ist keine gültige SQLite-Datenbank.",
+                    }
+                ),
+                400,
+            )
+
+        # Close the current request's DB connection
+        db = g.pop("db", None)
+        if db is not None:
+            db.close()
+
+        # Overwrite the live database
+        shutil.copy2(tmp_path, app.config["DATABASE"])
+        os.unlink(tmp_path)
+        tmp_path = None
+
+        logger.warning(
+            f"Database imported by superadmin {current_user.username}"
+        )
+
+        # Clear all cached data
+        data_cache.invalidate()
+
+        # Notify connected clients
+        emit_data_update("database_reset")
+
+        return jsonify(
+            {"success": True, "message": "Datenbank erfolgreich importiert."}
+        )
+    except Exception as e:
+        logger.exception("Error importing database.")
+        return (
+            jsonify(
+                {"success": False, "message": f"Fehler beim Importieren: {e}"}
+            ),
+            500,
+        )
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 # --- Other Routes ---
