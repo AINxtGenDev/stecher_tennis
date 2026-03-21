@@ -12,6 +12,8 @@
     body { background: #f5f5f5; color: #333; font-family: 'Roboto', sans-serif; }
     h2, h4 { color: #0056b3; }
     .container { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+    .ranking-header { text-align: center; margin-bottom: 30px; background-color: #f8e473; padding: 20px; border-bottom: 3px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 10px; }
+    .ranking-header h2 { font-size: 3rem; margin: 0; color: #000; text-shadow: 2px 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(248,228,115,0.4); }
     .ranking-list { perspective: 800px; display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
     .ranking-list .row { display: flex; justify-content: center; margin: 10px 0; transform: rotateX(8deg); }
     .ranking-list .player { width: 100px; height: 100px; background: linear-gradient(145deg, #ffa500, #ff8c00); border: 2px solid #ff8c00; color: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; margin: 5px; position: relative; transition: transform 0.3s, box-shadow 0.3s, background 0.3s, border-color 0.3s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
@@ -101,7 +103,8 @@
     @media (max-width: 768px) {
       body { perspective: none; }
       .container { padding: 15px; }
-      h2 { font-size: 1.8rem; }
+      .ranking-header { padding: 15px; margin-bottom: 20px; }
+      .ranking-header h2 { font-size: 2rem; }
       .ranking-list { perspective: none; }
       .ranking-list .row { transform: none; margin: 5px 0; }
       .ranking-list .player {
@@ -142,7 +145,8 @@
     /* --- MOBILE OPTIMIZATION START --- */
     /* Further adjustments for very small screens (Phones) */
     @media (max-width: 480px) {
-      h2 { font-size: 1.1rem; }
+      .ranking-header { padding: 10px; margin-bottom: 10px; }
+      .ranking-header h2 { font-size: 1.1rem; }
 
       .ranking-list .row {
          margin: 2px 0; /* Tighter vertical spacing */
@@ -251,7 +255,8 @@
         right: 2px;
         border-width: 1px;
       }
-      h2 { font-size: 1rem; margin-bottom: 0.3rem !important; }
+      .ranking-header { padding: 8px; margin-bottom: 5px; }
+      .ranking-header h2 { font-size: 1rem; }
       .legend-item { font-size: 0.6rem; margin: 1px 4px; }
       .legend-color { width: 12px; height: 12px; }
       .legend { margin-bottom: 5px; }
@@ -311,7 +316,9 @@
 
   <!-- Main Application Container -->
   <div class="container">
-    <h2 class="text-center mb-4">Tennis-Rangliste 2026</h2>
+    <header class="ranking-header">
+      <h2>Tennis-Rangliste 2026</h2>
+    </header>
     <div class="legend">
       <div class="legend-item available"><div class="legend-color"></div>Verfügbar</div>
       <div class="legend-item challenger"><div class="legend-color"></div>Herausforderer</div>
