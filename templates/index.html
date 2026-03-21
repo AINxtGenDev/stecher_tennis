@@ -85,27 +85,40 @@
       }
     }
 
-    @media (max-width: 768px) { 
-      body { perspective: none; } 
-      .container { padding: 15px; } 
-      h2 { font-size: 1.8rem; } 
-      .ranking-list { perspective: none; } 
-      .ranking-list .row { transform: none; margin: 5px 0; } 
-      .ranking-list .player { 
+    /* Tablet portrait: ensure 9-player bottom row fits on one line */
+    @media (max-width: 1024px) and (orientation: portrait) {
+      .ranking-list .player {
+        /* 9 cards + margins must fit in viewport width minus container padding */
+        width: calc((100vw - 40px) / 9 - 8px);
+        height: calc((100vw - 40px) / 9 - 8px);
+        max-width: 80px;
+        max-height: 80px;
+        font-size: 0.55rem;
+        margin: 3px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body { perspective: none; }
+      .container { padding: 15px; }
+      h2 { font-size: 1.8rem; }
+      .ranking-list { perspective: none; }
+      .ranking-list .row { transform: none; margin: 5px 0; }
+      .ranking-list .player {
         /* This size is for portrait tablets, overriding the 1200px rule */
-        width: 65px; 
-        height: 65px; 
-        font-size: 0.7rem; 
-        margin: 3px; 
-        transform: none !important; 
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); 
-      } 
-      .ranking-list .player:hover { 
-        transform: none !important; 
-        box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15); 
-      } 
-      .availability-toggle { width: 18px; height: 18px; top: 3px; right: 3px; } 
-      .legend { margin-bottom: 15px; } 
+        width: 65px;
+        height: 65px;
+        font-size: 0.7rem;
+        margin: 3px;
+        transform: none !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .ranking-list .player:hover {
+        transform: none !important;
+        box-shadow: 0 3px 7px rgba(0, 0, 0, 0.15);
+      }
+      .availability-toggle { width: 18px; height: 18px; top: 3px; right: 3px; }
+      .legend { margin-bottom: 15px; }
       .legend-item { font-size: 0.8rem; margin: 3px 8px; } 
       .legend-color { width: 18px; height: 18px; } 
       #challengeForm .form-label { font-size: 0.9rem; } 
@@ -242,6 +255,13 @@
       .legend-item { font-size: 0.6rem; margin: 1px 4px; }
       .legend-color { width: 12px; height: 12px; }
       .legend { margin-bottom: 5px; }
+    }
+
+    /* Tablet landscape: use same font size as portrait mode */
+    @media (min-height: 501px) and (max-height: 900px) and (orientation: landscape) {
+      .ranking-list .player {
+        font-size: 0.55rem;
+      }
     }
     /* --- MOBILE OPTIMIZATION END --- */
 
