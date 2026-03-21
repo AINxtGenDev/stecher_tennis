@@ -310,12 +310,49 @@
 - **Fix:** Recreated the script; cron job (`*/5 * * * *`) was already in place and now works again
 - Manually updated DuckDNS to correct IP; verified `OK`
 
+### 33. Tablet Portrait Pyramid Fix (2026-03-21)
+- **Problem:** Pyramid bottom rows wrapped on Google Pixel Tablet (CSS viewport 1157x590, DPR 2.21) — cards too wide for 9-player row
+- **Root cause:** Pixel Tablet CSS viewport is 1157px wide, just under the 1200px breakpoint. Previous fixed-width cards (80-100px) couldn't fit 9 in a row
+- **Solution:** Added `flex-shrink: 1` + `aspect-ratio: 1` + `flex-wrap: nowrap` on pyramid rows — cards auto-shrink to fit any viewport width. Eliminated reliance on `calc(100vw)` which was unreliable across devices
+- **Font:** Changed to `font-family: 'Segoe UI', system-ui, -apple-system, sans-serif`, `font-size: 0.75rem`, `font-weight: 600`
+- **Media queries simplified:** Single `max-width: 1200px` breakpoint with 70px max cards + flex-shrink handles all tablets
+- **Tested:** Phone (390px), tablet (800px, 1157px), desktop (1280px) — all rows fit on single lines
+- Commits: `82658ef`, `bc8ae71`, `4aced85`, `95ea501`, `1391a81`, `41ebceb`, `9b6f123`
+
+### 34. Tennis-Rangliste 2026 Header Styled (2026-03-21)
+- **Change:** `<h2>` replaced with `<header class="ranking-header">` matching the "Spieler- und Datenbankverwaltung" banner style
+- **Look:** Yellow background (`#f8e473`), rounded corners, box-shadow, text-shadow, 3rem font
+- **Responsive:** Header padding/font-size adapts across phone/tablet/desktop breakpoints
+- Commit: `bc8ae71`
+
+### 35. Security Review (2026-03-21)
+- Ran `/security-review` on full `docker` branch diff (541KB, 70+ files)
+- **Result:** No high-confidence vulnerabilities found
+- All findings (DB import/export, DB_PATH, /health, build scripts) scored below confidence threshold
+- Key mitigations confirmed: non-root container user, `.dockerignore` excludes secrets, `@superadmin_required` on sensitive routes, CSRF-exempt only on `/health`
+
+### 36. Login Security Review (2026-03-21)
+- Ran focused security review on login functionality
+- **1 finding:** Open redirect via unvalidated `next` parameter in `app.py:1139-1141` (Medium severity, confidence 9/10)
+  - `redirect(request.args.get("next"))` without same-origin validation
+  - **Not yet fixed** — needs `is_safe_url()` validation before redirect
+- **No other issues:** SQL injection safe (parameterized), bcrypt correct, CSRF active, error messages don't leak username validity
+- Session cookie flags and rate limiting noted as hardening opportunities but not concrete vulnerabilities
+
+### 37. v3.49 Re-deployed to Production RPi (2026-03-21)
+- Built multi-arch images (amd64+arm64) via `build-and-push.sh`
+- Pushed to GHCR: `stecher-tennis-app:v3.49` + `stecher-tennis-caddy:v3.49`
+- Deployed: `git pull && docker compose pull && docker compose up -d`
+- Verified: both containers recreated and healthy
+- **Changes deployed:** Tablet pyramid flex-shrink fix, header banner styling, smaller font on cards
+
 ## Current State
 - **Branch:** `docker` (tracking `origin/docker`)
 - **GSD status:** Milestone v1.0 complete. All 4 phases executed and verified.
-- **RPi status:** Running Docker stack v3.49, production HTTPS, auto-restart on reboot, DuckDNS updating every 5min
-- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.49` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.49` (public)
+- **RPi status:** Running Docker stack v3.49 (updated), production HTTPS, auto-restart on reboot (even after manual `docker stop`, containers come back via `docker compose up -d` on boot), DuckDNS updating every 5min
+- **GHCR images:** `ghcr.io/ainxtgendev/stecher-tennis-app:v3.49` + `ghcr.io/ainxtgendev/stecher-tennis-caddy:v3.49` (public, rebuilt 2026-03-21)
 - **RPi housekeeping:** `~/stecher_tennis` clean (git-tracked files only), `~/stecher_tennis.bak` kept (500MB, old bare-metal install)
+- **Pixel Tablet:** CSS viewport 1157x590, DPR 2.21 — confirmed via debug element
 
 ## Key Info
 - **Conda env:** `stecher_tennis`
