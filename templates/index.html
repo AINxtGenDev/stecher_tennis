@@ -78,23 +78,14 @@
     .challenger-option { background-color: #e6ffe6; }
     .opponent-option { background-color: #ffe6e6; }
 
-    /* MODIFIED: Media query for larger tablets (like Pixel Tablet landscape) and small desktops */
+    /* Tablet and small desktop: ensure 9-player bottom row always fits on one line */
     @media (max-width: 1200px) {
       .ranking-list .player {
-        width: 80px;
-        height: 80px;
-        font-size: 0.55rem; /* Adjust font for better fit */
-      }
-    }
-
-    /* Tablet: ensure 9-player bottom row always fits on one line */
-    @media (max-width: 1024px) {
-      .ranking-list .player {
-        /* 9 cards + margins must fit in viewport width minus container padding */
-        width: calc((100vw - 60px) / 9 - 8px);
-        height: calc((100vw - 60px) / 9 - 8px);
-        max-width: 75px;
-        max-height: 75px;
+        /* 9 cards + margins must fit: container padding (40px) + border (2px) + card margins (6px × 9) */
+        width: calc((100vw - 100px) / 9);
+        height: calc((100vw - 100px) / 9);
+        max-width: 80px;
+        max-height: 80px;
         font-size: 0.50rem;
         margin: 3px;
       }
