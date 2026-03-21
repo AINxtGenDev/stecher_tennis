@@ -15,8 +15,8 @@
     .ranking-header { text-align: center; margin-bottom: 30px; background-color: #f8e473; padding: 20px; border-bottom: 3px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 10px; }
     .ranking-header h2 { font-size: 3rem; margin: 0; color: #000; text-shadow: 2px 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(248,228,115,0.4); }
     .ranking-list { perspective: 800px; display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
-    .ranking-list .row { display: flex; justify-content: center; margin: 10px 0; transform: rotateX(8deg); }
-    .ranking-list .player { width: 100px; height: 100px; background: linear-gradient(145deg, #ffa500, #ff8c00); border: 2px solid #ff8c00; color: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; margin: 5px; position: relative; transition: transform 0.3s, box-shadow 0.3s, background 0.3s, border-color 0.3s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
+    .ranking-list .row { display: flex; justify-content: center; flex-wrap: nowrap; margin: 10px 0; transform: rotateX(8deg); }
+    .ranking-list .player { width: 100px; height: auto; aspect-ratio: 1; flex-shrink: 1; min-width: 0; background: linear-gradient(145deg, #ffa500, #ff8c00); border: 2px solid #ff8c00; color: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; margin: 5px; position: relative; transition: transform 0.3s, box-shadow 0.3s, background 0.3s, border-color 0.3s; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
     .ranking-list .player:hover { transform: scale(1.05) translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); }
     .ranking-list .player.unavailable { background: #ffffff; border: 2px solid #cccccc; color: #333; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); }
     .ranking-list .player.challenger { background: linear-gradient(145deg, #e6ffe6, #ccffcc); border-color: #28a745; box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3); color: #333; }
@@ -78,13 +78,10 @@
     .challenger-option { background-color: #e6ffe6; }
     .opponent-option { background-color: #ffe6e6; }
 
-    /* Tablet and small desktop: ensure 9-player bottom row always fits on one line */
+    /* Tablet and small desktop: reduce card size, flexbox handles fitting */
     @media (max-width: 1200px) {
       .ranking-list .player {
-        width: calc((100vw - 120px) / 9);
-        height: calc((100vw - 120px) / 9);
-        max-width: 70px;
-        max-height: 70px;
+        width: 70px;
         font-size: 0.45rem;
         margin: 2px;
       }
@@ -98,12 +95,9 @@
       .ranking-list { perspective: none; }
       .ranking-list .row { transform: none; margin: 5px 0; }
       .ranking-list .player {
-        width: calc((100vw - 40px) / 9 - 8px);
-        height: calc((100vw - 40px) / 9 - 8px);
-        max-width: 65px;
-        max-height: 65px;
-        font-size: 0.55rem;
-        margin: 3px;
+        width: 55px;
+        font-size: 0.45rem;
+        margin: 2px;
         transform: none !important;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
       }
@@ -145,13 +139,8 @@
 
       /* Make pyramid smaller on phones to ensure all rows fit. */
       .ranking-list .player {
-        /* MODIFIED: Reduced size to fit the 9-player row on small viewports. */
-        width: 9vw;
-        height: 9vw;
+        width: 30px;
         min-width: 26px;
-        min-height: 26px;
-        max-width: 30px;
-        max-height: 30px;
         
         /* Font size is already very small, kept as is. */
         font-size: 0.20rem;
@@ -224,11 +213,7 @@
     @media (max-height: 500px) and (orientation: landscape) {
       .ranking-list .player {
         width: 10vh;
-        height: 10vh;
         min-width: 35px;
-        min-height: 35px;
-        max-width: 70px;
-        max-height: 70px;
         font-size: 0.20rem;
         line-height: 1.0;
         padding: 1px;
@@ -309,7 +294,12 @@
   <div class="container">
     <header class="ranking-header">
       <h2>Tennis-Rangliste 2026</h2>
+      <div id="debug-viewport" style="font-size:0.8rem;color:#666;margin-top:5px;"></div>
     </header>
+    <script>
+      var d = document.getElementById('debug-viewport');
+      d.textContent = 'Viewport: ' + window.innerWidth + 'x' + window.innerHeight + ' DPR: ' + window.devicePixelRatio.toFixed(2);
+    </script>
     <div class="legend">
       <div class="legend-item available"><div class="legend-color"></div>Verfügbar</div>
       <div class="legend-item challenger"><div class="legend-color"></div>Herausforderer</div>
