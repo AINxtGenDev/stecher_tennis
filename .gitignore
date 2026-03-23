@@ -13,4 +13,5 @@ mobile_stecher_tennis/*
 # Exclude backup
 .env
 backup/*
+SESSION_CHECKPOINT.md
 
