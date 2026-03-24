@@ -180,7 +180,8 @@
           const socket = io();
           const passwordChangeModal = new bootstrap.Modal(document.getElementById('passwordChangeModal'));
 
-          function showAlert(message, type = 'success') { const $alert = $('#global-alert'); $alert.removeClass('alert-success alert-danger alert-warning').addClass(`alert-${type}`); $alert.html(message).fadeIn(); setTimeout(() => $alert.fadeOut(), 5000); }
+          function escapeHtml(str) { if (str == null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+          function showAlert(message, type = 'success') { const $alert = $('#global-alert'); $alert.removeClass('alert-success alert-danger alert-warning').addClass(`alert-${type}`); $alert.text(message).fadeIn(); setTimeout(() => $alert.fadeOut(), 5000); }
           
           function loadPlayers() { 
               $.get('/get_players', function(players) { 
@@ -195,10 +196,10 @@
                             <tr data-player-id="${player.id}"> 
                                 <td>${player.id}</td> 
                                 <td> 
-                                    <span class="player-name-static">${player.name}</span> 
-                                    <input type="text" class="form-control inline-edit d-none" value="${player.name}"> 
+                                    <span class="player-name-static">${escapeHtml(player.name)}</span>
+                                    <input type="text" class="form-control inline-edit d-none" value="${escapeHtml(player.name)}">
                                 </td>
-                                <td>${player.username}</td>
+                                <td>${escapeHtml(player.username)}</td>
                                 <td> 
                                     <span class="player-rank-static">${player.rank}</span> 
                                     <input type="number" class="form-control inline-edit d-none" value="${player.rank}" min="1" max="45"> 
@@ -214,7 +215,7 @@
                                     <button class="btn btn-secondary btn-sm edit-player-btn">Bearbeiten</button> 
                                     <button class="btn btn-success btn-sm save-player-btn d-none">Speichern</button> 
                                     <button class="btn btn-secondary btn-sm cancel-edit-btn d-none">Abbrechen</button> 
-                                    <button class="btn btn-warning btn-sm change-password-btn" data-player-id="${player.id}" data-player-name="${player.name}">Passwort</button>
+                                    <button class="btn btn-warning btn-sm change-password-btn" data-player-id="${player.id}" data-player-name="${escapeHtml(player.name)}">Passwort</button>
                                     <button class="btn btn-danger btn-sm delete-player-btn">Löschen</button> 
                                 </td> 
                             </tr>`; 
