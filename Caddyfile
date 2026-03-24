@@ -15,6 +15,14 @@
 		level ERROR
 	}
 
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
 	reverse_proxy app:5000 {
 		header_up Host              {http.request.host}
 		header_up X-Real-IP         {http.request.remote}
