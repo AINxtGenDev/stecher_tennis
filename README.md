@@ -1,4 +1,4 @@
-# Tennis-Ranking Web Application 2025
+# Tennis-Ranking Web Application 2026
 
 <img src="static/01_tennis_racket.png" alt="Tennis Racket" width="300">
 
@@ -501,7 +501,7 @@ Pre-built multi-arch images (AMD64 + ARM64) are available on GHCR:
 - Raspberry Pi OS **64-bit** (required for ARM64 Docker images)
 - Internet connection
 - A DuckDNS account with a registered domain (free at [duckdns.org](https://www.duckdns.org))
-- Router port forwarding configured (external port 10443 → RPi internal port 443, external port 80 → RPi port 80)
+- Router port forwarding configured (external port 443 → RPi internal port 10443, external port 80 → RPi port 80)
 
 #### Step 1: Install Docker
 
@@ -552,7 +552,7 @@ Fill in the **required** values:
 | `DUCKDNS_TOKEN` | Your DuckDNS API token (36-char UUID) | `f5035eb4-6739-4f5e-b0e7-xxxxxxxxxxxx` |
 | `ACME_EMAIL` | Your email for Let's Encrypt | `your-email@gmail.com` |
 | `ACME_CA` | Start with staging, switch to production later | `https://acme-staging-v02.api.letsencrypt.org/directory` |
-| `CORS_ALLOWED_ORIGINS` | Must match user-facing URL | `https://nechvatal.duckdns.org:10443` |
+| `CORS_ALLOWED_ORIGINS` | Must match user-facing URL | `https://nechvatal.duckdns.org` |
 
 #### Step 5: Pull and Start the Stack
 
@@ -570,7 +570,7 @@ Both containers should show `Up` and the app should be `(healthy)`.
 
 #### Step 6: Verify with Staging Certificate
 
-Visit `https://your-domain.duckdns.org:10443` in a browser. You will see a certificate warning (this is expected with staging certs). Accept the warning and verify the app loads correctly.
+Visit `https://your-domain.duckdns.org` in a browser. You will see a certificate warning (this is expected with staging certs). Accept the warning and verify the app loads correctly.
 
 Check Caddy logs to confirm the staging certificate was obtained:
 ```bash
@@ -595,7 +595,7 @@ docker volume rm $(docker volume ls -q | grep caddy_data)
 docker compose up -d
 ```
 
-Wait 1-2 minutes for the production certificate to be issued. Then visit `https://your-domain.duckdns.org:10443` — no browser warning this time.
+Wait 1-2 minutes for the production certificate to be issued. Then visit `https://your-domain.duckdns.org` — no browser warning this time.
 
 #### Step 8: Verify Everything Works
 
@@ -685,7 +685,7 @@ Configure your router to forward these ports to the Raspberry Pi:
 
 | External Port | Internal Port | Protocol | Purpose |
 |--------------|---------------|----------|---------|
-| 10443 | 443 | TCP | HTTPS (Caddy TLS) |
+| 443 | 10443 | TCP | HTTPS (Caddy TLS via Docker) |
 | 80 | 80 | TCP | HTTP → HTTPS redirect |
 
 ## 🔧 Development
@@ -838,7 +838,7 @@ docker compose ps
 
 ## 📝 License
 
-© 2025 Matthias Stecher. All rights reserved.
+© 2026 Matthias Stecher. All rights reserved.
 
 ## 👥 Support
 
