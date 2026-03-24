@@ -19,6 +19,7 @@ from flask import (
     url_for,
     flash,
     send_file,
+    after_this_request,
 )
 from flask_socketio import (
     SocketIO,
@@ -126,6 +127,8 @@ if not debug_mode and prod_origins_str:
     app.config["WTF_CSRF_TRUSTED_ORIGINS"] = trusted_origins
     logger.info(f"Production CSRF trusted origins set to: {trusted_origins}")
 
+# --- Upload size limit (50 MB) ---
+app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
 if CustomJSONProvider:
     app.json = CustomJSONProvider(app)
@@ -152,6 +155,7 @@ login_manager.login_message_category = "warning"
 # --- NEW: Rate Limiting for Login ---
 login_attempts = {}
 login_attempts_lock = Lock()
+_db_import_lock = Lock()
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_LOCKOUT_TIME = timedelta(minutes=5)
 
@@ -2532,9 +2536,34 @@ def export_database():
     db_path = app.config["DATABASE"]
     if not os.path.exists(db_path):
         return jsonify({"success": False, "message": "Datenbankdatei nicht gefunden."}), 404
+    # Create a consistent snapshot using sqlite3 backup API
+    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".db")
+    os.close(tmp_fd)
+    try:
+        src_conn = sqlite3.connect(db_path)
+        dst_conn = sqlite3.connect(tmp_path)
+        src_conn.backup(dst_conn)
+        dst_conn.close()
+        src_conn.close()
+    except Exception as e:
+        logger.exception("Failed to create DB snapshot for export.")
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        return jsonify({"success": False, "message": f"Export fehlgeschlagen: {e}"}), 500
+
     timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+
+    @after_this_request
+    def cleanup(response):
+        try:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except OSError:
+            pass
+        return response
+
     return send_file(
-        db_path,
+        tmp_path,
         as_attachment=True,
         download_name=f"db_backup_{timestamp}.db",
         mimetype="application/octet-stream",
@@ -2565,9 +2594,22 @@ def import_database():
         except sqlite3.DatabaseError:
             return jsonify({"success": False, "message": "Die Datei ist keine gültige SQLite-Datenbank."}), 400
 
-        # Close existing connection and replace
-        close_db(None)
-        shutil.copy2(tmp_path, db_path)
+        # Close existing connection and replace with WAL checkpoint + lock
+        with _db_import_lock:
+            # Checkpoint WAL to ensure all data is in the main DB file
+            try:
+                live_conn = sqlite3.connect(db_path)
+                live_conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                live_conn.close()
+            except Exception:
+                pass  # DB may not exist yet or not be in WAL mode
+            close_db(None)
+            shutil.copy2(tmp_path, db_path)
+            # Remove stale WAL/SHM files
+            for suffix in ("-wal", "-shm"):
+                wal_path = db_path + suffix
+                if os.path.exists(wal_path):
+                    os.remove(wal_path)
         logger.info(f"Database imported by superadmin {current_user.username}")
         return jsonify({"success": True, "message": "Datenbank erfolgreich importiert. Seite wird neu geladen."})
     finally:
