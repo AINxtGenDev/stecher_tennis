@@ -8,6 +8,9 @@ in index.html to 0 without deleting the data; in other words, all data must rema
 
 /gsd:do "Add the posibillity within db_settings.html to upload and download the database"
 
+/gsd:do "change on index.html Version: 3.47 • 19. März 2026 to Version: 3.48 • 20. März 2026"
+
+
 Here's the right sequence:
 
   1. /gsd:new-project — tell it you want to Dockerize the app (it will create PROJECT.md, REQUIREMENTS.md, ROADMAP.md)
@@ -18,7 +21,7 @@ Here's the right sequence:
 /gsd:settings
 /gsd:set-profile quality
 
-update SESSION_CHECKPOINT.md
+/loop update SESSION_CHECKPOINT.md every minute
 /clear
 
 @SESSION_CHECKPOINT.md /gsd:execute-phase 4
@@ -49,6 +52,10 @@ No page reload on export; use a hidden <a> with download attribute or window.loc
 *) conda activate stecher_tennis
 *) python3 app.py
 *) http://localhost:5000/index
+
+#######################################################################
+## /security-review to perform a comprehensive security review
+#######################################################################
 
 #######################################################################
 ## git 

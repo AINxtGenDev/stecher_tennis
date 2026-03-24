@@ -843,7 +843,7 @@ docker compose ps
 ## 👥 Support
 
 For support or questions:
-- **Email**: matthias.stecher@hpe.com
+- **Email**: matthias.stecher@gmx.at
 - **Mobile**: +43 664 105 25 56
 
 ---
