@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Herausforderungen</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" />
   <style>
     /* All existing CSS remains the same... */
     :root { --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2; --container-bg: #fff; --text-color: #333; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4); --challenger-color: #28a745; --opponent-color: #dc3545; --neutral-color: #6c757d; --error-color: #dc3545; }
@@ -52,8 +52,8 @@
     @media (max-width: 768px) { body { padding: 10px; perspective: none; } header { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 5px 15px var(--shadow-color); } header:hover { transform: none !important; } header h1 { font-size: 2rem; } main { max-width: 100%; } .challenge-container { padding: 15px; margin-bottom: 20px; transform: none !important; box-shadow: 0 8px 15px var(--shadow-color); } .challenge-container:hover { transform: none !important; box-shadow: 0 12px 20px var(--shadow-color); } .challenge-container p { font-size: 1.1rem; margin-bottom: 10px; } .challenge-container form { grid-template-columns: 1fr; gap: 8px; } .challenge-container form label { grid-column: 1 / -1; text-align: left; font-size: 1rem; margin-bottom: 0; padding-right: 0; } .challenge-container form select, .challenge-container form input[type="text"], .challenge-container form button { grid-column: 1 / -1; font-size: 1rem; padding: 10px 12px; width: 100%; } .result-details-wrapper { grid-column: 1 / -1; } .score-input-section { grid-template-columns: 1fr; gap: 8px; padding-left: 0; border-left: none; margin-top: 5px; } .score-input-section .score-label { grid-column: 1 / -1; text-align: left; font-size: 0.9rem; } .score-input-section input[type="text"] { font-size: 0.9rem; min-width: 60px; grid-column: 1 / -1; } .special-result-section, .result-dropdown-section { grid-column: 1 / -1; grid-template-columns: 1fr; gap: 5px; margin-bottom: 5px; } .special-result-section label, .result-dropdown-section label { grid-column: 1 / -1; text-align: left; } .special-result-section select, .result-dropdown-section select { grid-column: 1 / -1; } .score-display-section { font-size: 1.1rem; } .submit-button-section button { width: 100%; font-size: 1.1rem; padding: 12px; } .no-challenges { font-size: 1.1rem; padding: 20px; transform: none !important; } .no-challenges:hover { transform: none !important; } }
     @media (max-width: 480px) { header h1 { font-size: 1.8rem; } .challenge-container p { font-size: 1rem; } .challenge-container form label, .challenge-container form select, .challenge-container form input[type="text"], .challenge-container form button, .no-challenges { font-size: 0.9rem; } .score-input-section input[type="text"] { margin-bottom: 5px; } .score-display-section { font-size: 1rem; } .submit-button-section button { font-size: 1rem; } }
   </style>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js" integrity="sha512-AI5A3zIoeRSEEX9z3Vyir8NqSMC1pY7r5h2cE+9J6FLsoEmSSGLFaqMQw8SWvoONXogkfFrkQiJfLeHLz3+HOg==" crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -112,7 +112,7 @@
       {% if not challenges %}<div class="no-challenges">Derzeit keine ausstehenden Herausforderungen.</div>{% endif %}
     </div>
   </main>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" crossorigin="anonymous"></script>
   <script>
     // All existing JavaScript remains the same...
     $(document).ready(function(){

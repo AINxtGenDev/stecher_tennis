@@ -7,6 +7,11 @@ services:
       - tennis_data:/app/data
     env_file: .env
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     # No ports: block — port 5000 only reachable inside Docker network (COMP-02)
 
   caddy:
@@ -24,6 +29,11 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       app:
         condition: service_healthy

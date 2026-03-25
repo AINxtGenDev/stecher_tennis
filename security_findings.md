@@ -50,20 +50,18 @@
 - **Why:** `env_file: .env` gives Caddy access to `SECRET_KEY`, `FLASK_DEBUG`, etc. Violates least privilege.
 - **Fix:** Use explicit `environment:` entries; Caddy only needs `DUCKDNS_*`, `ACME_*`, `HTTPS_PORT`.
 
-### 10. No log rotation configured
+### 10. ~~No log rotation configured~~ ✅ Fixed
 - **File:** `docker-compose.yml`
-- **Why:** Without `max-size`/`max-file` logging options, container logs can fill the SD card.
-- **Fix:** Add `logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }`.
+- **Fix applied:** Added `logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }` to both app and caddy services
 
 ### 11. Volume removal uses greedy grep in deploy.sh
 - **File:** `deploy.sh:176`
 - **Why:** `grep caddy_data` could match volumes from other projects.
 - **Fix:** Use exact name `stecher_tennis_caddy_data`.
 
-### 12. CDN resources without SRI hashes
-- **Files:** All templates
-- **Why:** Bootstrap, jQuery, Socket.IO loaded without `integrity` attributes. CDN compromise → arbitrary JS execution.
-- **Fix:** Add `integrity` and `crossorigin` attributes to all CDN script/link tags.
+### 12. ~~CDN resources without SRI hashes~~ ✅ Fixed
+- **Files:** All templates (`index.html`, `admin.html`, `db_settings.html`)
+- **Fix applied:** Added `integrity` (SHA-512) and `crossorigin="anonymous"` attributes to all CDN resources (Bootstrap CSS/JS, jQuery, Socket.IO)
 
 ### 13. Entrypoint doesn't validate critical env vars
 - **File:** `entrypoint.sh`
