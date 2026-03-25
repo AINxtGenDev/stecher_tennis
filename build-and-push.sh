@@ -19,7 +19,7 @@ if [ -z "${GHCR_TOKEN:-}" ]; then
 fi
 
 # ── Version extraction ───────────────────────────────────────────────────────
-VERSION=$(grep -oP 'Version:\s*\K[0-9]+\.[0-9]+' templates/index.html)
+VERSION=$(grep -oP 'Version:\s*\K[0-9]+\.[0-9]+(\.[0-9]+)?' templates/index.html)
 if [ -z "$VERSION" ]; then
     echo "ERROR: Could not extract version from templates/index.html"
     exit 1

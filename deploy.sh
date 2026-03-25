@@ -173,7 +173,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 
     # Remove caddy_data volume to clear cached staging certs
     echo "==> Clearing cached staging certificates..."
-    remote "docker volume rm \$(docker volume ls -q | grep caddy_data) 2>/dev/null || true"
+    remote "docker volume rm stecher_tennis_caddy_data 2>/dev/null || true"
 
     remote "cd ${REMOTE_DIR} && docker compose up -d"
 

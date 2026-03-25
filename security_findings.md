@@ -54,10 +54,9 @@
 - **File:** `docker-compose.yml`
 - **Fix applied:** Added `logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }` to both app and caddy services
 
-### 11. Volume removal uses greedy grep in deploy.sh
+### 11. ~~Volume removal uses greedy grep in deploy.sh~~ ✅ Fixed
 - **File:** `deploy.sh:176`
-- **Why:** `grep caddy_data` could match volumes from other projects.
-- **Fix:** Use exact name `stecher_tennis_caddy_data`.
+- **Fix applied:** Replaced greedy `grep caddy_data` with exact volume name `stecher_tennis_caddy_data`
 
 ### 12. ~~CDN resources without SRI hashes~~ ✅ Fixed
 - **Files:** All templates (`index.html`, `admin.html`, `db_settings.html`)
@@ -77,17 +76,17 @@
 
 ## 🟢 Nits (Optional)
 
-### 15. Email mismatch in footer
-- **File:** `index.html:419`
-- **Detail:** `href` is `mailto:matthias.stecher@hpe.com`, visible text is `matthias.stecher@gmx.at`.
+### 15. ~~Email mismatch in footer~~ ✅ Fixed
+- **File:** `index.html:420`
+- **Fix applied:** Changed `mailto:` href from `hpe.com` to `gmx.at` to match visible text
 
-### 16. Caddy log level set to ERROR only
+### 16. ~~Caddy log level set to ERROR only~~ ✅ Fixed
 - **File:** `Caddyfile:15`
-- **Detail:** Will miss TLS renewal warnings. Consider `WARN`.
+- **Fix applied:** Changed log level from `ERROR` to `WARN` to catch TLS renewal warnings
 
-### 17. Version regex only captures 2 components
+### 17. ~~Version regex only captures 2 components~~ ✅ Fixed
 - **File:** `build-and-push.sh:22`
-- **Detail:** Would miss `3.46.1` style versions.
+- **Fix applied:** Regex now captures optional third component: `[0-9]+\.[0-9]+(\.[0-9]+)?`
 
 ### 18. `0.20rem` font-size on mobile pyramid
 - **File:** `index.html:146,217`
