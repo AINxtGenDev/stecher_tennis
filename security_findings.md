@@ -36,10 +36,9 @@
 
 ## 🟡 Suggestions (Should Consider)
 
-### 7. No schema validation on imported database
+### 7. ~~No schema validation on imported database~~ ✅ Fixed
 - **File:** `app.py` — `import_database()`
-- **Why:** Only runs `integrity_check`. A valid SQLite file with wrong schema breaks the app.
-- **Fix:** Add `SELECT 1 FROM players LIMIT 1` check after integrity validation.
+- **Fix applied:** Added schema validation after integrity check — verifies required columns in both `players` and `challenges` tables (`app.py:2593-2598`)
 
 ### 8. No container hardening in docker-compose.yml
 - **File:** `docker-compose.yml`

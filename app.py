@@ -2588,9 +2588,17 @@ def import_database():
         try:
             conn = sqlite3.connect(tmp_path)
             result = conn.execute("PRAGMA integrity_check").fetchone()
-            conn.close()
             if result[0] != "ok":
+                conn.close()
                 return jsonify({"success": False, "message": "Die Datei ist keine gültige SQLite-Datenbank."}), 400
+            # Validate schema: ensure required tables and columns exist
+            try:
+                conn.execute("SELECT id, name, username, password_hash, rank, available, privilege_level FROM players LIMIT 1")
+                conn.execute("SELECT id, challenger_id, opponent_id, timestamp, deadline, resolved, result FROM challenges LIMIT 1")
+            except sqlite3.OperationalError:
+                conn.close()
+                return jsonify({"success": False, "message": "Die Datenbank hat nicht das erwartete Schema (players/challenges Tabellen fehlen oder sind unvollständig)."}), 400
+            conn.close()
         except sqlite3.DatabaseError:
             return jsonify({"success": False, "message": "Die Datei ist keine gültige SQLite-Datenbank."}), 400
 
