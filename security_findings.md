@@ -1,42 +1,36 @@
 # Code Review Summary — `docker` branch
 
 **Date:** 2026-03-23
+**Updated:** 2026-03-25 (verified all critical fixes)
 **Scope:** Full `docker` branch diff vs `main` (Docker infra, app.py, templates, tests)
 
 ---
 
-## 🔴 Critical (Must Fix)
+## 🔴 Critical (Must Fix) — ALL FIXED ✅
 
-### 1. DB export streams live WAL-mode file, risking corruption
+### 1. ~~DB export streams live WAL-mode file, risking corruption~~ ✅ Fixed
 - **File:** `app.py` — `export_database()`
-- **Why:** `send_file(db_path)` sends the `.db` file while connections are active. WAL/SHM files aren't included, un-checkpointed transactions are lost.
-- **Fix:** Use `conn.backup(dst_conn)` or `VACUUM INTO` to produce a consistent snapshot to a temp file, then serve that.
+- **Fix applied:** Uses `conn.backup(dst_conn)` to produce a consistent snapshot to a temp file (`app.py:2545`)
 
-### 2. DB import replaces file while other connections may be open
+### 2. ~~DB import replaces file while other connections may be open~~ ✅ Fixed
 - **File:** `app.py` — `import_database()`
-- **Why:** `close_db(None)` only closes the current request's `g.db`. Socket.IO worker and concurrent requests keep stale connections → split-brain.
-- **Fix:** Force WAL checkpoint before overwrite; consider requiring a service restart or app-level lock.
+- **Fix applied:** Added `PRAGMA wal_checkpoint(TRUNCATE)` before overwrite, `_db_import_lock` for serialization, stale WAL/SHM cleanup (`app.py:2602`)
 
-### 3. No upload size limit on DB import
+### 3. ~~No upload size limit on DB import~~ ✅ Fixed
 - **File:** `app.py`
-- **Why:** No `MAX_CONTENT_LENGTH` configured. A large upload could exhaust disk/memory on the Raspberry Pi.
-- **Fix:** Set `app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024` (50 MB).
+- **Fix applied:** `app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024` (50 MB) (`app.py:131`)
 
-### 4. Stored XSS via unescaped player names in JavaScript
+### 4. ~~Stored XSS via unescaped player names in JavaScript~~ ✅ Fixed
 - **Files:** `index.html`, `db_settings.html`
-- **Why:** jQuery `.append()`/`.html()` with template literals like `${player.name}` insert raw HTML. A name like `<img src=x onerror=alert(1)>` would execute in every connected browser via Socket.IO push.
-- **Affected functions:** `updatePyramid()`, `updatePlayerDropdowns()`, `updateActiveChallenges()`, `updateBlockedPlayers()`, `updateUnavailablePlayers()`, `updateCompletedChallenges()`, `loadPlayers()`, `showAlert()`
-- **Fix:** Use `.text()` for user data, or create an `escapeHtml()` helper for template literals.
+- **Fix applied:** Added `escapeHtml()` helper in both templates, wrapped all user-supplied text in JS template literals (13+ call sites)
 
-### 5. No security headers in Caddyfile
+### 5. ~~No security headers in Caddyfile~~ ✅ Fixed
 - **File:** `Caddyfile`
-- **Why:** No HSTS, X-Content-Type-Options, X-Frame-Options, or CSP. Browsers won't enforce HTTPS on repeat visits.
-- **Fix:** Add a `header` block with standard security headers.
+- **Fix applied:** Added HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy (`Caddyfile:18-24`)
 
-### 6. HTTPS port mismatch between docker-compose.yml and .env.example
-- **Files:** `docker-compose.yml:17`, `.env.example:39`
-- **Why:** Compose hardcodes `"443:443"` but `.env.example` sets `HTTPS_PORT=10443` and the Caddyfile references `{$HTTPS_PORT}`. Inconsistent — relies on FritzBox mapping to work.
-- **Fix:** Parameterize: `"${HTTPS_PORT:-443}:443"` or document the FritzBox dependency explicitly.
+### 6. ~~HTTPS port mismatch between docker-compose.yml and .env.example~~ ✅ Fixed
+- **Files:** `docker-compose.yml:17`
+- **Fix applied:** Changed to `"${HTTPS_PORT:-443}:443"` for parameterized port mapping
 
 ---
 
