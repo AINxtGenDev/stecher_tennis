@@ -9,7 +9,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js" integrity="sha512-AI5A3zIoeRSEEX9z3Vyir8NqSMC1pY7r5h2cE+9J6FLsoEmSSGLFaqMQw8SWvoONXogkfFrkQiJfLeHLz3+HOg==" crossorigin="anonymous"></script>
     <style>
-      :root { --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2; --container-bg: #fff; --text-color: #333; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4); --challenger-color: #28a745; --opponent-color: #dc3545; --neutral-color: #6c757d; --error-color: #dc3545; --warning-color: #ffc107; }
+      :root { --primary-color: #f8e473; --primary-dark: #e6d661; --bg-color: #f2f2f2; --container-bg: #fff; --text-color: #333; --border-color: #ccc; --shadow-color: rgba(0, 0, 0, 0.2); --highlight-shadow: rgba(248, 228, 115, 0.4); --challenger-color: #28a745; --opponent-color: #dc3545; --neutral-color: #6c757d; --error-color: #dc3545; --warning-color: #ffc107; --action-color: #0d6efd; }
       body { background-color: var(--bg-color); font-family: Arial, sans-serif; margin: 0; padding: 20px; color: var(--text-color); }
       header { text-align: center; margin-bottom: 30px; background-color: var(--primary-color); padding: 20px; border-bottom: 3px solid var(--border-color); box-shadow: 0 10px 25px var(--shadow-color); border-radius: 10px; position: relative; }
       header h1 { font-size: 3rem; margin: 0; color: #000; text-shadow: 2px 2px 4px var(--shadow-color), 0 0 10px var(--highlight-shadow); }
@@ -33,6 +33,9 @@
       .btn-primary:hover:not(:disabled) { background-color: var(--primary-dark); }
       .action-buttons .btn { padding: 5px 10px; font-size: 0.8rem; margin-right: 5px; }
       .btn-danger { background-color: var(--error-color); color: #fff; }
+      .btn-action { background-color: var(--action-color); color: #fff; border-color: var(--action-color); }
+      .btn-action:hover { background-color: #0b5ed7; }
+      .challenge-container.action-border { border-color: var(--action-color); }
       .btn-danger:hover:not(:disabled) { background-color: #a71d2a; }
       .btn-success { background-color: var(--challenger-color); color: #fff; }
       .btn-success:hover:not(:disabled) { background-color: #218838; }
@@ -105,13 +108,13 @@
                 </table>
             </div>
         </div>
-        <div class="challenge-container" style="border-color: #0d6efd;">
+        <div class="challenge-container action-border">
             <h2>Datenbank Import / Export</h2>
 
             <!-- Export section -->
             <div style="margin-bottom: 20px;">
                 <p>Erstellt eine vollständige Sicherungskopie der aktuellen Datenbank.</p>
-                <button id="export-db-btn" class="btn" style="background-color: #0d6efd; color: #fff; border-color: #0d6efd;">
+                <button id="export-db-btn" class="btn btn-action">
                     Datenbank herunterladen
                 </button>
             </div>
@@ -131,10 +134,10 @@
                 <div id="import-db-success" style="color: var(--challenger-color); margin-top: 10px; display: none;"></div>
             </div>
         </div>
-        <div class="challenge-container" style="border-color: #0d6efd;">
+        <div class="challenge-container action-border">
             <h2>Herausforderungen</h2>
             <p>Setzt die Anzeige der durchgeführten Herausforderungen auf 0 zurück. Alle Daten bleiben in der Datenbank gespeichert.</p>
-            <button id="reset-completed-btn" class="btn" style="background-color: #0d6efd; color: #fff; border-color: #0d6efd;">Durchgeführte Herausforderungen zurücksetzen</button>
+            <button id="reset-completed-btn" class="btn btn-action">Durchgeführte Herausforderungen zurücksetzen</button>
         </div>
         <div class="challenge-container danger-zone">
             <h2>Gefahrenzone</h2>

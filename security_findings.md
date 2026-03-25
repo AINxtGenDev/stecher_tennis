@@ -92,9 +92,9 @@
 - **File:** `index.html:146,217`
 - **Detail:** ~3.2px, effectively unreadable. Consider hiding names and using tap tooltips.
 
-### 19. New buttons use inline styles instead of CSS variables
+### 19. ~~New buttons use inline styles instead of CSS variables~~ ✅ Fixed
 - **File:** `db_settings.html`
-- **Detail:** Should use `var(--primary-color)` or Bootstrap classes for consistency.
+- **Fix applied:** Added `--action-color` CSS variable, `.btn-action` and `.action-border` classes; replaced all inline `#0d6efd` styles
 
 ### 20. Health test tests 405, not CSRF exemption
 - **File:** `tests/test_health.py`
