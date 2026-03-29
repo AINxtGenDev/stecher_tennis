@@ -74,7 +74,7 @@
               {% if current_user.privilege_level == 'superadmin' %}
                 <a href="{{ url_for('db_settings') }}" class="btn btn-sm btn-outline-primary {% if request.endpoint == 'db_settings' %}active{% endif %}">DB-Einstellungen</a>
               {% endif %}
-              <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">Abmelden</a>
+              <form action="{{ url_for('logout') }}" method="POST" style="display:inline;"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/><button type="submit" class="btn btn-sm btn-outline-danger">Abmelden</button></form>
             </div>
           </div>
         </div>

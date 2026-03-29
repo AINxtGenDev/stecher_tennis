@@ -3,6 +3,7 @@ import re
 import os
 import shutil
 import tempfile
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 import sqlite3
 import json
@@ -129,6 +130,9 @@ if not debug_mode and prod_origins_str:
 
 # --- Upload size limit (50 MB) ---
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
+app.config["SESSION_COOKIE_SECURE"] = not app.debug
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 if CustomJSONProvider:
     app.json = CustomJSONProvider(app)
@@ -154,6 +158,7 @@ login_manager.login_message_category = "warning"
 
 # --- NEW: Rate Limiting for Login ---
 login_attempts = {}
+login_attempts_by_ip = {}
 login_attempts_lock = Lock()
 _db_import_lock = Lock()
 MAX_LOGIN_ATTEMPTS = 5
@@ -1010,9 +1015,9 @@ def emit_to_room(event, data, room="tennis_updates"):
 
 def emit_data_update(update_type="general", specific_data=None):
     try:
-        data_cache.invalidate()
-        fresh_data = get_realtime_data_cached()
+        fresh_data = get_realtime_data()
         if fresh_data:
+            data_cache.set("realtime_data", fresh_data)
             emit_to_room(
                 "data_update",
                 {
@@ -1090,7 +1095,24 @@ def login():
         password = request.form.get("password")
 
         # --- RATE LIMITING CHECK ---
+        client_ip = request.remote_addr
         with login_attempts_lock:
+            # Check IP-based rate limit
+            ip_attempts, ip_last_time = login_attempts_by_ip.get(client_ip, (0, None))
+            if ip_attempts >= MAX_LOGIN_ATTEMPTS and ip_last_time:
+                time_since = datetime.now() - ip_last_time
+                if time_since < LOGIN_LOCKOUT_TIME:
+                    wait_time = LOGIN_LOCKOUT_TIME - time_since
+                    wait_minutes = int(wait_time.total_seconds() / 60) + 1
+                    flash(
+                        f"Zu viele fehlgeschlagene Anmeldeversuche. Bitte warte {wait_minutes} Minute(n).",
+                        "danger",
+                    )
+                    return redirect(url_for("login"))
+                else:
+                    login_attempts_by_ip.pop(client_ip, None)
+
+            # Check username-based rate limit
             if username:
                 attempts, last_attempt_time = login_attempts.get(username, (0, None))
                 if attempts >= MAX_LOGIN_ATTEMPTS and last_attempt_time:
@@ -1104,7 +1126,6 @@ def login():
                         )
                         return redirect(url_for("login"))
                     else:
-                        # Lockout expired, reset attempts
                         login_attempts.pop(username, None)
         # --- END RATE LIMITING CHECK ---
 
@@ -1142,16 +1163,22 @@ def login():
 
             next_page = request.args.get("next")
             if next_page:
-                return redirect(next_page)
+                parsed = urlparse(next_page)
+                if not parsed.netloc and not parsed.scheme and next_page.startswith("/") and not next_page.startswith("//"):
+                    return redirect(next_page)
+                else:
+                    return redirect(url_for("index"))
 
             # MODIFIED: All users are redirected to the index page.
             return redirect(url_for("index"))
         else:
             # --- FAILED LOGIN ---
-            if username:
-                with login_attempts_lock:
+            with login_attempts_lock:
+                if username:
                     attempts, _ = login_attempts.get(username, (0, None))
                     login_attempts[username] = (attempts + 1, datetime.now())
+                ip_attempts, _ = login_attempts_by_ip.get(client_ip, (0, None))
+                login_attempts_by_ip[client_ip] = (ip_attempts + 1, datetime.now())
 
             flash("Ungültiger Benutzername oder Passwort.", "danger")
             return redirect(url_for("login"))
@@ -1159,7 +1186,7 @@ def login():
     return render_template("login_tennis.html")
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 @login_required
 def logout():
     logout_user()
@@ -1178,7 +1205,7 @@ def api_realtime_data():
             return jsonify({"success": False, "error": "Failed to get data"}), 500
     except Exception as e:
         logger.exception("Error in api_realtime_data")
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": "Ein unerwarteter Fehler ist aufgetreten."}), 500
 
 
 @app.route("/index")
@@ -1413,7 +1440,7 @@ def eligible_opponents():
         return jsonify({"error": "Database error"}), 500
     except Exception as e:
         logger.exception("Unexpected error fetching eligible opponents.")
-        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+        return jsonify({"error": "Ein unerwarteter Fehler ist aufgetreten."}), 500
 
 
 @app.route("/challenge", methods=["POST"])
@@ -1423,6 +1450,8 @@ def challenge():
     opponent_id = request.form.get("opponent")
     if not challenger_id or not opponent_id:
         return jsonify({"error": "Both challenger and opponent must be selected."}), 400
+    if str(current_user.id) != str(challenger_id) and current_user.privilege_level not in ("admin", "superadmin"):
+        return jsonify({"error": "Nicht autorisiert."}), 403
     db = get_db()
     try:
         cur = db.execute("SELECT * FROM players WHERE id = ?", (challenger_id,))
@@ -1544,7 +1573,7 @@ def challenge():
         return jsonify({"error": "Database error during challenge creation."}), 500
     except Exception as e:
         logger.exception("Error during challenge validation or creation.")
-        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+        return jsonify({"error": "Ein unerwarteter Fehler ist aufgetreten."}), 500
 
 
 @app.route("/toggle_availability", methods=["POST"])
@@ -1555,6 +1584,9 @@ def toggle_availability():
 
     if not player_id:
         return jsonify({"success": False, "message": "No player_id provided."}), 400
+
+    if str(current_user.id) != str(player_id) and current_user.privilege_level not in ("admin", "superadmin"):
+        return jsonify({"success": False, "message": "Nicht autorisiert."}), 403
 
     if reason and len(reason) > 25:
         return (
@@ -1625,7 +1657,7 @@ def toggle_availability():
         logger.exception("Unexpected error toggling availability.")
         return (
             jsonify(
-                {"success": False, "message": f"An unexpected error occurred: {e}"}
+                {"success": False, "message": "Ein unerwarteter Fehler ist aufgetreten."}
             ),
             500,
         )
@@ -1654,9 +1686,9 @@ def submit_result():
             flash("Challenge not found or already resolved.", "danger")
             return redirect(url_for("admin"))
 
-        # --- MODIFIED: Authorization check removed as per requirement. ---
-        # The new requirement is that any logged-in player can submit a result from the admin page.
-        # The @login_required decorator already ensures the user is authenticated.
+        if current_user.privilege_level not in ("admin", "superadmin"):
+            if str(current_user.id) not in (str(challenge_record["challenger_id"]), str(challenge_record["opponent_id"])):
+                return jsonify({"success": False, "error": "Nicht autorisiert."}), 403
 
         score_details = None
         if result == "not_happened":
@@ -1812,17 +1844,19 @@ def submit_result():
     except sqlite3.Error as e:
         db.rollback()
         logger.exception(f"Database error during challenge result submission: {e}")
-        flash(f"Internal error while updating challenge result: {e}", "danger")
+        flash("Ein interner Fehler ist aufgetreten.", "danger")
     except Exception as e:
         db.rollback()
         logger.exception(f"Unexpected error during challenge result submission: {e}")
-        flash(f"An unexpected error occurred: {e}", "danger")
+        flash("Ein unerwarteter Fehler ist aufgetreten.", "danger")
     return redirect(url_for("admin"))
 
 
 @app.route("/newplayer_challenge", methods=["POST"])
 @login_required
 def newplayer_challenge():
+    if current_user.privilege_level not in ("admin", "superadmin"):
+        return jsonify({"error": "Nicht autorisiert."}), 403
     newplayer_name = request.form.get("newplayer_name", "").strip()
     opponent_id_str = request.form.get("opponent_id")
     if not newplayer_name or not opponent_id_str:
@@ -2050,7 +2084,7 @@ def newplayer_challenge():
         logger.exception(
             f"Unexpected error during new player challenge: {e}. newplayer_name='{newplayer_name}', opponent_id='{opponent_id_str}'"
         )
-        return jsonify({"error": f"Ein unerwarteter Fehler ist aufgetreten: {e}"}), 500
+        return jsonify({"error": "Ein unerwarteter Fehler ist aufgetreten."}), 500
 
 
 @app.route("/update_scheduled_date", methods=["POST"])
@@ -2064,6 +2098,13 @@ def update_scheduled_date():
     try:
         db = get_db()
         challenge_id = int(challenge_id_str)
+        if current_user.privilege_level not in ("admin", "superadmin"):
+            ch = db.execute(
+                "SELECT challenger_id, opponent_id FROM challenges WHERE id = ?",
+                (challenge_id,),
+            ).fetchone()
+            if not ch or str(current_user.id) not in (str(ch["challenger_id"]), str(ch["opponent_id"])):
+                return jsonify({"success": False, "message": "Nicht autorisiert."}), 403
         scheduled_dt_obj = None
         if selected_date_str:
             time_str = selected_time_str if selected_time_str else "00:00"
@@ -2216,7 +2257,7 @@ def add_player():
         logger.exception(f"Unexpected error adding player {new_name} via admin: {e}")
         return (
             jsonify(
-                {"success": False, "message": f"An unexpected error occurred: {e}"}
+                {"success": False, "message": "Ein unerwarteter Fehler ist aufgetreten."}
             ),
             500,
         )
@@ -2315,7 +2356,7 @@ def update_player():
         logger.exception(f"Unexpected error updating player {player_id} via admin: {e}")
         return (
             jsonify(
-                {"success": False, "message": f"An unexpected error occurred: {e}"}
+                {"success": False, "message": "Ein unerwarteter Fehler ist aufgetreten."}
             ),
             500,
         )
@@ -2367,7 +2408,7 @@ def delete_player():
         logger.exception(f"Unexpected error deleting player {player_id}: {e}")
         return (
             jsonify(
-                {"success": False, "message": f"An unexpected error occurred: {e}"}
+                {"success": False, "message": "Ein unerwarteter Fehler ist aufgetreten."}
             ),
             500,
         )
@@ -2429,7 +2470,7 @@ def set_player_block_status():
         )
         return (
             jsonify(
-                {"success": False, "message": f"An unexpected error occurred: {e}"}
+                {"success": False, "message": "Ein unerwarteter Fehler ist aufgetreten."}
             ),
             500,
         )
@@ -2523,7 +2564,7 @@ def reset_completed_challenges_display():
             jsonify(
                 {
                     "success": False,
-                    "message": f"Datenbankfehler: {e}",
+                    "message": "Datenbankfehler.",
                 }
             ),
             500,
@@ -2549,7 +2590,7 @@ def export_database():
         logger.exception("Failed to create DB snapshot for export.")
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
-        return jsonify({"success": False, "message": f"Export fehlgeschlagen: {e}"}), 500
+        return jsonify({"success": False, "message": "Export fehlgeschlagen."}), 500
 
     timestamp = datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
@@ -2651,7 +2692,7 @@ def reset_database():
         logger.exception("Database error during reset.")
         return (
             jsonify(
-                {"success": False, "message": f"Datenbankfehler beim Zurücksetzen: {e}"}
+                {"success": False, "message": "Datenbankfehler beim Zurücksetzen."}
             ),
             500,
         )
@@ -2661,7 +2702,7 @@ def reset_database():
             jsonify(
                 {
                     "success": False,
-                    "message": f"Unerwarteter Fehler beim Zurücksetzen: {e}",
+                    "message": "Unerwarteter Fehler beim Zurücksetzen.",
                 }
             ),
             500,
@@ -2719,7 +2760,9 @@ def handle_disconnect():
 @login_required
 def handle_request_full_update():
     logger.info(f"Client {request.sid} requested a full data update.")
-    emit_data_update("full_update_requested")
+    data = get_realtime_data_cached()
+    if data:
+        emit("data_update", {"type": "full_update_requested", "data": data})
 
 
 @socketio.on("ping")
