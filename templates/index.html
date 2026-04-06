@@ -85,26 +85,41 @@
     /* Tablet and small desktop */
     @media (max-width: 1200px) {
       .ranking-list .player {
-        width: 70px;
-        font-size: 0.45rem;
+        width: 90px;
+        font-size: 0.4rem;
         margin: 2px;
+      }
+      .ranking-list .player .player-info {
+        padding: 0 2px;
+      }
+      .ranking-list .player .player-name {
+        font-size: 0.32rem;
       }
     }
 
-    /* Tablets and large phones */
-    @media (max-width: 768px) {
+    /* Tablets portrait and large phones */
+    @media (max-width: 900px) {
       body { perspective: none; }
-      .container { padding: 15px; }
+      .container { padding: 10px; margin-left: 5px; margin-right: 5px; max-width: 100%; }
       .ranking-header { padding: 15px; margin-bottom: 20px; }
       .ranking-header h2 { font-size: 2rem; }
       .ranking-list { perspective: none; }
-      .ranking-list .row { transform: none; margin: 5px 0; }
+      .ranking-list .row { transform: none; margin: 5px 0; flex-wrap: nowrap; }
       .ranking-list .player {
-        width: 55px;
-        font-size: 0.45rem;
+        width: calc((100vw - 40px) / 10 - 5px);
+        max-width: 65px;
+        flex-shrink: 1;
+        min-width: 0;
+        font-size: 0.35rem;
         margin: 2px;
         transform: none !important;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .ranking-list .player .player-info {
+        padding: 0 2px;
+      }
+      .ranking-list .player .player-name {
+        font-size: 0.25rem;
       }
       .ranking-list .player:hover {
         transform: none !important;
