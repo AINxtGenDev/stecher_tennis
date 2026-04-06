@@ -304,31 +304,106 @@
   <!-- MODAL: New Player Credentials -->
   <div class="modal fade" id="newPlayerCredentialsModal" tabindex="-1" aria-labelledby="newPlayerCredentialsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="newPlayerCredentialsModalLabel">Neuer Spieler erfolgreich erstellt!</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+        <div class="modal-header" style="background-color: #2c7a2c; padding: 12px 16px; border-bottom: none;">
+          <h6 class="modal-title text-white d-flex align-items-center gap-2 mb-0" id="newPlayerCredentialsModalLabel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm-5 6s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zM11 3.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5zm.5 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4zm2 3a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1h-2z"/>
+            </svg>
+            Neuer Spieler erfolgreich erstellt!
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" style="padding: 20px 16px;">
           <p>Die Herausforderung wurde erstellt. Bitte notiere dir die folgenden Anmeldedaten für den neuen Spieler:</p>
-          <p><strong>Benutzername:</strong> <span id="new-player-username-display" class="fw-bold text-primary"></span></p>
-          <p><strong>Passwort:</strong> <span id="new-player-password-display" class="fw-bold text-primary"></span></p>
-          <p class="small text-muted">Das Passwort ist das Standardpasswort und kann unter DB-Einstellungen geändert werden.</p>
+          <div style="background-color: #f0f7f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px;">
+            <p class="mb-2"><strong>Benutzername:</strong> <span id="new-player-username-display" class="fw-bold" style="color: #2c7a2c;"></span></p>
+            <p class="mb-0"><strong>Passwort:</strong> <span id="new-player-password-display" class="fw-bold" style="color: #2c7a2c;"></span></p>
+          </div>
+          <p class="small text-muted mb-0">Das Passwort ist das Standardpasswort und kann unter DB-Einstellungen geändert werden.</p>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+        <div class="modal-footer" style="border-top: none; padding: 8px 16px 16px;">
+          <button type="button" class="btn text-white" data-bs-dismiss="modal" style="background-color: #2c7a2c;">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Alert (replaces native alert()) -->
+  <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+        <div class="modal-header" id="alertModalHeader" style="background-color: #c0392b; padding: 12px 16px; border-bottom: none;">
+          <h6 class="modal-title text-white d-flex align-items-center gap-2 mb-0" id="alertModalLabel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+            </svg>
+            <span id="alertModalTitle">Fehler</span>
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen" style="font-size: 0.75rem;"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px 16px;">
+          <p class="mb-0" id="alertModalBody"></p>
+        </div>
+        <div class="modal-footer" style="border-top: none; padding: 8px 16px 16px;">
+          <button type="button" class="btn text-white" data-bs-dismiss="modal" id="alertModalBtn" style="background-color: #c0392b;">OK</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- MODAL: Availability Change -->
-  <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="availabilityModalLabel">Verfügbarkeit ändern</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div id="availability-step-1"><p>Willst Du Dich wirklich als "nicht verfügbar" melden?</p></div><div id="availability-step-2" style="display: none;"><p>Bitte um eine kurze Begründung - max. 25 Zeichen.</p><div class="mb-3"><input type="text" class="form-control" id="unavailability-reason" placeholder="z.B. Urlaub bis 15. Sep." maxlength="25"><div id="char-count" class="form-text text-end">0 / 25</div></div></div></div><div class="modal-footer"><div id="availability-footer-1"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nein</button><button type="button" class="btn btn-primary" id="confirm-availability-yes">Ja</button></div><div id="availability-footer-2" style="display: none;"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button><button type="button" class="btn btn-success" id="submit-unavailability">Bestätigen</button></div></div></div></div></div>
-  <div class="modal fade" id="becomeAvailableModal" tabindex="-1" aria-labelledby="becomeAvailableModalLabel" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="becomeAvailableModalLabel">Verfügbarkeit ändern</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p>Bitte bestätige dass du wieder als "verfügbar" angezeigt werden möchtest?</p><p class="small text-muted">Hinweis: Du wirst für 3 Tage für das Herausfordern von Spielern gesperrt, die in der Rangliste über dir stehen.</p></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Nein</button><button type="button" class="btn btn-success" id="confirm-become-available">Ja, verfügbar melden</button></div></div></div></div>
+  <div class="modal fade" id="availabilityModal" tabindex="-1" aria-labelledby="availabilityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+        <div class="modal-header" style="background-color: #e67e22; padding: 12px 16px; border-bottom: none;">
+          <h6 class="modal-title text-white d-flex align-items-center gap-2 mb-0" id="availabilityModalLabel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+            </svg>
+            Verfügbarkeit ändern
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen" style="font-size: 0.75rem;"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px 16px;">
+          <div id="availability-step-1"><p>Willst Du Dich wirklich als "nicht verfügbar" melden?</p></div>
+          <div id="availability-step-2" style="display: none;"><p>Bitte um eine kurze Begründung - max. 25 Zeichen.</p><div class="mb-3"><input type="text" class="form-control" id="unavailability-reason" placeholder="z.B. Urlaub bis 15. Sep." maxlength="25"><div id="char-count" class="form-text text-end">0 / 25</div></div></div>
+        </div>
+        <div class="modal-footer" style="border-top: none; padding: 8px 16px 16px;">
+          <div id="availability-footer-1"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Nein</button> <button type="button" class="btn text-white" id="confirm-availability-yes" style="background-color: #e67e22;">Ja</button></div>
+          <div id="availability-footer-2" style="display: none;"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button> <button type="button" class="btn text-white" id="submit-unavailability" style="background-color: #e67e22;">Bestätigen</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="becomeAvailableModal" tabindex="-1" aria-labelledby="becomeAvailableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border: none; border-radius: 12px; overflow: hidden;">
+        <div class="modal-header" style="background-color: #2c7a2c; padding: 12px 16px; border-bottom: none;">
+          <h6 class="modal-title text-white d-flex align-items-center gap-2 mb-0" id="becomeAvailableModalLabel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+            </svg>
+            Verfügbarkeit ändern
+          </h6>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Schließen" style="font-size: 0.75rem;"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px 16px;">
+          <p>Bitte bestätige dass du wieder als "verfügbar" angezeigt werden möchtest?</p>
+          <p class="small text-muted mb-0">Hinweis: Du wirst für 3 Tage für das Herausfordern von Spielern gesperrt, die in der Rangliste über dir stehen.</p>
+        </div>
+        <div class="modal-footer" style="border-top: none; padding: 8px 16px 16px;">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Nein</button>
+          <button type="button" class="btn text-white" id="confirm-become-available" style="background-color: #2c7a2c;">Ja, verfügbar melden</button>
+        </div>
+      </div>
+    </div>
+  </div>
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js" integrity="sha512-AI5A3zIoeRSEEX9z3Vyir8NqSMC1pY7r5h2cE+9J6FLsoEmSSGLFaqMQw8SWvoONXogkfFrkQiJfLeHLz3+HOg==" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" crossorigin="anonymous"></script>
   <script>
+    function showAlertModal(msg, title) { $('#alertModalBody').text(msg); $('#alertModalTitle').text(title || 'Fehler'); new bootstrap.Modal($('#alertModal')[0]).show(); }
     $(document).ready(function () {
       function escapeHtml(str) { if (str == null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
       $.ajaxSetup({ beforeSend: function(xhr, settings) { if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) { xhr.setRequestHeader("X-CSRFToken", $('meta[name="csrf-token"]').attr('content')); } } });
@@ -353,8 +428,8 @@
       $("#challengeForm").on("submit", function (e) { e.preventDefault(); const challengerId = $("#challenger").val(), opponentId = $("#opponent").val(); if (!challengerId || !opponentId) return; const $btn = $("#challengeButton"); $btn.prop("disabled", true).text("Sende..."); $("#challengeResult").hide(); $.post("/challenge", $(this).serialize()).done(function (response) { $("#challengeResult").removeClass("alert-danger").addClass("alert-success").html(`${response.message}`).fadeIn().delay(15000).fadeOut(); tempChallengerId = null; tempOpponentId = null; $("#challenger").val(""); $("#opponent").html('<option value="">Wähle einen Gegner...</option>').prop("disabled", true); $btn.prop("disabled", true).text("Herausfordern"); }).fail(function(xhr) { const errorMsg = xhr.responseJSON?.error || "Fehler beim Erstellen der Herausforderung."; $("#challengeResult").removeClass("alert-success").addClass("alert-danger").html(errorMsg).fadeIn(); $btn.prop("disabled", false).text("Herausfordern"); }); });
       $("#challenger").on("change", function (e, data) { const challengerId = $(this).val(); tempChallengerId = challengerId; tempOpponentId = null; const $opponentSelect = $("#opponent"); $opponentSelect.html('<option value="">Lade Gegner...</option>').prop("disabled", true); $("#challengeButton").prop("disabled", true); applyTemporarySelections(); if (!challengerId) { $opponentSelect.html('<option value="">Wähle einen Gegner...</option>'); return; } $.post("/eligible_opponents", { challenger_id: challengerId }).done(function (opponents) { $opponentSelect.html('<option value="">Wähle einen Gegner...</option>'); if (Array.isArray(opponents) && opponents.length > 0) { opponents.forEach(o => { $opponentSelect.append(`<option value="${o.id}" class="opponent-option">${escapeHtml(o.name)} (Rang ${o.rank})</option>`); }); $opponentSelect.prop("disabled", false); if (data && data.preserveOpponent && $opponentSelect.find(`option[value="${data.preserveOpponent}"]`).length > 0) { $opponentSelect.val(data.preserveOpponent).trigger('change'); } } else { const errorMsg = opponents.error || "Keine Gegner verfügbar"; $opponentSelect.html(`<option value="">${errorMsg}</option>`); } }); });
       $("#opponent").on("change", function () { tempOpponentId = $(this).val(); applyTemporarySelections(); $("#challengeButton").prop("disabled", !(tempChallengerId && tempOpponentId)); });
-      $('#availabilityModal').on('hidden.bs.modal', function () { $('#availability-step-1, #availability-footer-1').show(); $('#availability-step-2, #availability-footer-2').hide(); $('#unavailability-reason').val(''); $('#char-count').text('0 / 25'); availabilityPlayerId = null; }); $('#becomeAvailableModal').on('hidden.bs.modal', function () { availabilityPlayerId = null; }); $('#unavailability-reason').on('input', function() { const len = $(this).val().length; $('#char-count').text(len + ' / 25'); }); $(document).on("click", ".availability-toggle", function (e) { e.stopPropagation(); const $toggle = $(this); if ($toggle.hasClass('processing')) return; const playerId = $toggle.data("player-id"); if (playerId !== currentUserId && currentUserPrivilege !== 'admin' && currentUserPrivilege !== 'superadmin') return; const isAvailable = $toggle.hasClass('available'); availabilityPlayerId = playerId; const playerName = $toggle.closest('.player').find('.player-info').text().replace(/^Rang \d+/, '').trim(); if (isAvailable) { $('#availabilityModalLabel').text('Verfügbarkeit ändern von ' + playerName); availabilityModal.show(); } else { $('#becomeAvailableModalLabel').text('Verfügbarkeit ändern von ' + playerName); becomeAvailableModal.show(); } }); $('#confirm-availability-yes').on('click', function() { $('#availability-step-1, #availability-footer-1').hide(); $('#availability-step-2, #availability-footer-2').show(); }); $('#submit-unavailability').on('click', function() { const reason = $('#unavailability-reason').val().trim(); if (reason.length > 25) { alert("Der Grund darf maximal 25 Zeichen lang sein."); return; } const $toggle = $(`.availability-toggle[data-player-id="${availabilityPlayerId}"]`); $toggle.addClass('processing'); $.post("/toggle_availability", { player_id: availabilityPlayerId, reason: reason }).fail(function (xhr) { alert("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); }).always(() => setTimeout(() => $toggle.removeClass('processing'), 200)); availabilityModal.hide(); }); $('#confirm-become-available').on('click', function() { if (!availabilityPlayerId) return; const $toggle = $(`.availability-toggle[data-player-id="${availabilityPlayerId}"]`); $toggle.addClass('processing'); $.post("/toggle_availability", { player_id: availabilityPlayerId }).fail(function (xhr) { alert("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); }).always(() => setTimeout(() => $toggle.removeClass('processing'), 200)); becomeAvailableModal.hide(); });
-      $(document).on("change", ".scheduled-date-dropdown, .scheduled-time-dropdown", function () { const $entry = $(this).closest('.challenge-entry'); const $dateDropdown = $entry.find('.scheduled-date-dropdown'); const $timeDropdown = $entry.find('.scheduled-time-dropdown'); const challengeId = $entry.data('challenge-id'); const selectedDate = $dateDropdown.val(); const selectedTime = $timeDropdown.val(); $timeDropdown.prop('disabled', !selectedDate); if (!selectedDate) { $timeDropdown.val(''); } if (selectedDate) { $dateDropdown.addClass('has-selection'); if (selectedTime) { $timeDropdown.addClass('has-selection'); } else { $timeDropdown.removeClass('has-selection'); } $dateDropdown.prop('disabled', true); $timeDropdown.prop('disabled', true); $.ajax({ url: "/update_scheduled_date", type: "POST", data: { challenge_id: challengeId, selected_date: selectedDate, selected_time: selectedTime }, success: function(response) { if (!response.success) { alert("Fehler: " + response.message); } }, error: function(xhr) { var msg = "Netzwerkfehler beim Aktualisieren des Spieldatums."; try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch(e) {} alert(msg); }, complete: function() { $dateDropdown.prop('disabled', false); $timeDropdown.prop('disabled', !$dateDropdown.val()); } }); } else { $dateDropdown.removeClass('has-selection'); $timeDropdown.removeClass('has-selection'); $.post("/update_scheduled_date", { challenge_id: challengeId, selected_date: '', selected_time: '' }); } });
+      $('#availabilityModal').on('hidden.bs.modal', function () { $('#availability-step-1, #availability-footer-1').show(); $('#availability-step-2, #availability-footer-2').hide(); $('#unavailability-reason').val(''); $('#char-count').text('0 / 25'); availabilityPlayerId = null; }); $('#becomeAvailableModal').on('hidden.bs.modal', function () { availabilityPlayerId = null; }); $('#unavailability-reason').on('input', function() { const len = $(this).val().length; $('#char-count').text(len + ' / 25'); }); $(document).on("click", ".availability-toggle", function (e) { e.stopPropagation(); const $toggle = $(this); if ($toggle.hasClass('processing')) return; const playerId = $toggle.data("player-id"); if (playerId !== currentUserId && currentUserPrivilege !== 'admin' && currentUserPrivilege !== 'superadmin') return; const isAvailable = $toggle.hasClass('available'); availabilityPlayerId = playerId; const playerName = $toggle.closest('.player').find('.player-info').text().replace(/^Rang \d+/, '').trim(); if (isAvailable) { $('#availabilityModalLabel').text('Verfügbarkeit ändern von ' + playerName); availabilityModal.show(); } else { $('#becomeAvailableModalLabel').text('Verfügbarkeit ändern von ' + playerName); becomeAvailableModal.show(); } }); $('#confirm-availability-yes').on('click', function() { $('#availability-step-1, #availability-footer-1').hide(); $('#availability-step-2, #availability-footer-2').show(); }); $('#submit-unavailability').on('click', function() { const reason = $('#unavailability-reason').val().trim(); if (reason.length > 25) { showAlertModal("Der Grund darf maximal 25 Zeichen lang sein.", "Eingabefehler"); return; } const $toggle = $(`.availability-toggle[data-player-id="${availabilityPlayerId}"]`); $toggle.addClass('processing'); $.post("/toggle_availability", { player_id: availabilityPlayerId, reason: reason }).fail(function (xhr) { showAlertModal("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); }).always(() => setTimeout(() => $toggle.removeClass('processing'), 200)); availabilityModal.hide(); }); $('#confirm-become-available').on('click', function() { if (!availabilityPlayerId) return; const $toggle = $(`.availability-toggle[data-player-id="${availabilityPlayerId}"]`); $toggle.addClass('processing'); $.post("/toggle_availability", { player_id: availabilityPlayerId }).fail(function (xhr) { showAlertModal("Fehler: " + (xhr.responseJSON?.message || "Unbekannter Fehler")); }).always(() => setTimeout(() => $toggle.removeClass('processing'), 200)); becomeAvailableModal.hide(); });
+      $(document).on("change", ".scheduled-date-dropdown, .scheduled-time-dropdown", function () { const $entry = $(this).closest('.challenge-entry'); const $dateDropdown = $entry.find('.scheduled-date-dropdown'); const $timeDropdown = $entry.find('.scheduled-time-dropdown'); const challengeId = $entry.data('challenge-id'); const selectedDate = $dateDropdown.val(); const selectedTime = $timeDropdown.val(); $timeDropdown.prop('disabled', !selectedDate); if (!selectedDate) { $timeDropdown.val(''); } if (selectedDate) { $dateDropdown.addClass('has-selection'); if (selectedTime) { $timeDropdown.addClass('has-selection'); } else { $timeDropdown.removeClass('has-selection'); } $dateDropdown.prop('disabled', true); $timeDropdown.prop('disabled', true); $.ajax({ url: "/update_scheduled_date", type: "POST", data: { challenge_id: challengeId, selected_date: selectedDate, selected_time: selectedTime }, success: function(response) { if (!response.success) { showAlertModal("Fehler: " + response.message); } }, error: function(xhr) { var msg = "Netzwerkfehler beim Aktualisieren des Spieldatums."; try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch(e) {} showAlertModal(msg); }, complete: function() { $dateDropdown.prop('disabled', false); $timeDropdown.prop('disabled', !$dateDropdown.val()); } }); } else { $dateDropdown.removeClass('has-selection'); $timeDropdown.removeClass('has-selection'); $.post("/update_scheduled_date", { challenge_id: challengeId, selected_date: '', selected_time: '' }); } });
       const $newPlayerInput = $("#newplayer"), $newPlayerOpponentSelect = $("#newplayer-opponent"), $newPlayerButton = $("#newplayer-challenge"), $newPlayerNameError = $("#newplayer-name-error"); function validateNewPlayerChallenge() { const name = $newPlayerInput.val().trim(); const opponent = $newPlayerOpponentSelect.val(); const nameValid = (name.match(/[A-Za-z]/g) || []).length >= 5 && !/\d/.test(name); $newPlayerNameError.toggle(name.length > 0 && !nameValid).text("Name muss min. 5 Buchstaben haben und keine Zahlen enthalten."); $newPlayerButton.prop("disabled", !(nameValid && opponent)); } $newPlayerInput.on("input change", validateNewPlayerChallenge); $newPlayerOpponentSelect.on("change", function() { tempNewPlayerOpponentId = $(this).val(); applyTemporarySelections(); validateNewPlayerChallenge(); }); 
       
       $newPlayerButton.click(function () { 
@@ -396,7 +471,7 @@
         <div class="col-md-6 mb-3 mb-md-0"><h5>Kontaktinformationen</h5><p>Matthias Stecher<br /><a href="mailto:matthias.stecher@gmx.at">matthias.stecher@gmx.at</a><br />Mobile: 0699 177 822 76</p></div>
         <div class="col-md-6"><h5>Rechtliche Informationen</h5><p>© 2025 Matthias Stecher. Der Inhalt dieser Webseite ist urheberrechtlich geschützt.<br />Haftungsausschluss: Keine Haftung für Fehler oder Verzögerungen in den Ranglisten.</p></div>
       </div>
-      <div class="row"><div class="col-12 text-center mt-3"><small>Version: 3.54 • 5. April 2026</small></div></div>
+      <div class="row"><div class="col-12 text-center mt-3"><small>Version: 3.55 • 6. April 2026</small></div></div>
       <img id="duckLogo" src="/static/a1_duck_11.png" alt="Duck Logo" width="46" height="46" style="position: absolute; bottom: 15px; right: 15px; cursor: pointer;" />
     </div>
   </footer>
