@@ -7,7 +7,7 @@ A comprehensive web-based tennis ranking management system with real-time update
 ## 🎯 Project Overview
 
 The **Tennis Ranking Web Application** is a full-featured system for managing tennis players in a ranking-based tournament format. It provides real-time dynamic ranking updates, player blocking management, availability tracking, and advanced challenge scheduling with automatic rank adjustments based on match results.
-This version (v3.xx) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
+This version (v3.55) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
 
 ## 🛠 Core Technologies
 
@@ -436,14 +436,14 @@ These endpoints are restricted to users with `admin` or `superadmin` privileges 
 - **Description:** Manually adds a new player to the system with a specified name and rank.
 - **Authorization:** `@admin_required`
 
-### `POST /update_player/<int:player_id>`
+### `POST /update_player`
 - **Method:** `POST`
-- **Description:** Updates the details (name, rank, etc.) of a specific player.
+- **Description:** Updates the details (name, rank, etc.) of a specific player. Player ID is passed in the request body as JSON.
 - **Authorization:** `@admin_required`
 
-### `POST /delete_player/<int:player_id>`
+### `POST /delete_player`
 - **Method:** `POST`
-- **Description:** Deletes a player from the system.
+- **Description:** Deletes a player from the system. Player ID is passed in the request body as JSON.
 - **Authorization:** `@admin_required`
 
 ### `POST /cancel_challenge`
@@ -823,16 +823,16 @@ docker compose ps
 ## ✨ Total Lines of Code (LOC)
 
 ```bash
-# app.py                2.461
-# index.html	          392
-# admin.html    	  138
-# db_settings.html	  290
+# app.py                2.786
+# index.html	          479
+# admin.html    	  227
+# db_settings.html	  489
 # login_tennis.html	  494
 # initial_players.json    112
 # schema.sql	           59
 # error.html	           21
 #############################
-# Total	                3.967
+# Total	                4.667
 #############################
 ```
 
