@@ -84,7 +84,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.55"
+APP_VERSION = "3.60"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -94,12 +94,11 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 
-app.secret_key = os.environ.get(
-    "SECRET_KEY", "a-very-long-and-super-secret-key-for-dev"
-)
-if app.secret_key == "a-very-long-and-super-secret-key-for-dev":
-    logger.warning(
-        "SECURITY WARNING: Using default secret key. Set the SECRET_KEY environment variable for production."
+app.secret_key = os.environ.get("SECRET_KEY")
+if not app.secret_key:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is required. "
+        "Generate one with: python3 -c \"import secrets; print(secrets.token_hex(32))\""
     )
 
 _db_path = os.environ.get("DB_PATH")
@@ -262,6 +261,33 @@ if socketio.server_options.get("cors_allowed_origins") == "*":
     )
 
 
+def parse_datetime(value):
+    """Parse a datetime value from the database, handling str, datetime, and None."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        if not value:
+            return None
+        try:
+            return datetime.strptime(value.split(".")[0], "%Y-%m-%d %H:%M:%S")
+        except (ValueError, TypeError):
+            logger.warning(f"Could not parse datetime value: {value!r}")
+            return None
+    logger.warning(f"Unexpected datetime type {type(value).__name__}: {value!r}")
+    return None
+
+
+def _get_field(obj, key, default=None):
+    """Get a field from a dict or sqlite3.Row safely."""
+    try:
+        val = obj[key]
+        return val
+    except (KeyError, IndexError):
+        return default
+
+
 class DataCache:
     def __init__(self, ttl=10):
         self.cache = {}
@@ -301,88 +327,37 @@ def serialize_player(player_row):
         "block_opponent_until",
     ]
     for field in datetime_fields:
-        if player.get(field):
-            if isinstance(player[field], str):
-                try:
-                    dt = datetime.strptime(
-                        player[field].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                    player[f"{field}_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
-                    player[field] = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except (ValueError, TypeError):
-                    player[f"{field}_formatted"] = "Invalid"
-                    player[field] = None
-            elif isinstance(player[field], datetime):
-                player[f"{field}_formatted"] = player[field].strftime("%Y-%m-%d %H:%M")
-                player[field] = player[field].strftime("%Y-%m-%d %H:%M:%S")
+        dt = parse_datetime(player.get(field))
+        if dt:
+            player[f"{field}_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
+            player[field] = dt.strftime("%Y-%m-%d %H:%M:%S")
         else:
             player[f"{field}_formatted"] = None
+            player[field] = None
     return player
 
 
 def serialize_challenge(challenge_row):
     challenge = dict(challenge_row)
-    if challenge.get("timestamp"):
-        if isinstance(challenge["timestamp"], datetime):
-            challenge["timestamp"] = challenge["timestamp"].strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-        elif isinstance(challenge["timestamp"], str):
-            challenge["timestamp"] = challenge["timestamp"].split(".")[0]
-    if challenge.get("deadline"):
-        if isinstance(challenge["deadline"], datetime):
-            challenge["deadline_formatted"] = challenge["deadline"].strftime(
-                "%Y-%m-%d %H:%M"
-            )
-            challenge["deadline"] = challenge["deadline"].strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(challenge["deadline"], str):
-            try:
-                dt = datetime.strptime(
-                    challenge["deadline"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                )
-                challenge["deadline_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
-                challenge["deadline"] = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except (ValueError, TypeError):
-                challenge["deadline_formatted"] = "N/A"
-    if challenge.get("resolved_at"):
-        if isinstance(challenge["resolved_at"], datetime):
-            challenge["resolved_at_formatted"] = challenge["resolved_at"].strftime(
-                "%Y-%m-%d %H:%M"
-            )
-            challenge["resolved_at"] = challenge["resolved_at"].strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-        elif isinstance(challenge["resolved_at"], str):
-            try:
-                dt = datetime.strptime(
-                    challenge["resolved_at"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                )
-                challenge["resolved_at_formatted"] = dt.strftime("%Y-%m-%d %H:%M")
-                challenge["resolved_at"] = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except (ValueError, TypeError):
-                challenge["resolved_at_formatted"] = "N/A"
-    if challenge.get("scheduled_play_date"):
-        if isinstance(challenge["scheduled_play_date"], datetime):
-            challenge["scheduled_date"] = challenge["scheduled_play_date"].strftime(
-                "%Y-%m-%d"
-            )
-            challenge["scheduled_time"] = challenge["scheduled_play_date"].strftime(
-                "%H:%M"
-            )
-            challenge["scheduled_play_date"] = challenge[
-                "scheduled_play_date"
-            ].strftime("%Y-%m-%d %H:%M:%S")
-        elif isinstance(challenge["scheduled_play_date"], str):
-            try:
-                dt = datetime.strptime(
-                    challenge["scheduled_play_date"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                )
-                challenge["scheduled_date"] = dt.strftime("%Y-%m-%d")
-                challenge["scheduled_time"] = dt.strftime("%H:%M")
-                challenge["scheduled_play_date"] = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except (ValueError, TypeError):
-                challenge["scheduled_date"] = None
-                challenge["scheduled_time"] = None
+    ts = parse_datetime(challenge.get("timestamp"))
+    challenge["timestamp"] = ts.strftime("%Y-%m-%d %H:%M:%S") if ts else None
+    dl = parse_datetime(challenge.get("deadline"))
+    if dl:
+        challenge["deadline_formatted"] = dl.strftime("%Y-%m-%d %H:%M")
+        challenge["deadline"] = dl.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        challenge["deadline_formatted"] = "N/A"
+    ra = parse_datetime(challenge.get("resolved_at"))
+    if ra:
+        challenge["resolved_at_formatted"] = ra.strftime("%Y-%m-%d %H:%M")
+        challenge["resolved_at"] = ra.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        challenge["resolved_at_formatted"] = "N/A"
+    spd = parse_datetime(challenge.get("scheduled_play_date"))
+    if spd:
+        challenge["scheduled_date"] = spd.strftime("%Y-%m-%d")
+        challenge["scheduled_time"] = spd.strftime("%H:%M")
+        challenge["scheduled_play_date"] = spd.strftime("%Y-%m-%d %H:%M:%S")
     else:
         challenge["scheduled_date"] = None
         challenge["scheduled_time"] = None
@@ -475,6 +450,11 @@ def init_db():
         db.execute(
             "CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)"
         )
+        # Ensure indexes exist (for existing databases)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_challenges_challenger_id ON challenges(challenger_id)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_challenges_opponent_id ON challenges(opponent_id)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_players_block_challenger ON players(block_challenger_until)")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_players_block_opponent ON players(block_opponent_until)")
         db.commit()
     except Exception as e:
         logger.exception("Error during database initialization.")
@@ -514,39 +494,13 @@ def get_active_challenges():
         challenges_processed = []
         for row in challenges_raw:
             challenge = dict(row)
-            if isinstance(challenge.get("deadline"), str):
-                try:
-                    challenge["deadline"] = datetime.strptime(
-                        challenge["deadline"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["deadline"] = None
-            elif not isinstance(challenge.get("deadline"), datetime):
-                challenge["deadline"] = None
-            scheduled_play_date_val = challenge.get("scheduled_play_date")
-            if isinstance(scheduled_play_date_val, str):
-                try:
-                    challenge["scheduled_play_date"] = datetime.strptime(
-                        scheduled_play_date_val.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["scheduled_play_date"] = None
-            elif not isinstance(scheduled_play_date_val, datetime):
-                challenge["scheduled_play_date"] = None
-            if isinstance(challenge.get("timestamp"), str):
-                try:
-                    challenge["timestamp"] = datetime.strptime(
-                        challenge["timestamp"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["timestamp"] = None
-            elif not isinstance(challenge.get("timestamp"), datetime):
-                challenge["timestamp"] = None
+            challenge["deadline"] = parse_datetime(challenge.get("deadline"))
+            challenge["scheduled_play_date"] = parse_datetime(challenge.get("scheduled_play_date"))
+            challenge["timestamp"] = parse_datetime(challenge.get("timestamp"))
             challenge["valid_play_dates"] = []
-            deadline_dt_obj = challenge.get("deadline")
-            if isinstance(deadline_dt_obj, datetime):
+            if isinstance(challenge["deadline"], datetime):
                 current_loop_date = now_dt.date()
-                deadline_date = deadline_dt_obj.date()
+                deadline_date = challenge["deadline"].date()
                 while current_loop_date <= deadline_date:
                     challenge["valid_play_dates"].append(current_loop_date.isoformat())
                     current_loop_date += timedelta(days=1)
@@ -568,7 +522,7 @@ def get_completed_challenges(limit=50):
             if row:
                 hidden_before = row["value"]
         except sqlite3.Error:
-            pass
+            logger.warning("Could not read completed_challenges_hidden_before setting.")
         if hidden_before:
             cur = db.execute(
                 "SELECT * FROM completed_challenges_view WHERE resolved_at > ? LIMIT ?",
@@ -582,25 +536,9 @@ def get_completed_challenges(limit=50):
         challenges_processed = []
         for row in challenges_raw:
             challenge = dict(row)
-            if isinstance(challenge.get("resolved_at"), str):
-                try:
-                    challenge["resolved_at"] = datetime.strptime(
-                        challenge["resolved_at"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["resolved_at"] = None
-            elif not isinstance(challenge.get("resolved_at"), datetime):
-                challenge["resolved_at"] = None
-            if isinstance(challenge.get("timestamp"), str):
-                try:
-                    challenge["timestamp"] = datetime.strptime(
-                        challenge["timestamp"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["timestamp"] = None
-            elif not isinstance(challenge.get("timestamp"), datetime):
-                challenge["timestamp"] = None
-            if challenge.get("resolved_at"):
+            challenge["resolved_at"] = parse_datetime(challenge.get("resolved_at"))
+            challenge["timestamp"] = parse_datetime(challenge.get("timestamp"))
+            if challenge["resolved_at"]:
                 challenge["resolved_at_fmt"] = challenge["resolved_at"].strftime(
                     "%Y-%m-%d %H:%M"
                 )
@@ -635,19 +573,8 @@ def get_unavailable_players():
         players_with_formatted_dates = []
         for player in players:
             p = dict(player)
-            if p.get("unavailable_since"):
-                try:
-                    unav_dt = p["unavailable_since"]
-                    if isinstance(unav_dt, str):
-                        unav_dt = datetime.strptime(
-                            unav_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    elif not isinstance(unav_dt, datetime):
-                        raise TypeError("unavailable_since is not a recognized type")
-                    p["unavailable_since_fmt"] = unav_dt.strftime("%Y-%m-%d %H:%M")
-                except (ValueError, TypeError, AttributeError) as e:
-                    logger.warning(f"Could not format unavailable_since: {e}")
-                    p["unavailable_since_fmt"] = "Ungültig"
+            unav_dt = parse_datetime(p.get("unavailable_since"))
+            p["unavailable_since_fmt"] = unav_dt.strftime("%Y-%m-%d %H:%M") if unav_dt else "Ungültig" if p.get("unavailable_since") else None
             players_with_formatted_dates.append(p)
         return players_with_formatted_dates
     except sqlite3.Error:
@@ -667,23 +594,8 @@ def get_blocked_challenger_players():
         players_with_formatted_dates = []
         for player in players:
             p = dict(player)
-            if p.get("block_challenger_until"):
-                try:
-                    block_dt = p["block_challenger_until"]
-                    if isinstance(block_dt, str):
-                        block_dt = datetime.strptime(
-                            block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    elif not isinstance(block_dt, datetime):
-                        raise TypeError(
-                            "block_challenger_until is not a recognized type"
-                        )
-                    p["block_challenger_until_fmt"] = block_dt.strftime(
-                        "%Y-%m-%d %H:%M"
-                    )
-                except (ValueError, TypeError, AttributeError) as e:
-                    logger.warning(f"Could not format block_challenger_until: {e}")
-                    p["block_challenger_until_fmt"] = "Ungültig"
+            block_dt = parse_datetime(p.get("block_challenger_until"))
+            p["block_challenger_until_fmt"] = block_dt.strftime("%Y-%m-%d %H:%M") if block_dt else "Ungültig"
             players_with_formatted_dates.append(p)
         return players_with_formatted_dates
     except sqlite3.Error:
@@ -703,19 +615,8 @@ def get_blocked_opponent_players():
         players_with_formatted_dates = []
         for player in players:
             p = dict(player)
-            if p.get("block_opponent_until"):
-                try:
-                    block_dt = p["block_opponent_until"]
-                    if isinstance(block_dt, str):
-                        block_dt = datetime.strptime(
-                            block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    elif not isinstance(block_dt, datetime):
-                        raise TypeError("block_opponent_until is not a recognized type")
-                    p["block_opponent_until_fmt"] = block_dt.strftime("%Y-%m-%d %H:%M")
-                except (ValueError, TypeError, AttributeError) as e:
-                    logger.warning(f"Could not format block_opponent_until: {e}")
-                    p["block_opponent_until_fmt"] = "Ungültig"
+            block_dt = parse_datetime(p.get("block_opponent_until"))
+            p["block_opponent_until_fmt"] = block_dt.strftime("%Y-%m-%d %H:%M") if block_dt else "Ungültig"
             players_with_formatted_dates.append(p)
         return players_with_formatted_dates
     except sqlite3.Error:
@@ -731,19 +632,9 @@ def eligible_opponents_for(challenger):
     active_ids = get_active_challenge_ids()
     if challenger_rank >= 11:
         is_challenger_blocked = False
-        if challenger["block_challenger_until"]:
-            try:
-                block_dt = challenger["block_challenger_until"]
-                if isinstance(block_dt, str):
-                    block_dt = datetime.strptime(
-                        block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                if isinstance(block_dt, datetime) and now_dt < block_dt:
-                    is_challenger_blocked = True
-            except (ValueError, TypeError, AttributeError) as e:
-                logger.warning(
-                    f"Could not parse block_challenger_until for eligibility check (challenger {challenger['id']}, value: '{challenger['block_challenger_until']}'): {e}"
-                )
+        block_dt = parse_datetime(_get_field(challenger, "block_challenger_until"))
+        if block_dt and now_dt < block_dt:
+            is_challenger_blocked = True
         if is_challenger_blocked:
             logger.info(
                 f"Challenger {challenger['name']} (Rank {challenger_rank}) is blocked from challenging upwards until {challenger['block_challenger_until']}. No eligible opponents."
@@ -924,73 +815,7 @@ def resolve_expired_challenges():
 
 
 def get_realtime_data():
-    db = get_db()
-    now_dt = get_current_time()
-    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        cur = db.execute(
-            """
-            SELECT p.*,
-                CASE
-                  WHEN EXISTS (
-                    SELECT 1 FROM challenges c
-                    WHERE c.resolved = 0
-                      AND c.deadline > ?
-                      AND (c.challenger_id = p.id OR c.opponent_id = p.id)
-                  ) THEN 1 ELSE 0
-                END as in_challenge
-            FROM players p
-            WHERE p.is_ranked_player = 1
-            ORDER BY rank ASC
-        """,
-            (now_str,),
-        )
-        players_raw = cur.fetchall()
-        players = [serialize_player(p) for p in players_raw]
-        for player in players:
-            player["blocked_challenger"] = False
-            player["blocked_opponent"] = False
-            if player.get("block_challenger_until"):
-                try:
-                    block_dt = datetime.strptime(
-                        player["block_challenger_until"], "%Y-%m-%d %H:%M:%S"
-                    )
-                    if now_dt < block_dt:
-                        player["blocked_challenger"] = True
-                except (ValueError, TypeError):
-                    pass
-            if player.get("block_opponent_until"):
-                try:
-                    block_dt = datetime.strptime(
-                        player["block_opponent_until"], "%Y-%m-%d %H:%M:%S"
-                    )
-                    if now_dt < block_dt:
-                        player["blocked_opponent"] = True
-                except (ValueError, TypeError):
-                    pass
-        active_challenges = [serialize_challenge(c) for c in get_active_challenges()]
-        completed_challenges = [
-            serialize_challenge(c) for c in get_completed_challenges(limit=50)
-        ]
-        blocked_challenger_players = [
-            serialize_player(p) for p in get_blocked_challenger_players()
-        ]
-        blocked_opponent_players = [
-            serialize_player(p) for p in get_blocked_opponent_players()
-        ]
-        unavailable_players = [serialize_player(p) for p in get_unavailable_players()]
-        return {
-            "players": players,
-            "active_challenges": active_challenges,
-            "completed_challenges": completed_challenges,
-            "blocked_challenger_players": blocked_challenger_players,
-            "blocked_opponent_players": blocked_opponent_players,
-            "unavailable_players": unavailable_players,
-            "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S"),
-        }
-    except Exception as e:
-        logger.exception("Error getting realtime data")
-        return None
+    return _build_realtime_sections(_ALL_SECTIONS)
 
 
 def get_realtime_data_cached():
@@ -1013,23 +838,98 @@ def emit_to_room(event, data, room="tennis_updates"):
         logger.error(f"Failed to emit {event} to room {room}: {e}")
 
 
+# Define which data sections each update type needs to refresh.
+# Unlisted types default to a full refresh.
+_UPDATE_SECTIONS = {
+    "scheduled_date_updated": {"active_challenges"},
+    "challenges_display_reset": {"completed_challenges"},
+    "block_status_updated": {"players", "active_challenges", "blocked_challenger_players", "blocked_opponent_players"},
+    "availability_toggled": {"players", "active_challenges", "unavailable_players"},
+}
+_ALL_SECTIONS = {"players", "active_challenges", "completed_challenges",
+                 "blocked_challenger_players", "blocked_opponent_players", "unavailable_players"}
+
+
+def _build_realtime_sections(sections):
+    """Build only the requested data sections, returning a dict."""
+    now_dt = get_current_time()
+    now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S")
+    data = {"timestamp": now_str}
+    try:
+        if "players" in sections:
+            db = get_db()
+            cur = db.execute(
+                """
+                SELECT p.*,
+                    CASE
+                      WHEN EXISTS (
+                        SELECT 1 FROM challenges c
+                        WHERE c.resolved = 0
+                          AND c.deadline > ?
+                          AND (c.challenger_id = p.id OR c.opponent_id = p.id)
+                      ) THEN 1 ELSE 0
+                    END as in_challenge
+                FROM players p
+                WHERE p.is_ranked_player = 1
+                ORDER BY rank ASC
+            """,
+                (now_str,),
+            )
+            players = [serialize_player(p) for p in cur.fetchall()]
+            for player in players:
+                block_ch = parse_datetime(player.get("block_challenger_until"))
+                player["blocked_challenger"] = bool(block_ch and now_dt < block_ch)
+                block_op = parse_datetime(player.get("block_opponent_until"))
+                player["blocked_opponent"] = bool(block_op and now_dt < block_op)
+            data["players"] = players
+        if "active_challenges" in sections:
+            data["active_challenges"] = [serialize_challenge(c) for c in get_active_challenges()]
+        if "completed_challenges" in sections:
+            data["completed_challenges"] = [serialize_challenge(c) for c in get_completed_challenges(limit=50)]
+        if "blocked_challenger_players" in sections:
+            data["blocked_challenger_players"] = [serialize_player(p) for p in get_blocked_challenger_players()]
+        if "blocked_opponent_players" in sections:
+            data["blocked_opponent_players"] = [serialize_player(p) for p in get_blocked_opponent_players()]
+        if "unavailable_players" in sections:
+            data["unavailable_players"] = [serialize_player(p) for p in get_unavailable_players()]
+        return data
+    except Exception:
+        logger.exception("Error building realtime data sections")
+        return None
+
+
 def emit_data_update(update_type="general", specific_data=None):
     try:
-        fresh_data = get_realtime_data()
-        if fresh_data:
-            data_cache.set("realtime_data", fresh_data)
-            emit_to_room(
-                "data_update",
-                {
-                    "type": update_type,
-                    "data": fresh_data,
-                    "specific": specific_data,
-                    "timestamp": get_current_time().strftime("%Y-%m-%d %H:%M:%S"),
-                },
-            )
-            logger.info(f"Emitted data_update (type: {update_type})")
+        sections = _UPDATE_SECTIONS.get(update_type, _ALL_SECTIONS)
+        delta = _build_realtime_sections(sections)
+        if delta is None:
+            logger.error("Failed to build realtime data for emission")
+            return
+        # For full refreshes, also update the cache
+        if sections == _ALL_SECTIONS:
+            data_cache.set("realtime_data", delta)
         else:
-            logger.error("Failed to get fresh realtime data for emission")
+            # Merge delta into cached data so the cache stays current
+            cached = data_cache.get("realtime_data")
+            if cached:
+                cached.update(delta)
+                data_cache.set("realtime_data", cached)
+            else:
+                # No cache yet, do a full build
+                full = _build_realtime_sections(_ALL_SECTIONS)
+                if full:
+                    data_cache.set("realtime_data", full)
+        emit_to_room(
+            "data_update",
+            {
+                "type": update_type,
+                "data": delta,
+                "sections": list(sections),
+                "specific": specific_data,
+                "timestamp": get_current_time().strftime("%Y-%m-%d %H:%M:%S"),
+            },
+        )
+        logger.info(f"Emitted data_update (type: {update_type}, sections: {sections})")
     except Exception as e:
         logger.exception(f"Error in emit_data_update: {e}")
 
@@ -1261,14 +1161,8 @@ def admin():
         challenges_processed = []
         for row in challenges_raw:
             challenge = dict(row)
-            if isinstance(challenge.get("deadline"), str):
-                try:
-                    challenge["deadline"] = datetime.strptime(
-                        challenge["deadline"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                except (ValueError, TypeError):
-                    challenge["deadline"] = None
-            elif not isinstance(challenge.get("deadline"), datetime):
+            challenge["deadline"] = parse_datetime(challenge.get("deadline"))
+            if not isinstance(challenge.get("deadline"), datetime):
                 challenge["deadline"] = None
             challenges_processed.append(challenge)
         return render_template("admin.html", challenges=challenges_processed)
@@ -1301,46 +1195,19 @@ def get_players():
             block_challenger_until_str = None
             block_opponent_until_str = None
             unavailable_since_str = None
-            if p.get("block_challenger_until"):
-                try:
-                    block_until = p["block_challenger_until"]
-                    if isinstance(block_until, str):
-                        block_until = datetime.strptime(
-                            block_until.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    if isinstance(block_until, datetime) and current_time < block_until:
-                        block_challenger = True
-                        block_challenger_until_str = block_until.strftime(
-                            "%Y-%m-%d %H:%M"
-                        )
-                except (ValueError, TypeError, AttributeError):
-                    pass
-            if p.get("block_opponent_until"):
-                try:
-                    block_until = p["block_opponent_until"]
-                    if isinstance(block_until, str):
-                        block_until = datetime.strptime(
-                            block_until.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    if isinstance(block_until, datetime) and current_time < block_until:
-                        block_opponent = True
-                        block_opponent_until_str = block_until.strftime(
-                            "%Y-%m-%d %H:%M"
-                        )
-                except (ValueError, TypeError, AttributeError):
-                    pass
-            if p.get("unavailable_since"):
-                try:
-                    unav_dt = p["unavailable_since"]
-                    if isinstance(unav_dt, str):
-                        unav_dt = datetime.strptime(
-                            unav_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                        )
-                    elif not isinstance(unav_dt, datetime):
-                        raise TypeError("unavailable_since is not datetime")
-                    unavailable_since_str = unav_dt.strftime("%Y-%m-%d %H:%M")
-                except (ValueError, TypeError, AttributeError):
-                    unavailable_since_str = "Ungültig"
+            block_ch_dt = parse_datetime(p.get("block_challenger_until"))
+            if block_ch_dt and current_time < block_ch_dt:
+                block_challenger = True
+                block_challenger_until_str = block_ch_dt.strftime("%Y-%m-%d %H:%M")
+            block_op_dt = parse_datetime(p.get("block_opponent_until"))
+            if block_op_dt and current_time < block_op_dt:
+                block_opponent = True
+                block_opponent_until_str = block_op_dt.strftime("%Y-%m-%d %H:%M")
+            unav_dt = parse_datetime(p.get("unavailable_since"))
+            if unav_dt:
+                unavailable_since_str = unav_dt.strftime("%Y-%m-%d %H:%M")
+            elif p.get("unavailable_since"):
+                unavailable_since_str = "Ungültig"
             in_challenge = p["id"] in active_ids
             players_list.append(
                 {
@@ -1384,20 +1251,10 @@ def eligible_opponents():
         now_dt = get_current_time()
         is_generally_blocked_as_challenger = False
         block_until_fmt = None
-        if challenger["block_challenger_until"]:
-            try:
-                block_dt = challenger["block_challenger_until"]
-                if isinstance(block_dt, str):
-                    block_dt = datetime.strptime(
-                        block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                if isinstance(block_dt, datetime) and now_dt < block_dt:
-                    is_generally_blocked_as_challenger = True
-                    block_until_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
-            except (ValueError, TypeError, AttributeError):
-                logger.warning(
-                    f"Could not parse block_challenger_until for eligibility check: {challenger['block_challenger_until']}"
-                )
+        block_dt = parse_datetime(_get_field(challenger, "block_challenger_until"))
+        if block_dt and now_dt < block_dt:
+            is_generally_blocked_as_challenger = True
+            block_until_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
         opponents = eligible_opponents_for(challenger)
         if (
             challenger["rank"] >= 11
@@ -1467,18 +1324,10 @@ def challenge():
             return jsonify({"error": f"{challenger['name']} is not available."}), 400
         challenger_blocked_general = False
         challenger_block_fmt = None
-        if challenger["block_challenger_until"]:
-            try:
-                block_dt = challenger["block_challenger_until"]
-                if isinstance(block_dt, str):
-                    block_dt = datetime.strptime(
-                        block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                if isinstance(block_dt, datetime) and now_dt < block_dt:
-                    challenger_blocked_general = True
-                    challenger_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
-            except (ValueError, TypeError, AttributeError):
-                pass
+        block_dt = parse_datetime(_get_field(challenger, "block_challenger_until"))
+        if block_dt and now_dt < block_dt:
+            challenger_blocked_general = True
+            challenger_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
         if challenger_blocked_general:
             return (
                 jsonify(
@@ -1492,18 +1341,10 @@ def challenge():
             return jsonify({"error": f"{opponent['name']} is not available."}), 400
         opponent_blocked = False
         opponent_block_fmt = None
-        if opponent["block_opponent_until"]:
-            try:
-                block_dt = opponent["block_opponent_until"]
-                if isinstance(block_dt, str):
-                    block_dt = datetime.strptime(
-                        block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                if isinstance(block_dt, datetime) and now_dt < block_dt:
-                    opponent_blocked = True
-                    opponent_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
-            except (ValueError, TypeError, AttributeError):
-                pass
+        block_dt = parse_datetime(_get_field(opponent, "block_opponent_until"))
+        if block_dt and now_dt < block_dt:
+            opponent_blocked = True
+            opponent_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
         if opponent_blocked:
             return (
                 jsonify(
@@ -1913,18 +1754,10 @@ def newplayer_challenge():
         now_dt = get_current_time()
         opponent_blocked = False
         opponent_block_fmt = None
-        if opponent["block_opponent_until"]:
-            try:
-                block_dt = opponent["block_opponent_until"]
-                if isinstance(block_dt, str):
-                    block_dt = datetime.strptime(
-                        block_dt.split(".")[0], "%Y-%m-%d %H:%M:%S"
-                    )
-                if isinstance(block_dt, datetime) and now_dt < block_dt:
-                    opponent_blocked = True
-                    opponent_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
-            except (ValueError, TypeError, AttributeError):
-                pass
+        block_dt = parse_datetime(_get_field(opponent, "block_opponent_until"))
+        if block_dt and now_dt < block_dt:
+            opponent_blocked = True
+            opponent_block_fmt = block_dt.strftime("%Y-%m-%d %H:%M")
         if opponent_blocked:
             return (
                 jsonify(

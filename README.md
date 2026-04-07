@@ -7,7 +7,7 @@ A comprehensive web-based tennis ranking management system with real-time update
 ## 🎯 Project Overview
 
 The **Tennis Ranking Web Application** is a full-featured system for managing tennis players in a ranking-based tournament format. It provides real-time dynamic ranking updates, player blocking management, availability tracking, and advanced challenge scheduling with automatic rank adjustments based on match results.
-This version (v3.55) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
+This version (v3.60) introduces a robust authentication and authorization system, enhancing security and providing role-based access control for players, administrators, and super-administrators.
 
 ## 🛠 Core Technologies
 
@@ -226,7 +226,7 @@ requests
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `SECRET_KEY` | Flask secret key for sessions | `default-dev-key-for-testing-only` | Yes (production) |
+| `SECRET_KEY` | Flask secret key for sessions | None (required) | Yes |
 | `CORS_ALLOWED_ORIGINS` | CORS origins for Socket.IO | `*` | No |
 | `FLASK_DEBUG` | Enable debug mode | `false` | No |
 | `FLASK_HOST` | Host to bind to | `0.0.0.0` | No |
@@ -446,14 +446,9 @@ These endpoints are restricted to users with `admin` or `superadmin` privileges 
 - **Description:** Deletes a player from the system. Player ID is passed in the request body as JSON.
 - **Authorization:** `@admin_required`
 
-### `POST /cancel_challenge`
+### `POST /set_player_block_status`
 - **Method:** `POST`
-- **Description:** Cancels an active challenge without affecting player ranks or applying blocks.
-- **Authorization:** `@admin_required`
-
-### `POST /reset_password`
-- **Method:** `POST`
-- **Description:** Resets a player's password to a default value.
+- **Description:** Manually sets or removes a player's block status (challenger, opponent, or none).
 - **Authorization:** `@admin_required`
 
 ---
@@ -467,19 +462,29 @@ These routes are for system-level database management and are restricted to user
 - **Description:** Renders the page for database management, including options to back up and restore the database.
 - **Authorization:** `@superadmin_required`
 
-### `POST /api/db_actions`
+### `POST /change_password`
 - **Method:** `POST`
-- **Description:** Performs a database action, such as creating a backup file.
+- **Description:** Changes a player's password. Player ID and new password are passed in the request body as JSON.
 - **Authorization:** `@superadmin_required`
 
-### `GET /download_db`
+### `POST /reset_completed_challenges_display`
+- **Method:** `POST`
+- **Description:** Resets the display of completed challenges to zero. All data remains in the database.
+- **Authorization:** `@superadmin_required`
+
+### `GET /api/settings/db/export`
 - **Method:** `GET`
 - **Description:** Downloads a backup of the SQLite database file.
 - **Authorization:** `@superadmin_required`
 
-### `POST /upload_db`
+### `POST /api/settings/db/import`
 - **Method:** `POST`
-- **Description:** Uploads and restores a database file, replacing the current one.
+- **Description:** Uploads and restores a database file, replacing the current one. Validates schema integrity before applying.
+- **Authorization:** `@superadmin_required`
+
+### `POST /reset_database`
+- **Method:** `POST`
+- **Description:** Resets the entire database to its initial state using `schema.sql` and `initial_players.json`. This action is irreversible.
 - **Authorization:** `@superadmin_required`
 
 ---
@@ -823,16 +828,16 @@ docker compose ps
 ## ✨ Total Lines of Code (LOC)
 
 ```bash
-# app.py                2.786
+# app.py                2.619
 # index.html	          479
 # admin.html    	  227
 # db_settings.html	  489
 # login_tennis.html	  494
 # initial_players.json    112
-# schema.sql	           59
-# error.html	           21
+# schema.sql	           67
+# error.html	           20
 #############################
-# Total	                4.667
+# Total	                4.507
 #############################
 ```
 

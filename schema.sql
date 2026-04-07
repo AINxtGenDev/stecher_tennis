@@ -62,3 +62,7 @@ CREATE TABLE app_settings (
 CREATE INDEX IF NOT EXISTS idx_players_rank ON players(rank);
 CREATE INDEX IF NOT EXISTS idx_challenges_resolved ON challenges(resolved);
 CREATE INDEX IF NOT EXISTS idx_challenges_deadline ON challenges(deadline);
+CREATE INDEX IF NOT EXISTS idx_challenges_challenger_id ON challenges(challenger_id);
+CREATE INDEX IF NOT EXISTS idx_challenges_opponent_id ON challenges(opponent_id);
+CREATE INDEX IF NOT EXISTS idx_players_block_challenger ON players(block_challenger_until);
+CREATE INDEX IF NOT EXISTS idx_players_block_opponent ON players(block_opponent_until);
