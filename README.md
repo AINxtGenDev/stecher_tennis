@@ -185,39 +185,15 @@ Access the application at `http://127.0.0.1:5000`
 Access the application on mobile device use the ip-address from your development server like `http://192.168.1.8:5000`
 
 ### Production Requirements
+
+See `docker-requirements.txt` for pinned production dependencies. Core runtime packages:
+
 ```
-# Core Flask and Web Server
-Flask
-gunicorn
-bcrypt
-Werkzeug
-itsdangerous
-Jinja2
-click
-pip
-
-# Flask Plugins
-flask-cors
-Flask-SocketIO
-Flask-Login
-Flask-WTF
-
-# Async and Networking
-eventlet
-greenlet
-python-engineio
-python-socketio
-
-# Configuration
-python-dotenv
-
-# Other potential runtime dependencies (include ONLY if your app uses them in production)
-google-generativeai
-openai
-numpy
-scipy
-pydantic
-requests
+Flask, Flask-SocketIO, Flask-Login, Flask-WTF, flask-cors
+gunicorn, eventlet, greenlet
+python-engineio, python-socketio
+bcrypt, Werkzeug, itsdangerous, Jinja2, click
+python-dotenv, pydantic, requests
 ```
 
 ## ⚙️ Configuration
@@ -494,6 +470,8 @@ These routes are for system-level database management and are restricted to user
 The application runs as a Docker Compose stack with two containers:
 - **app** — Flask + Gunicorn + eventlet (single worker)
 - **caddy** — Custom Caddy build with DuckDNS module for automatic HTTPS via DNS-01 ACME
+
+Both containers are hardened with `read_only` root filesystem, `cap_drop: ALL` (Caddy gets `NET_BIND_SERVICE` back for port binding), and `no-new-privileges` security option.
 
 Pre-built multi-arch images (AMD64 + ARM64) are available on GHCR:
 - `ghcr.io/ainxtgendev/stecher-tennis-app:latest`
@@ -829,15 +807,16 @@ docker compose ps
 
 ```bash
 # app.py                2.619
-# index.html	          479
-# admin.html    	  227
-# db_settings.html	  489
-# login_tennis.html	  494
+# index.html              479
+# admin.html              227
+# db_settings.html        489
+# login_tennis.html       494
+# stecher_start.html      239
 # initial_players.json    112
-# schema.sql	           67
-# error.html	           20
+# schema.sql               67
+# error.html               20
 #############################
-# Total	                4.507
+# Total                  4.746
 #############################
 ```
 
