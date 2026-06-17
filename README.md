@@ -806,7 +806,7 @@ docker compose ps
 ## ✨ Total Lines of Code (LOC)
 
 ```bash
-# app.py                2.619
+# app.py                2.654
 # index.html              479
 # admin.html              227
 # db_settings.html        489
@@ -816,9 +816,30 @@ docker compose ps
 # schema.sql               67
 # error.html               20
 #############################
-# Total                  4.746
+# Total                  4.781
 #############################
 ```
+
+## 📋 Recent Changes
+
+### 2026-06-17 — Critical fixes from code review
+
+Applied the three Critical findings from the standing code review (`REVIEW.md`)
+plus one related Warning:
+
+- **CR-01** — Expired challenges are now auto-resolved. `resolve_expired_challenges()`
+  was defined but never called, so the 10-day deadline rule was silently never
+  enforced. A throttled `@app.before_request` hook (runs at most once per minute)
+  now invokes it, working under both `python app.py` and gunicorn.
+- **CR-02** — Fixed an operator-precedence/casing bug in the UNIQUE-constraint
+  check of `add_player` and `update_player`, so genuine duplicate-name errors are
+  detected correctly.
+- **CR-03** — `emit_data_update()` in the expired-challenge flow now fires only
+  after the transaction commits, so clients never receive rolled-back state.
+- **WR-03** — `eventlet.monkey_patch()` is now applied at startup, restoring
+  dev/prod parity for cooperative stdlib I/O. Added a smoke test
+  (`tests/test_eventlet_patch.py`). Note: `sqlite3`/`bcrypt` are C extensions and
+  remain blocking regardless.
 
 ## 📝 License
 
