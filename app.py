@@ -95,7 +95,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.61"
+APP_VERSION = "3.62"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -1539,6 +1539,44 @@ def toggle_availability():
         )
 
 
+def _parse_set_score(score_str):
+    """Return True if the challenger (left side) won this set, False if the
+    opponent won, or None if the string is not a valid completed set.
+
+    Mirrors the client-side parseSetScore() in admin.html so that the winner
+    can be recomputed server-side (defense-in-depth: a direct POST must not be
+    able to record a result that contradicts the set scores — see WR-07).
+    """
+    if not score_str:
+        return None
+    s = score_str.strip()
+    tie = re.match(r"^(\d+):(\d+)\((\d+):(\d+)\)$", s)
+    std = re.match(r"^(\d+):(\d+)$", s)
+    if tie:
+        p1g, p2g, p1t, p2t = (int(tie.group(i)) for i in range(1, 5))
+        if not ((p1g == 7 and p2g == 6) or (p1g == 6 and p2g == 7)):
+            return None
+        if abs(p1t - p2t) < 2 or max(p1t, p2t) < 7:
+            return None
+        if (p1g > p2g) != (p1t > p2t):
+            return None
+        return p1g > p2g
+    if std:
+        p1g, p2g = int(std.group(1)), int(std.group(2))
+        diff = abs(p1g - p2g)
+        mx = max(p1g, p2g)
+        if mx < 6 or mx > 7:
+            return None
+        if mx == 6 and diff < 2:
+            return None
+        if mx == 7 and diff != 2:
+            return None
+        if p1g == p2g:
+            return None
+        return p1g > p2g
+    return None
+
+
 @app.route("/submit_result", methods=["POST"])
 @login_required
 def submit_result():
@@ -1550,6 +1588,9 @@ def submit_result():
     set3_score = request.form.get("set3_score", "").strip()
     if not challenge_id or not result:
         flash("Invalid submission: Missing challenge ID or result type.", "danger")
+        return redirect(url_for("admin"))
+    if result not in ("challenger_wins", "opponent_wins", "not_happened"):
+        flash("Unbekanntes Ergebnis.", "danger")
         return redirect(url_for("admin"))
 
     db = get_db()
@@ -1600,6 +1641,39 @@ def submit_result():
                 "danger",
             )
             return redirect(url_for("admin"))
+
+        # Recompute the winner from the set scores and reject if it contradicts
+        # the claimed result (WR-07). Skipped for Aufgabe/Disqualifikation, where
+        # a retirement can occur at any score, and for "not_happened".
+        if result in ("challenger_wins", "opponent_wins") and special_result not in (
+            "Aufgabe",
+            "Disqualifikation",
+        ):
+            challenger_sets = opponent_sets = 0
+            for s in (set1_score, set2_score, set3_score):
+                if not s:
+                    continue
+                won = _parse_set_score(s)
+                if won is None:
+                    flash(f"Ungültiges Satzergebnis: '{s}'.", "danger")
+                    return redirect(url_for("admin"))
+                if won:
+                    challenger_sets += 1
+                else:
+                    opponent_sets += 1
+            if challenger_sets >= 2 and challenger_sets > opponent_sets:
+                computed = "challenger_wins"
+            elif opponent_sets >= 2 and opponent_sets > challenger_sets:
+                computed = "opponent_wins"
+            else:
+                computed = None
+            if computed != result:
+                flash(
+                    "Das ausgewählte Ergebnis stimmt nicht mit dem Satzergebnis "
+                    "überein (es muss ein Spieler 2 Sätze gewinnen).",
+                    "danger",
+                )
+                return redirect(url_for("admin"))
 
         resolved_at = get_current_time()
         db.execute(
