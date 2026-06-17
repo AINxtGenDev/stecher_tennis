@@ -797,11 +797,13 @@ def resolve_expired_challenges():
             logger.info(
                 f"Automatically resolved {len(challenge_ids_to_resolve)} expired challenges as 'not_happened'."
             )
-            # Invalidate cache and emit update *after* commit
-            emit_data_update(
-                "expired_challenges_resolved",
-                {"resolved_ids": challenge_ids_to_resolve},
-            )
+
+        # Transaction has committed (with db: exited) — only now invalidate
+        # cache and broadcast, so clients never see rolled-back state.
+        emit_data_update(
+            "expired_challenges_resolved",
+            {"resolved_ids": challenge_ids_to_resolve},
+        )
 
     except sqlite3.Error as e:
         logger.exception(
