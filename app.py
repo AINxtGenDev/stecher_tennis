@@ -2062,11 +2062,11 @@ def add_player():
             }
         )
     except sqlite3.IntegrityError as e:
+        error_string = str(e).lower()
         if (
-            "UNIQUE constraint failed: players.name" in str(e).lower()
-            or "not unique" in str(e).lower()
-            and "players.name" in str(e).lower()
-        ):
+            "unique constraint failed" in error_string
+            and "players.name" in error_string
+        ) or ("not unique" in error_string and "players.name" in error_string):
             logger.warning(f"Admin add failed: Name '{new_name}' might be duplicate.")
             return (
                 jsonify(
@@ -2157,11 +2157,11 @@ def update_player():
             }
         )
     except sqlite3.IntegrityError as e:
+        error_string = str(e).lower()
         if (
-            "UNIQUE constraint failed: players.name" in str(e).lower()
-            or "not unique" in str(e).lower()
-            and "players.name" in str(e).lower()
-        ):
+            "unique constraint failed" in error_string
+            and "players.name" in error_string
+        ) or ("not unique" in error_string and "players.name" in error_string):
             logger.warning(
                 f"Admin update failed: Name '{new_name}' might be duplicate."
             )
