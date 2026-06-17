@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa: E402
+# Eventlet monkey-patching MUST run before any other import so the stdlib
+# (socket, ssl, threading, time) becomes cooperative for Flask-SocketIO.
+# Importing it before `logging` also avoids the known eventlet/logging lock
+# deadlock. Production gunicorn eventlet workers already patch automatically;
+# this makes `python app.py` dev mode behave the same (idempotent if double-run).
+# Note: sqlite3/bcrypt are C extensions and stay blocking regardless of this.
+import eventlet
+
+eventlet.monkey_patch()
+
 import re
 import os
 import shutil
