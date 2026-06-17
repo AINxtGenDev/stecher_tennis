@@ -740,6 +740,10 @@ def rerank_players(db, allow_temporary_overflow=False):
         raise e
 
 
+# Throttle automatic expired-challenge cleanup to at most once per minute.
+_last_expired_cleanup = 0.0
+
+
 def resolve_expired_challenges():
     """
     Finds and resolves any challenges where the deadline has passed.
@@ -814,6 +818,24 @@ def resolve_expired_challenges():
         logger.exception(
             "Unexpected error during automatic resolution of expired challenges."
         )
+
+
+@app.before_request
+def _cleanup_expired_challenges():
+    """Auto-resolve expired challenges, throttled to at most once per minute.
+
+    resolve_expired_challenges() has no scheduler/background task, so enforce
+    the 10-day deadline rule here. The time guard keeps it cheap on every
+    request and works under both `python app.py` and gunicorn.
+    """
+    global _last_expired_cleanup
+    now = time.time()
+    if now - _last_expired_cleanup > 60:
+        _last_expired_cleanup = now
+        try:
+            resolve_expired_challenges()
+        except Exception:
+            logger.exception("Expired challenge cleanup failed")
 
 
 def get_realtime_data():
