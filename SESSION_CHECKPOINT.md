@@ -2,9 +2,9 @@
 
 **Date:** 2026-06-17
 **Branch:** docker
-**Version:** 3.60
-**Latest commit:** `d89e03c` chore: bump version to 3.61 • 17. Juni 2026
-**Git Status:** pushed to origin/docker; untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
+**Version:** 3.61
+**Latest commit:** `50e60fd` chore: untrack committed __pycache__ .pyc files
+**Git Status:** `main` == `docker` == `50e60fd` (both pushed); untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
 **Production:** **v3.61 live on RPi** (deployed 2026-06-17; container hardening active since 2026-04-08)
 
 ## Current Session (2026-06-17)
@@ -45,9 +45,18 @@ all 9 tests pass (7 existing + 2 new smoke tests).
   footer `Version: 3.61 • 17. Juni 2026`, app container `healthy`.
 - External LAN HTTPS check (`:10443`) not confirmable — known NAT-hairpin router limitation.
 
+### Merge + repo cleanup
+- Merged `docker` → `main` (clean fast-forward; `main` was an exact ancestor, nothing lost).
+  Both branches now at the same tip and pushed. ✓ Completes the "Merge docker → main" next step.
+- Untracked 4 committed `tests/__pycache__/*.pyc` files (`50e60fd`) — they predated the
+  `.gitignore __pycache__/` rule. Kept on disk, now ignored. Propagated to `main` too.
+- Orphaned worktree commit `4da1a11` (tablet name-truncation fix) still NOT merged anywhere —
+  lives only in worktree branch `worktree-agent-a2f0416f`. Revisit if that fix is still wanted.
+
 ### Still open (deferred)
 - REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06, WR-07 + 5 Info
 - REVIEW-TEMPLATES.md: all 13 findings (6 Warning, 7 Info)
+- Deploy to second club (ts-breaking.duckdns.org)
 
 ## Prior Session (2026-04-17)
 
