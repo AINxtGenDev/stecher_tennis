@@ -3,9 +3,9 @@
 **Date:** 2026-06-17
 **Branch:** docker
 **Version:** 3.60
-**Latest commit:** `2dab8d0` fix: apply eventlet.monkey_patch() at startup (WR-03)
-**Git Status:** 4 fix commits + docs; untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
-**Production:** v3.60 live on RPi (container hardening active since 2026-04-08)
+**Latest commit:** `d89e03c` chore: bump version to 3.61 • 17. Juni 2026
+**Git Status:** pushed to origin/docker; untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
+**Production:** **v3.61 live on RPi** (deployed 2026-06-17; container hardening active since 2026-04-08)
 
 ## Current Session (2026-06-17)
 
@@ -33,6 +33,17 @@ all 9 tests pass (7 existing + 2 new smoke tests).
   Key correction to the review: `monkey_patch()` does NOT fix `sqlite3`/`bcrypt`
   blocking — those are C extensions; only `eventlet.tpool` would, which is a larger
   future change (deliberately out of scope).
+
+### Version bump + deploy
+- Bumped to **v3.61 • 17. Juni 2026** (`d89e03c`): `APP_VERSION` in app.py + footer in index.html.
+- Built multi-arch (amd64 + arm64) via `build-and-push.sh`, pushed to GHCR:
+  - app `:v3.61`/`:latest` → manifest `sha256:84aaec99…d3916`
+  - caddy `:v3.61`/`:latest` → manifest `sha256:97391864…0724d`
+  - GHCR_TOKEN was sourced from the stored docker `~/.docker/config.json` `ghcr.io` auth (no token in shell history).
+- Deployed to RPi (`~/stecher_tennis`, `docker compose pull && up -d`). Verified:
+  running container image digests match the pushed manifests, `APP_VERSION = "3.61"`,
+  footer `Version: 3.61 • 17. Juni 2026`, app container `healthy`.
+- External LAN HTTPS check (`:10443`) not confirmable — known NAT-hairpin router limitation.
 
 ### Still open (deferred)
 - REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06, WR-07 + 5 Info
