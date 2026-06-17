@@ -7,6 +7,36 @@
 **Git Status:** `main` == `docker` == `50e60fd` (both pushed); untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
 **Production:** **v3.61 live on RPi** (deployed 2026-06-17; container hardening active since 2026-04-08)
 
+## Current Session (2026-06-17, later) — RPi 5 install guide
+
+Authored `first-installation-RPi5.html` — a self-contained, mobile-first HTML checklist
+for standing up a fresh **Raspberry Pi 5** production deployment from scratch (Docker-based).
+No code changes to the app; documentation artifact only.
+
+### What it covers (16 step cards, 0–14 + 1b)
+- Fresh RPi OS install, SSH login, **SSH hardening (Step 1b)** (ed25519 keys,
+  `PasswordAuthentication no`, custom port, with a lock-out safeguard).
+- System update + NTP, static IP (FritzBox reservation or `nmtui`), Docker install.
+- **DuckDNS**: subdomain + token, why DNS-01 ACME needs the token, `*/5` cron IP updater.
+- **FritzBox**: two TCP port-forwards (ext 10443→int 443, ext 80→int 80); DS-Lite/public-IPv4
+  warning; NAT-hairpin caveat.
+- `git clone -b docker`, `.env` fill-in (all vars from `.env.example`), staging→production
+  ACME switchover, function test, backup/auto-update/maintenance, troubleshooting table.
+
+### Built from real repo config (not boilerplate)
+Sourced from `prep_deploy.md`, `99_rpi.txt`, `.env.example`, `docker-compose.yml`, `Dockerfile`.
+
+### Verified before handing off as a checklist
+- GitHub repo `AINxtGenDev/stecher_tennis` → public (HTTP 200), clone needs no auth.
+- Both GHCR images (`stecher-tennis-app`, `stecher-tennis-caddy`) → anonymous pull = 200.
+- **Fixed a self-inflicted bug**: backup script originally called the `sqlite3` CLI, which is
+  absent in the `python:3.12-slim` image. Rewrote to use Python's `sqlite3` backup API
+  (guaranteed present, WAL-consistent).
+
+Design: dark gradient hero, numbered step cards, color-coded callouts, scroll-progress bar,
+copy-to-clipboard on every code block, mobile-first CSS with a 720px desktop enhancement.
+Deliberately presents Docker as the sole production path (drops the legacy systemd/native-Caddy flow).
+
 ## Current Session (2026-06-17)
 
 ### Fixed 3 Critical findings + WR-03 (from REVIEW.md)

@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>Erstinstallation · Stecher Tennis auf Raspberry Pi 5 (Docker)</title>
+<style>
+  /* ============ Design tokens ============ */
+  :root {
+    --bg:        #0b1020;
+    --bg-soft:   #131a31;
+    --card:      #182142;
+    --card-2:    #1d2750;
+    --ink:       #eef2ff;
+    --ink-soft:  #aeb8da;
+    --ink-dim:   #7f8bb5;
+    --line:      #2a3768;
+    --brand:     #6366f1;
+    --brand-2:   #22d3ee;
+    --accent:    #f43f5e;
+    --lime:      #a3e635;
+    --amber:     #fbbf24;
+    --green:     #34d399;
+    --shadow:    0 10px 40px -12px rgba(0,0,0,.65);
+    --radius:    18px;
+    --maxw:      860px;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 100% -10%, rgba(99,102,241,.25), transparent 60%),
+      radial-gradient(1000px 500px at -10% 10%, rgba(34,211,238,.18), transparent 55%),
+      var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
+
+  /* ============ Hero ============ */
+  header.hero {
+    padding: 56px 16px 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .8rem; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 7px 14px; border-radius: 999px;
+    background: linear-gradient(135deg, rgba(99,102,241,.25), rgba(34,211,238,.25));
+    border: 1px solid var(--line);
+    color: var(--brand-2);
+  }
+  header.hero h1 {
+    font-size: clamp(1.8rem, 6vw, 2.9rem);
+    line-height: 1.15;
+    margin: 18px 0 12px;
+    background: linear-gradient(120deg, #fff 10%, var(--brand-2) 55%, var(--brand) 95%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header.hero p.lead {
+    color: var(--ink-soft);
+    font-size: clamp(1rem, 3.2vw, 1.15rem);
+    max-width: 640px; margin: 0 auto;
+  }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    margin-top: 22px;
+  }
+  .chip {
+    font-size: .82rem; padding: 6px 12px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line); color: var(--ink-soft);
+  }
+  .chip b { color: var(--ink); }
+
+  /* ============ TOC ============ */
+  nav.toc {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin: 8px 0 32px;
+  }
+  nav.toc h2 { font-size: .82rem; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--ink-dim); margin: 0 0 12px; }
+  nav.toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+  nav.toc li { counter-increment: toc; }
+  nav.toc a {
+    display: flex; gap: 12px; align-items: baseline;
+    padding: 9px 10px; border-radius: 10px;
+    color: var(--ink-soft); text-decoration: none; font-weight: 600;
+    transition: background .15s, color .15s;
+  }
+  nav.toc a:hover, nav.toc a:focus { background: var(--card); color: var(--ink); }
+  nav.toc a::before {
+    content: counter(toc, decimal-leading-zero);
+    font-variant-numeric: tabular-nums;
+    color: var(--brand-2); font-size: .85rem; min-width: 24px;
+  }
+
+  /* ============ Sections / steps ============ */
+  section.step {
+    background: linear-gradient(180deg, var(--card), var(--bg-soft));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px 18px 26px;
+    margin: 0 0 22px;
+    box-shadow: var(--shadow);
+    scroll-margin-top: 16px;
+  }
+  .step-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 6px; }
+  .step-num {
+    flex: 0 0 auto;
+    width: 42px; height: 42px; border-radius: 12px;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 1.05rem; color: #0b1020;
+    background: linear-gradient(135deg, var(--brand-2), var(--brand));
+    box-shadow: 0 6px 18px -6px rgba(34,211,238,.6);
+  }
+  .step h2 { font-size: clamp(1.15rem, 4.5vw, 1.45rem); margin: 4px 0 2px; }
+  .step .sub { color: var(--ink-dim); font-size: .9rem; margin: 0; }
+  .step p, .step li { color: var(--ink-soft); }
+  .step strong, .step b { color: var(--ink); }
+  .step a { color: var(--brand-2); }
+
+  h3.mini { font-size: 1rem; margin: 22px 0 8px; color: var(--ink);
+    display: flex; align-items: center; gap: 8px; }
+  h3.mini::before { content: ""; width: 8px; height: 8px; border-radius: 3px;
+    background: var(--brand-2); }
+
+  /* ============ Code blocks ============ */
+  .code {
+    position: relative;
+    background: #070b18;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin: 12px 0;
+    overflow: hidden;
+  }
+  .code-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: #0d1428; border-bottom: 1px solid var(--line);
+  }
+  .code-bar span { font-size: .72rem; color: var(--ink-dim); letter-spacing: .05em;
+    text-transform: uppercase; font-weight: 700; }
+  .copy {
+    border: 1px solid var(--line); background: var(--card);
+    color: var(--ink-soft); font-size: .72rem; font-weight: 700;
+    padding: 5px 11px; border-radius: 8px; cursor: pointer;
+    transition: background .15s, color .15s; white-space: nowrap;
+  }
+  .copy:hover { background: var(--brand); color: #fff; }
+  .copy.done { background: var(--green); color: #04210f; border-color: var(--green); }
+  pre {
+    margin: 0; padding: 14px 12px; overflow-x: auto;
+    font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: .85rem; line-height: 1.6; color: #d7e3ff;
+    -webkit-overflow-scrolling: touch;
+  }
+  pre .c { color: #5d6b9c; } /* comment */
+  pre .k { color: var(--brand-2); } /* key/cmd */
+  code.inline {
+    font-family: ui-monospace, Consolas, monospace; font-size: .85em;
+    background: #070b18; border: 1px solid var(--line);
+    padding: 2px 7px; border-radius: 6px; color: var(--brand-2);
+    word-break: break-word;
+  }
+
+  /* ============ Callouts ============ */
+  .note {
+    border-radius: 12px; padding: 14px 16px; margin: 14px 0;
+    border: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start;
+    font-size: .92rem;
+  }
+  .note .ico { flex: 0 0 auto; font-size: 1.2rem; line-height: 1.4; }
+  .note.tip  { background: rgba(52,211,153,.10); border-color: rgba(52,211,153,.4); }
+  .note.warn { background: rgba(251,191,36,.10); border-color: rgba(251,191,36,.45); }
+  .note.dang { background: rgba(244,63,94,.10);  border-color: rgba(244,63,94,.45); }
+  .note.info { background: rgba(99,102,241,.10); border-color: rgba(99,102,241,.45); }
+  .note b { color: var(--ink); }
+
+  /* ============ Tables ============ */
+  .table-scroll { overflow-x: auto; margin: 14px 0; -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: .88rem; }
+  th, td { text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line); }
+  th { background: #0d1428; color: var(--brand-2); font-size: .76rem;
+    text-transform: uppercase; letter-spacing: .05em; }
+  td { color: var(--ink-soft); vertical-align: top; }
+  td code, th code { font-size: .82em; }
+  tr:last-child td { border-bottom: none; }
+
+  /* ============ Checklist ============ */
+  ul.check { list-style: none; padding: 0; margin: 12px 0; }
+  ul.check li { position: relative; padding: 6px 0 6px 30px; }
+  ul.check li::before {
+    content: "✓"; position: absolute; left: 0; top: 6px;
+    width: 20px; height: 20px; border-radius: 6px;
+    background: rgba(52,211,153,.15); color: var(--green);
+    display: grid; place-items: center; font-size: .8rem; font-weight: 800;
+  }
+
+  ol.flow { padding-left: 20px; }
+  ol.flow li { margin: 8px 0; }
+
+  .kv { display: grid; gap: 6px; margin: 10px 0; }
+  .kv div { display: flex; flex-wrap: wrap; gap: 6px; }
+  .kv .t { color: var(--ink-dim); min-width: 130px; font-size: .85rem; }
+
+  /* ============ Footer ============ */
+  footer {
+    text-align: center; padding: 40px 16px 60px; color: var(--ink-dim);
+    font-size: .85rem;
+  }
+  footer .pyr { font-size: 1.6rem; margin-bottom: 8px; }
+  footer a { color: var(--brand-2); }
+
+  hr.div { border: none; border-top: 1px dashed var(--line); margin: 18px 0; }
+
+  /* progress bar */
+  #progress { position: fixed; top: 0; left: 0; height: 3px; width: 0%;
+    background: linear-gradient(90deg, var(--brand-2), var(--brand), var(--accent));
+    z-index: 99; transition: width .1s; }
+
+  /* ============ Larger screens ============ */
+  @media (min-width: 720px) {
+    .wrap { padding: 0 24px; }
+    section.step { padding: 30px 30px 34px; }
+    header.hero { padding: 80px 24px 48px; }
+    nav.toc { padding: 24px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    #progress { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header class="hero">
+  <span class="badge">🎾 Production Deployment Guide</span>
+  <h1>Stecher Tennis auf einem frischen Raspberry&nbsp;Pi&nbsp;5</h1>
+  <p class="lead">Schritt-für-Schritt von der leeren SD-Karte zur fertigen, öffentlich
+    per&nbsp;HTTPS erreichbaren Tennis-App — vollständig in&nbsp;Docker, mit DuckDNS und FritzBox.</p>
+  <div class="hero-meta">
+    <span class="chip"><b>Stack:</b> Docker Compose</span>
+    <span class="chip"><b>TLS:</b> Caddy + DuckDNS</span>
+    <span class="chip"><b>App:</b> Flask · v3.61</span>
+    <span class="chip"><b>Ziel:</b> RPi 5 (64-bit)</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc" aria-label="Inhaltsverzeichnis">
+    <h2>Ablauf — was du tun wirst</h2>
+    <ol>
+      <li><a href="#s0">Was du vorbereitest (Überblick &amp; Reihenfolge)</a></li>
+      <li><a href="#s1">Raspberry Pi OS installieren &amp; erster Start</a></li>
+      <li><a href="#s1b">SSH absichern (Schlüssel + Härtung)</a></li>
+      <li><a href="#s2">System aktualisieren &amp; absichern</a></li>
+      <li><a href="#s3">Feste IP-Adresse vergeben</a></li>
+      <li><a href="#s4">Docker &amp; Docker Compose installieren</a></li>
+      <li><a href="#s5">DuckDNS-Domain einrichten (Domain + Token)</a></li>
+      <li><a href="#s6">DuckDNS-Updater (IP automatisch melden)</a></li>
+      <li><a href="#s7">FritzBox: Portfreigaben einrichten</a></li>
+      <li><a href="#s8">App-Repository holen</a></li>
+      <li><a href="#s9">.env-Konfiguration ausfüllen</a></li>
+      <li><a href="#s10">Container starten (Staging-Zertifikat)</a></li>
+      <li><a href="#s11">Auf Produktions-Zertifikat umstellen</a></li>
+      <li><a href="#s12">Funktionstest &amp; erste Anmeldung</a></li>
+      <li><a href="#s13">Backups, Auto-Updates &amp; Wartung</a></li>
+      <li><a href="#s14">Fehlersuche (Troubleshooting)</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===================== 0 ===================== -->
+  <section class="step" id="s0">
+    <div class="step-head">
+      <div class="step-num">0</div>
+      <div><h2>Was du vorbereitest</h2>
+        <p class="sub">Überblick, damit nichts in falscher Reihenfolge passiert.</p></div>
+    </div>
+    <p>Du baust folgende Kette: <b>Internet → FritzBox (Portfreigabe) → Raspberry Pi → Caddy-Container (HTTPS) → App-Container (Flask)</b>.
+       DuckDNS sorgt dafür, dass dein Name (z.&nbsp;B. <code class="inline">nechvatal.duckdns.org</code>) immer auf
+       deine wechselnde Heim-IP zeigt, und Caddy holt automatisch ein gültiges Let's-Encrypt-Zertifikat.</p>
+
+    <h3 class="mini">Hardware-Checkliste</h3>
+    <ul class="check">
+      <li>Raspberry Pi 5 (4&nbsp;GB oder 8&nbsp;GB)</li>
+      <li>Offizielles 27&nbsp;W USB-C Netzteil (Pi&nbsp;5 braucht es wirklich)</li>
+      <li>microSD-Karte ≥&nbsp;32&nbsp;GB (oder besser: NVMe-SSD via HAT)</li>
+      <li>Netzwerkkabel zur FritzBox (LAN ist stabiler als WLAN für einen Server)</li>
+      <li>Ein zweiter PC mit dem <b>Raspberry Pi Imager</b></li>
+    </ul>
+
+    <h3 class="mini">Was du dir vorab besorgst</h3>
+    <ul class="check">
+      <li>Einen kostenlosen <b>DuckDNS-Account</b> (Login per Google/GitHub) → liefert <b>Subdomain</b> + <b>Token</b></li>
+      <li>Zugang zur <b>FritzBox-Oberfläche</b> (<code class="inline">http://fritz.box</code>) als Admin</li>
+      <li>Eine E-Mail-Adresse für die Let's-Encrypt-Registrierung</li>
+    </ul>
+
+    <div class="note info"><span class="ico">💡</span>
+      <div>Die ganze App läuft in zwei Containern. Du musst auf dem Pi <b>kein Python, kein
+      gunicorn und kein Caddy</b> nativ installieren — Docker bringt alles mit. Die alte
+      systemd-Variante aus früheren Anleitungen wird <b>nicht</b> mehr benötigt.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 1 ===================== -->
+  <section class="step" id="s1">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div><h2>Raspberry Pi OS installieren</h2>
+        <p class="sub">Mit dem Raspberry Pi Imager auf die SD-Karte / SSD schreiben.</p></div>
+    </div>
+    <ol class="flow">
+      <li>Lade den <a href="https://www.raspberrypi.com/software/" target="_blank" rel="noopener">Raspberry Pi Imager</a> auf deinem PC herunter.</li>
+      <li>Wähle: <b>Device</b> = Raspberry Pi 5, <b>OS</b> = <i>Raspberry Pi OS (64-bit)</i> (Lite reicht — kein Desktop nötig), <b>Storage</b> = deine Karte/SSD.</li>
+      <li>Klicke auf das Zahnrad / <b>„Einstellungen bearbeiten"</b> und setze vorab:</li>
+    </ol>
+    <div class="kv">
+      <div><span class="t">Hostname:</span> <code class="inline">stechertennis</code></div>
+      <div><span class="t">Benutzername:</span> <code class="inline">stecher</code></div>
+      <div><span class="t">Passwort:</span> ein starkes Passwort</div>
+      <div><span class="t">SSH:</span> aktivieren (Passwort-Authentifizierung)</div>
+      <div><span class="t">WLAN/Locale:</span> optional, Zeitzone <code class="inline">Europe/Vienna</code></div>
+    </div>
+    <p>Schreibe das Image, stecke die Karte in den Pi, verbinde LAN-Kabel und Strom. Nach ~1&nbsp;Minute ist er im Netz.</p>
+
+    <h3 class="mini">Per SSH einloggen</h3>
+    <div class="code">
+      <div class="code-bar"><span>auf deinem PC</span><button class="copy">Kopieren</button></div>
+<pre><span class="c"># Hostname funktioniert meist direkt; sonst die IP aus der FritzBox nehmen</span>
+ssh stecher@stechertennis.local</pre>
+    </div>
+    <div class="note tip"><span class="ico">✅</span>
+      <div>Findest du den Pi nicht? Schau in der FritzBox unter <b>Heimnetz → Netzwerk</b>
+      nach dem Gerät <code class="inline">stechertennis</code> und nutze dessen IP.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 1b — SSH hardening ===================== -->
+  <section class="step" id="s1b">
+    <div class="step-head">
+      <div class="step-num">1b</div>
+      <div><h2>SSH absichern (Schlüssel + Härtung)</h2>
+        <p class="sub">Pflicht, sobald der Server öffentlich erreichbar ist. Reihenfolge genau einhalten.</p></div>
+    </div>
+
+    <h3 class="mini">1) Schlüsselpaar auf deinem PC erzeugen</h3>
+    <div class="code">
+      <div class="code-bar"><span>auf deinem PC</span><button class="copy">Kopieren</button></div>
+<pre>ssh-keygen -t ed25519 -C "stecher-tennis"   <span class="c"># ed25519 = modern &amp; sicher</span>
+ssh-copy-id stecher@stechertennis.local     <span class="c"># public key auf den Pi kopieren</span></pre>
+    </div>
+    <div class="note dang"><span class="ico">🚪</span>
+      <div><b>Jetzt testen, bevor du Passwörter abschaltest:</b> In einem <u>zweiten</u> Terminal
+        <code class="inline">ssh stecher@stechertennis.local</code> — der Login muss <b>ohne Passwort</b>
+        klappen. Erst danach weiter. Sonst sperrst du dich aus.</div>
+    </div>
+
+    <h3 class="mini">2) SSH-Server härten</h3>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>sudo nano /etc/ssh/sshd_config.d/99-hardening.conf</pre>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>99-hardening.conf</span><button class="copy">Kopieren</button></div>
+<pre>Port 10115                       <span class="c"># abweichender Port (optional, gegen Scan-Lärm)</span>
+AddressFamily inet               <span class="c"># nur IPv4</span>
+PermitRootLogin no
+PubkeyAuthentication yes
+PasswordAuthentication no        <span class="c"># Passwort-Login AUS</span>
+KbdInteractiveAuthentication no
+AuthenticationMethods publickey
+MaxAuthTries 3
+MaxSessions 4
+LoginGraceTime 30</pre>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>prüfen &amp; neu laden</span><button class="copy">Kopieren</button></div>
+<pre>sudo sshd -t                     <span class="c"># Syntax prüfen — muss fehlerfrei sein</span>
+sudo systemctl restart ssh
+<span class="c"># neuer Login: ssh -p 10115 stecher@stechertennis.local</span></pre>
+    </div>
+    <div class="note warn"><span class="ico">🧱</span>
+      <div>Wenn du <b>Port 10115</b> nutzt: leg dir auf dem PC einen Alias in
+        <code class="inline">~/.ssh/config</code> an (<code class="inline">Host pi</code> /
+        <code class="inline">Port 10115</code>). <b>Leg keine SSH-Portfreigabe in der FritzBox an</b> —
+        SSH bleibt LAN-only; nach außen gehen nur 80 und 10443 (Schritt&nbsp;7).</div>
+    </div>
+  </section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="step" id="s2">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div><h2>System aktualisieren</h2>
+        <p class="sub">Erst alles auf den neuesten Stand bringen.</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>sudo apt-get update &amp;&amp; sudo apt-get upgrade -y
+sudo apt-get install -y git curl
+sudo systemctl enable --now systemd-timesyncd   <span class="c"># korrekte Uhrzeit (wichtig für TLS!)</span></pre>
+    </div>
+    <div class="note warn"><span class="ico">⏰</span>
+      <div>Eine <b>korrekte Systemzeit</b> ist Pflicht — Let's-Encrypt-Zertifikate werden sonst
+      als „nicht gültig" abgelehnt. Der NTP-Dienst oben erledigt das automatisch.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="step" id="s3">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div><h2>Feste IP-Adresse vergeben</h2>
+        <p class="sub">Damit die FritzBox-Portfreigabe immer das richtige Gerät trifft.</p></div>
+    </div>
+    <p>Der Pi braucht eine <b>gleichbleibende interne IP</b>. Zwei Wege — wähle einen:</p>
+
+    <h3 class="mini">Variante A — empfohlen: feste Zuweisung in der FritzBox</h3>
+    <p>In der FritzBox unter <b>Heimnetz → Netzwerk → </b> beim Gerät <code class="inline">stechertennis</code>
+       auf <b>Bearbeiten</b> → Häkchen bei <b>„Diesem Netzwerkgerät immer die gleiche
+       IPv4-Adresse zuweisen"</b>. Fertig, kein Eingriff am Pi nötig.</p>
+
+    <h3 class="mini">Variante B — statisch direkt am Pi</h3>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>sudo nmtui
+<span class="c"># → Edit a connection → Wired → IPv4 CONFIGURATION = Manual</span>
+<span class="c">#   Addresses: 192.168.1.213/24</span>
+<span class="c">#   Gateway:   192.168.1.1   (IP deiner FritzBox)</span>
+<span class="c">#   DNS:       8.8.8.8</span>
+sudo systemctl restart NetworkManager
+hostname -I   <span class="c"># prüfen</span></pre>
+    </div>
+    <div class="note info"><span class="ico">📝</span>
+      <div>Merke dir die IP (im Beispiel <b>192.168.1.213</b>) — du brauchst sie gleich für die FritzBox-Portfreigabe.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="step" id="s4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div><h2>Docker &amp; Docker Compose installieren</h2>
+        <p class="sub">Ein Befehl, danach einmal neu einloggen.</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $(whoami)
+exit                       <span class="c"># abmelden, damit die Gruppe greift</span></pre>
+    </div>
+    <p>Neu einloggen und prüfen:</p>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi (neue Sitzung)</span><button class="copy">Kopieren</button></div>
+<pre>ssh stecher@stechertennis.local
+docker --version
+docker compose version
+sudo systemctl enable docker   <span class="c"># Autostart beim Booten</span></pre>
+    </div>
+    <div class="note tip"><span class="ico">✅</span>
+      <div>Beide Versionsausgaben ohne Fehler = Docker läuft. <code class="inline">docker run hello-world</code>
+        ist ein optionaler Zusatztest.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 5 ===================== -->
+  <section class="step" id="s5">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div><h2>DuckDNS-Domain einrichten</h2>
+        <p class="sub">Was wir von DuckDNS brauchen: Subdomain + Token.</p></div>
+    </div>
+    <ol class="flow">
+      <li>Auf <a href="https://www.duckdns.org" target="_blank" rel="noopener">duckdns.org</a> einloggen (Google/GitHub/Reddit).</li>
+      <li>Oben im Feld eine <b>Subdomain</b> eintragen, z.&nbsp;B. <code class="inline">nechvatal</code> → <b>add domain</b>.
+          Deine öffentliche Adresse ist dann <code class="inline">nechvatal.duckdns.org</code>.</li>
+      <li>Ganz oben steht dein <b>token</b> — eine 36-stellige UUID. <b>Diese zwei Werte brauchst du:</b></li>
+    </ol>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Was</th><th>Beispiel</th><th>Wofür</th></tr>
+        <tr><td><b>Domain</b><br>(ohne <code>.duckdns.org</code>)</td><td><code>nechvatal</code></td><td>App-URL &amp; Zertifikatsname</td></tr>
+        <tr><td><b>Token</b></td><td><code>f5035eb4-6739-…-5ee827c7062d</code></td><td>DNS-01-Challenge (Caddy holt Zertifikat) <i>und</i> IP-Updater</td></tr>
+      </table>
+    </div>
+    <div class="note dang"><span class="ico">🔒</span>
+      <div>Der <b>Token ist ein Geheimnis</b> — er erlaubt das Ändern deiner DNS-Einträge.
+        Nie in ein öffentliches Repo committen, nur in die <code class="inline">.env</code> (Schritt&nbsp;9).</div>
+    </div>
+    <div class="note info"><span class="ico">🌐</span>
+      <div><b>Warum DuckDNS?</b> Deine Heim-IP von A1/Magenta wechselt. DuckDNS hält den Namen
+        aktuell. Außerdem nutzt Caddy die <b>DNS-01-Methode</b>: das Zertifikat wird über einen
+        DNS-Eintrag bestätigt — dafür ist der Token nötig, und Port&nbsp;80 muss dafür <i>nicht</i> offen sein.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 6 ===================== -->
+  <section class="step" id="s6">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div><h2>DuckDNS-Updater einrichten</h2>
+        <p class="sub">Hält den Domain-Eintrag auf deine aktuelle Heim-IP aktuell.</p></div>
+    </div>
+    <p>Ein kleines Skript meldet alle 5&nbsp;Minuten die aktuelle öffentliche IP an DuckDNS.</p>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>mkdir -p ~/duckdns &amp;&amp; cd ~/duckdns
+nano duck.sh</pre>
+    </div>
+    <p>Inhalt (Domain &amp; Token anpassen — <code class="inline">ip=</code> leer lassen, DuckDNS erkennt die IP selbst):</p>
+    <div class="code">
+      <div class="code-bar"><span>~/duckdns/duck.sh</span><button class="copy">Kopieren</button></div>
+<pre>echo url="https://www.duckdns.org/update?domains=nechvatal&amp;token=DEIN-TOKEN&amp;ip=&amp;verbose=true" \
+  | curl -k -o ~/duckdns/duck.log -K -</pre>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>chmod 700 duck.sh
+./duck.sh &amp;&amp; cat duck.log     <span class="c"># muss "OK" zeigen</span>
+
+crontab -e
+<span class="c"># diese Zeile ans Ende setzen — alle 5 Minuten aktualisieren:</span>
+*/5 * * * * /home/stecher/duckdns/duck.sh >/dev/null 2>&amp;1</pre>
+    </div>
+    <p>Test der Namensauflösung:</p>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>ping -c 3 nechvatal.duckdns.org   <span class="c"># sollte deine öffentliche IP zeigen</span></pre>
+    </div>
+  </section>
+
+  <!-- ===================== 7 ===================== -->
+  <section class="step" id="s7">
+    <div class="step-head">
+      <div class="step-num">7</div>
+      <div><h2>FritzBox: Portfreigaben</h2>
+        <p class="sub">Damit das Internet den Caddy-Container erreicht.</p></div>
+    </div>
+    <p>Öffne <code class="inline">http://fritz.box</code> → <b>Internet → Freigaben → Portfreigaben</b> →
+       <b>Gerät für Freigaben hinzufügen</b> und wähle den Pi (<code class="inline">stechertennis</code>).
+       Lege <b>zwei</b> Regeln an:</p>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Bezeichnung</th><th>Protokoll</th><th>Port extern</th><th>an Gerät (Pi)</th><th>Port intern</th></tr>
+        <tr><td>HTTPS (App)</td><td>TCP</td><td><b>10443</b></td><td>192.168.1.213</td><td><b>443</b></td></tr>
+        <tr><td>HTTP→HTTPS Redirect</td><td>TCP</td><td><b>80</b></td><td>192.168.1.213</td><td><b>80</b></td></tr>
+      </table>
+    </div>
+    <div class="note info"><span class="ico">🔁</span>
+      <div><b>Warum 10443 statt 443 außen?</b> Viele Provider/FritzBox-Setups belegen 443 selbst
+        (Fernzugang). 10443 weicht dem aus. Deine öffentliche App-URL wird dadurch
+        <code class="inline">https://nechvatal.duckdns.org:10443</code>. Innen lauscht Caddy weiterhin auf 443.</div>
+    </div>
+    <div class="note warn"><span class="ico">📶</span>
+      <div><b>Wichtig — keine DS-Lite-Leitung:</b> Du brauchst eine <b>öffentliche IPv4-Adresse</b>.
+        Prüfe in der FritzBox unter <b>Internet → Online-Monitor</b>. Steht dort nur eine
+        IPv6-/DS-Lite-Adresse, ist die App von außen über IPv4 nicht erreichbar — dann beim
+        Provider eine öffentliche IPv4 anfragen.</div>
+    </div>
+    <div class="note info"><span class="ico">ℹ️</span>
+      <div><b>NAT-Hairpin:</b> Der Aufruf der externen URL <i>aus dem eigenen WLAN</i> klappt bei
+        manchen FritzBox-Modellen nicht (bekannte Router-Eigenheit). Teste dann über das
+        Mobilfunknetz (WLAN am Handy aus).</div>
+    </div>
+  </section>
+
+  <!-- ===================== 8 ===================== -->
+  <section class="step" id="s8">
+    <div class="step-head">
+      <div class="step-num">8</div>
+      <div><h2>App-Repository holen</h2>
+        <p class="sub">Wir brauchen nur die Konfigurationsdateien — die Images kommen fertig von GHCR.</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>cd ~
+git clone -b docker https://github.com/AINxtGenDev/stecher_tennis.git
+cd stecher_tennis</pre>
+    </div>
+    <div class="note tip"><span class="ico">📦</span>
+      <div>Die Container-Images (<code class="inline">stecher-tennis-app</code> und
+        <code class="inline">stecher-tennis-caddy</code>) liegen multi-arch (amd64 + <b>arm64</b>) auf der
+        GitHub Container Registry. Auf dem Pi wird automatisch die arm64-Variante gezogen — du
+        musst <b>nichts selbst bauen</b>.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 9 ===================== -->
+  <section class="step" id="s9">
+    <div class="step-head">
+      <div class="step-num">9</div>
+      <div><h2>.env-Konfiguration ausfüllen</h2>
+        <p class="sub">Das Herzstück — hier kommen DuckDNS-Domain, Token &amp; Secret rein.</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>cp .env.example .env
+python3 -c "import secrets; print(secrets.token_hex(32))"   <span class="c"># SECRET_KEY erzeugen</span>
+nano .env</pre>
+    </div>
+    <p>Trage deine Werte ein. Beginne bewusst mit dem <b>Staging</b>-ACME (Testzertifikat),
+       damit du bei Tippfehlern nicht ins Let's-Encrypt-Limit läufst:</p>
+    <div class="code">
+      <div class="code-bar"><span>.env</span><button class="copy">Kopieren</button></div>
+<pre><span class="c"># --- Flask ---</span>
+<span class="k">SECRET_KEY</span>=&lt;hier den 64-Zeichen-Hex-Wert von oben&gt;
+<span class="k">CORS_ALLOWED_ORIGINS</span>=https://nechvatal.duckdns.org:10443
+<span class="k">FLASK_DEBUG</span>=false
+
+<span class="c"># --- HTTPS / DuckDNS ---</span>
+<span class="k">DUCKDNS_DOMAIN</span>=nechvatal          <span class="c"># OHNE .duckdns.org</span>
+<span class="k">DUCKDNS_TOKEN</span>=dein-36-stelliger-token
+<span class="k">ACME_EMAIL</span>=deine-email@example.com
+<span class="k">HTTPS_PORT</span>=10443
+
+<span class="c"># Zuerst STAGING (Test), später auf production umstellen (Schritt 11):</span>
+<span class="k">ACME_CA</span>=https://acme-staging-v02.api.letsencrypt.org/directory</pre>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Variable</th><th>Bedeutung</th><th>Muss passen zu</th></tr>
+        <tr><td><code>SECRET_KEY</code></td><td>Verschlüsselung der Sitzungen</td><td>—</td></tr>
+        <tr><td><code>CORS_ALLOWED_ORIGINS</code></td><td>erlaubte Browser-Herkunft</td><td><b>exakt</b> der User-URL inkl. <code>:10443</code>, kein Slash am Ende</td></tr>
+        <tr><td><code>DUCKDNS_DOMAIN</code></td><td>Subdomain</td><td>Schritt 5</td></tr>
+        <tr><td><code>DUCKDNS_TOKEN</code></td><td>DNS-01-Challenge</td><td>Schritt 5</td></tr>
+        <tr><td><code>HTTPS_PORT</code></td><td>externer Port</td><td>FritzBox-Regel (10443)</td></tr>
+        <tr><td><code>ACME_CA</code></td><td>Zertifikats-Server</td><td>Staging → später Production</td></tr>
+      </table>
+    </div>
+    <div class="note dang"><span class="ico">⚠️</span>
+      <div><code class="inline">CORS_ALLOWED_ORIGINS</code> muss <b>zeichengenau</b> mit der Adresse
+        übereinstimmen, die im Browser steht — inklusive <code class="inline">:10443</code>. Sonst
+        baut sich die Pyramide nicht auf (kein Live-Update). Das ist die häufigste Stolperfalle.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 10 ===================== -->
+  <section class="step" id="s10">
+    <div class="step-head">
+      <div class="step-num">10</div>
+      <div><h2>Container starten (mit Staging-Zertifikat)</h2>
+        <p class="sub">Erster echter Start — Images ziehen und hochfahren.</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>im Ordner ~/stecher_tennis</span><button class="copy">Kopieren</button></div>
+<pre>docker compose pull          <span class="c"># lädt app- und caddy-Image (arm64)</span>
+docker compose up -d         <span class="c"># startet im Hintergrund</span>
+docker compose ps            <span class="c"># Status prüfen</span></pre>
+    </div>
+    <p>Beide Container sollen laufen, die App als <b>(healthy)</b>. Caddy holt jetzt im Hintergrund
+       das Zertifikat über DuckDNS:</p>
+    <div class="code">
+      <div class="code-bar"><span>Logs ansehen</span><button class="copy">Kopieren</button></div>
+<pre>docker compose logs -f caddy   <span class="c"># Strg+C zum Beenden</span>
+<span class="c"># Erfolg: "certificate obtained successfully"</span></pre>
+    </div>
+    <div class="note tip"><span class="ico">🧪</span>
+      <div>Ruf testweise <code class="inline">https://nechvatal.duckdns.org:10443</code> auf.
+        Beim <b>Staging</b>-Zertifikat warnt der Browser („nicht vertrauenswürdig") — das ist
+        <b>erwartet</b> und beweist, dass die ganze Kette funktioniert. Klicke „trotzdem fortfahren"
+        und prüfe, ob die App lädt.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 11 ===================== -->
+  <section class="step" id="s11">
+    <div class="step-head">
+      <div class="step-num">11</div>
+      <div><h2>Auf Produktions-Zertifikat umstellen</h2>
+        <p class="sub">Erst wenn Staging einwandfrei lief — dann gibt's das „grüne Schloss".</p></div>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>im Ordner ~/stecher_tennis</span><button class="copy">Kopieren</button></div>
+<pre><span class="c"># 1) ACME auf production umstellen</span>
+sed -i 's|acme-staging-v02|acme-v02|' .env
+
+<span class="c"># 2) Stack stoppen</span>
+docker compose down
+
+<span class="c"># 3) zwischengespeicherte Staging-Zertifikate löschen</span>
+docker volume rm $(docker volume ls -q | grep caddy_data)
+
+<span class="c"># 4) mit echten Zertifikaten neu starten</span>
+docker compose up -d</pre>
+    </div>
+    <p>Nach 1–2&nbsp;Minuten ist <code class="inline">https://nechvatal.duckdns.org:10443</code>
+       <b>ohne Warnung</b> erreichbar — fertige Produktionsumgebung. 🎉</p>
+    <div class="note warn"><span class="ico">🔁</span>
+      <div>Nach <b>jeder</b> Änderung in <code class="inline">.env</code> gilt:
+        <code class="inline">docker compose down &amp;&amp; docker compose up -d</code> — ein bloßes
+        <code class="inline">restart</code> liest die Datei <b>nicht</b> neu ein.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 12 ===================== -->
+  <section class="step" id="s12">
+    <div class="step-head">
+      <div class="step-num">12</div>
+      <div><h2>Funktionstest &amp; erste Anmeldung</h2>
+        <p class="sub">App läuft — jetzt Daten prüfen und absichern.</p></div>
+    </div>
+    <p>Die Datenbank wird beim ersten Start automatisch aus <code class="inline">initial_players.json</code>
+       befüllt. Melde dich als <b>Superadmin</b> an und passe an:</p>
+    <ul class="check">
+      <li>Login öffnen, Standard-Zugangsdaten sofort ändern (Passwort-Reset im Superadmin-Bereich)</li>
+      <li>Unter <code class="inline">/db_settings</code> die Spielerliste prüfen / pflegen</li>
+      <li>Eine Test-Forderung anlegen und ein Ergebnis eintragen → Pyramide aktualisiert sich live</li>
+    </ul>
+    <div class="note dang"><span class="ico">🔑</span>
+      <div>Ändere die <b>Standard-Passwörter</b> aus <code class="inline">initial_players.json</code>
+        unbedingt vor dem öffentlichen Betrieb.</div>
+    </div>
+  </section>
+
+  <!-- ===================== 13 ===================== -->
+  <section class="step" id="s13">
+    <div class="step-head">
+      <div class="step-num">13</div>
+      <div><h2>Backups, Auto-Updates &amp; Wartung</h2>
+        <p class="sub">Damit der Server unbeaufsichtigt zuverlässig läuft.</p></div>
+    </div>
+
+    <h3 class="mini">Datenbank-Backup per Cron</h3>
+    <p>Die SQLite-DB liegt im Docker-Volume <code class="inline">tennis_data</code>. Ein einfaches,
+       konsistentes Backup über den laufenden Container:</p>
+    <div class="code">
+      <div class="code-bar"><span>~/backup-db.sh</span><button class="copy">Kopieren</button></div>
+<pre>#!/bin/bash
+cd ~/stecher_tennis
+mkdir -p ~/db-backups
+STAMP=$(date +%Y-%m-%dT%H-%M-%S)
+<span class="c"># Python-Backup-API (im Image vorhanden) — konsistent auch im WAL-Modus.</span>
+<span class="c"># sqlite3-CLI gibt es im slim-Image NICHT, deshalb python -c:</span>
+docker compose exec -T app python -c "
+import sqlite3
+s=sqlite3.connect('/app/data/tennis.db'); d=sqlite3.connect('/app/data/backup-$STAMP.db')
+s.backup(d); d.close(); s.close()"
+docker compose cp app:/app/data/backup-$STAMP.db ~/db-backups/
+docker compose exec -T app rm -f /app/data/backup-$STAMP.db
+<span class="c"># nur die letzten 30 Backups behalten</span>
+ls -1t ~/db-backups/*.db | tail -n +31 | xargs -r rm</pre>
+    </div>
+    <div class="code">
+      <div class="code-bar"><span>einrichten</span><button class="copy">Kopieren</button></div>
+<pre>chmod +x ~/backup-db.sh
+crontab -e
+<span class="c"># alle 3 Stunden sichern:</span>
+0 */3 * * * /home/stecher/backup-db.sh >/dev/null 2>&amp;1</pre>
+    </div>
+
+    <h3 class="mini">App aktualisieren (neue Version)</h3>
+    <div class="code">
+      <div class="code-bar"><span>im Ordner ~/stecher_tennis</span><button class="copy">Kopieren</button></div>
+<pre>git pull                <span class="c"># falls sich compose/Caddyfile geändert hat</span>
+docker compose pull     <span class="c"># neues Image holen</span>
+docker compose up -d     <span class="c"># rollend neu starten</span></pre>
+    </div>
+
+    <h3 class="mini">System-Updates &amp; wöchentlicher Reboot</h3>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre>sudo apt-get install -y unattended-upgrades
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+
+sudo crontab -e
+<span class="c"># Sonntag 04:00 neu starten (Container starten dank restart-Policy automatisch):</span>
+0 4 * * 0 /usr/sbin/shutdown -r now</pre>
+    </div>
+    <div class="note tip"><span class="ico">🛡️</span>
+      <div>Die Container starten dank <code class="inline">restart: unless-stopped</code> nach jedem
+        Reboot von allein. Zusätzlich sind sie gehärtet: <b>read-only Dateisystem</b>,
+        <b>no-new-privileges</b> und alle Linux-Capabilities entfernt (Caddy behält nur
+        <code class="inline">NET_BIND_SERVICE</code>).</div>
+    </div>
+  </section>
+
+  <!-- ===================== 14 ===================== -->
+  <section class="step" id="s14">
+    <div class="step-head">
+      <div class="step-num">14</div>
+      <div><h2>Fehlersuche</h2>
+        <p class="sub">Die häufigsten Stolpersteine und ihre Lösung.</p></div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Symptom</th><th>Ursache &amp; Lösung</th></tr>
+        <tr><td>Seite nicht erreichbar (von außen)</td>
+            <td>FritzBox-Portfreigabe prüfen (10443→443, 80→80); öffentliche IPv4 vorhanden? (kein DS-Lite); DuckDNS-IP aktuell? <code>ping nechvatal.duckdns.org</code></td></tr>
+        <tr><td>TLS-/Zertifikatsfehler</td>
+            <td><code>caddy_data</code>-Volume löschen &amp; neu starten:<br><code>docker compose down &amp;&amp; docker volume rm $(docker volume ls -q | grep caddy_data) &amp;&amp; docker compose up -d</code></td></tr>
+        <tr><td>Pyramide baut sich nicht auf</td>
+            <td><code>CORS_ALLOWED_ORIGINS</code> muss <b>exakt</b> der Browser-URL entsprechen (inkl. <code>:10443</code>, kein Slash). Danach <code>down &amp;&amp; up -d</code>.</td></tr>
+        <tr><td>„too many certificates" von Let's Encrypt</td>
+            <td>Du hast zu oft mit Production getestet. Mit <code>acme-staging-v02</code> weiterarbeiten, ~1 Woche warten.</td></tr>
+        <tr><td>Container startet nicht / unhealthy</td>
+            <td><code>docker compose logs app</code> bzw. <code>logs caddy</code> ansehen; meist fehlender/fehlerhafter <code>.env</code>-Wert.</td></tr>
+        <tr><td>Eigene URL klappt nur vom Handy</td>
+            <td>NAT-Hairpin der FritzBox — kein Fehler der App. Von außen (Mobilfunk) testen.</td></tr>
+      </table>
+    </div>
+
+    <h3 class="mini">Nützliche Befehle</h3>
+    <div class="code">
+      <div class="code-bar"><span>Diagnose</span><button class="copy">Kopieren</button></div>
+<pre>docker compose ps                 <span class="c"># Status &amp; Health</span>
+docker compose logs -f app        <span class="c"># App-Logs live</span>
+docker compose logs -f caddy      <span class="c"># Caddy/TLS-Logs live</span>
+docker compose restart            <span class="c"># Neustart (ohne .env-Reload!)</span>
+docker compose down               <span class="c"># stoppen (Daten im Volume bleiben)</span></pre>
+    </div>
+  </section>
+
+  <footer>
+    <div class="pyr">🎾</div>
+    <p><b>Stecher Tennis</b> · Production Deployment auf Raspberry Pi 5 · Docker + Caddy + DuckDNS</p>
+    <p>Öffentliche URL nach Abschluss: <a href="#s11">https://&lt;deine-domain&gt;.duckdns.org:10443</a></p>
+  </footer>
+</div>
+
+<script>
+  // Copy buttons — copy the <pre> text of the same .code block
+  document.querySelectorAll('.code').forEach(function(block){
+    var btn = block.querySelector('.copy');
+    var pre = block.querySelector('pre');
+    if(!btn || !pre) return;
+    btn.addEventListener('click', function(){
+      var text = pre.innerText;
+      navigator.clipboard.writeText(text).then(function(){
+        var old = btn.textContent;
+        btn.textContent = '✓ Kopiert';
+        btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1600);
+      });
+    });
+  });
+
+  // Scroll progress bar
+  var bar = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var scrolled = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = (scrolled || 0) + '%';
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+</body>
+</html>
