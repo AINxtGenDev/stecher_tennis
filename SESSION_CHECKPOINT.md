@@ -2,10 +2,37 @@
 
 **Date:** 2026-06-17
 **Branch:** docker
-**Version:** 3.61
-**Latest commit:** `50e60fd` chore: untrack committed __pycache__ .pyc files
-**Git Status:** `main` == `docker` == `50e60fd` (both pushed); untracked: `REVIEW.md`, `REVIEW-TEMPLATES.md` (not committed)
-**Production:** **v3.61 live on RPi** (deployed 2026-06-17; container hardening active since 2026-04-08)
+**Version:** 3.62 (committed, NOT yet deployed)
+**Latest commit:** `515975b` fix: validate match winner against set scores server-side (WR-07)
+**Git Status:** `docker` ahead of `origin/docker` (testing/WR-07 commits unpushed); `main` behind; untracked: `REVIEW*.md`, `testing-17062026.md`, `test-screenshots/`
+**Production:** **v3.61 live on RPi** (v3.62 built but not deployed; container hardening active since 2026-04-08)
+
+## Current Session (2026-06-17, evening) — Production E2E test + WR-07 fix + v3.62
+
+### Live E2E test of v3.61 (testing-17062026.md)
+Ran a full browser+endpoint test against **production** (`nechvatal.duckdns.org`) as superadmin.
+Server was free for testing for 3 days. **Backed up the live DB first** (41 players/119 challenges →
+`~/tennis.pretest-backup-20260617.db` on RPi + in `tennis_data` volume), ran the destructive suite,
+then **restored** — production data unchanged (verified Harbarth r1, 41 players, 36 matches).
+
+**21 features PASS, 0 regressions.** Covered: login, pyramid, nav, Socket.IO, eligibility (all pyramid
+tiers match source), challenge create→result→re-rank (with shift), opponent-wins + 7-day block (re-challenge
+rejected), not_happened, availability toggle, new-player entry + name validation, admin UI, all DB-settings
+ops, full DB reset, logout. **CR-02 confirmed fixed live** (duplicate names rejected on add + update).
+
+**Issue found → WR-07 (confirmed live):** `/submit_result` did NOT cross-validate winner vs score. A direct
+POST of `result=challenger_wins` with score `1:6 2:6` was accepted and promoted the loser (rank 42→13).
+Client-side validation blocked it in-browser but was bypassable.
+Also re-confirmed IN-04 (default password `DefaultPassword1!` returned to client) and that `/submit_result`
+returns HTML not JSON. Not testable live: CR-01 (needs 10-day-expired deadline / TEST_DATE), WR-02 (needs a
+player-level account).
+
+### WR-07 fix (`515975b`, v3.62)
+Added `_parse_set_score()` (server port of client `parseSetScore()`), recompute the winner from set scores
+in `submit_result`, reject when it contradicts the claimed result — before any DB write. Added an early
+result allowlist. Aufgabe/Disqualifikation/not_happened skip the score check. Bumped 3.61→3.62.
+Verified: 9/9 tests pass; the exact bug case now rejects; valid 2/3-set + tie-break accept.
+**Not yet pushed or deployed.**
 
 ## Current Session (2026-06-17, later) — RPi 5 install guide
 
@@ -84,9 +111,10 @@ all 9 tests pass (7 existing + 2 new smoke tests).
   lives only in worktree branch `worktree-agent-a2f0416f`. Revisit if that fix is still wanted.
 
 ### Still open (deferred)
-- REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06, WR-07 + 5 Info
+- REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06 + 5 Info  (~~WR-07~~ fixed 2026-06-17 in v3.62)
 - REVIEW-TEMPLATES.md: all 13 findings (6 Warning, 7 Info)
 - Deploy to second club (ts-breaking.duckdns.org)
+- **Push + deploy v3.62** (WR-07 fix) to RPi, then merge docker → main
 
 ## Prior Session (2026-04-17)
 
