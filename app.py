@@ -12,7 +12,6 @@ eventlet.monkey_patch()
 
 import re
 import os
-import shutil
 import tempfile
 from urllib.parse import urlparse
 from dotenv import load_dotenv
@@ -2578,29 +2577,28 @@ def import_database():
             try:
                 conn.execute("SELECT id, name, username, password_hash, rank, available, privilege_level FROM players LIMIT 1")
                 conn.execute("SELECT id, challenger_id, opponent_id, timestamp, deadline, resolved, result FROM challenges LIMIT 1")
+                conn.execute("SELECT key, value FROM app_settings LIMIT 1")
+                conn.execute("SELECT * FROM completed_challenges_view LIMIT 1")
             except sqlite3.OperationalError:
                 conn.close()
-                return jsonify({"success": False, "message": "Die Datenbank hat nicht das erwartete Schema (players/challenges Tabellen fehlen oder sind unvollständig)."}), 400
+                return jsonify({"success": False, "message": "Die Datenbank hat nicht das erwartete Schema (players-, challenges- oder app_settings-Tabelle bzw. completed_challenges_view fehlen oder sind unvollständig)."}), 400
             conn.close()
         except sqlite3.DatabaseError:
             return jsonify({"success": False, "message": "Die Datei ist keine gültige SQLite-Datenbank."}), 400
 
-        # Close existing connection and replace with WAL checkpoint + lock
+        # Replace the live DB contents using the SQLite backup API (same as
+        # export). The backup copies page-by-page under SQLite's own locking,
+        # so it is safe even when other requests hold open connections — unlike
+        # a raw file copy, which can corrupt concurrent readers mid-write (WR-04).
         with _db_import_lock:
-            # Checkpoint WAL to ensure all data is in the main DB file
+            close_db(None)  # drop this request's connection before replacing
+            src_conn = sqlite3.connect(tmp_path)
+            dst_conn = sqlite3.connect(db_path)
             try:
-                live_conn = sqlite3.connect(db_path)
-                live_conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                live_conn.close()
-            except Exception:
-                pass  # DB may not exist yet or not be in WAL mode
-            close_db(None)
-            shutil.copy2(tmp_path, db_path)
-            # Remove stale WAL/SHM files
-            for suffix in ("-wal", "-shm"):
-                wal_path = db_path + suffix
-                if os.path.exists(wal_path):
-                    os.remove(wal_path)
+                src_conn.backup(dst_conn)
+            finally:
+                dst_conn.close()
+                src_conn.close()
         logger.info(f"Database imported by superadmin {current_user.username}")
         return jsonify({"success": True, "message": "Datenbank erfolgreich importiert. Seite wird neu geladen."})
     finally:
