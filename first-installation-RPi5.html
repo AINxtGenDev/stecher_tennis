@@ -255,7 +255,7 @@
   <div class="hero-meta">
     <span class="chip"><b>Stack:</b> Docker Compose</span>
     <span class="chip"><b>TLS:</b> Caddy + DuckDNS</span>
-    <span class="chip"><b>App:</b> Flask · v3.61</span>
+    <span class="chip"><b>App:</b> Flask · v3.62</span>
     <span class="chip"><b>Ziel:</b> RPi 5 (64-bit)</span>
   </div>
 </header>
@@ -762,6 +762,36 @@ ls -1t ~/db-backups/*.db | tail -n +31 | xargs -r rm</pre>
 crontab -e
 <span class="c"># alle 3 Stunden sichern:</span>
 0 */3 * * * /home/stecher/backup-db.sh >/dev/null 2>&amp;1</pre>
+    </div>
+
+    <h3 class="mini">Datenbank wiederherstellen</h3>
+    <p>Ein Backup aus <code class="inline">~/db-backups/</code> zurückspielen. Die DB-Datei muss dabei
+       <b>App-Container-intern dem Benutzer <code class="inline">appuser</code> (UID&nbsp;1000)</b> gehören —
+       sonst startet die App nur lesend und jede Forderung/jedes Ergebnis scheitert mit
+       <code class="inline">readonly database</code>.</p>
+    <div class="code">
+      <div class="code-bar"><span>auf dem Pi</span><button class="copy">Kopieren</button></div>
+<pre><span class="c"># gewünschtes Backup auswählen (Dateiname aus ~/db-backups/):</span>
+BACKUP=backup-2026-06-17T19-45-00.db
+VOL=$(docker volume ls -q | grep tennis_data)
+
+docker compose stop app                      <span class="c"># DB-Datei freigeben</span>
+
+<span class="c"># Einmal-Container OHNE Härtung: kopieren + Eigentümer auf UID 1000 setzen.</span>
+<span class="c"># (Der App-Container selbst kann wegen cap_drop:ALL nicht chownen — auch nicht als root.)</span>
+docker run --rm -v "$VOL":/data -v ~/db-backups:/bk:ro alpine sh -c \
+  "cp /bk/$BACKUP /data/tennis.db && chown 1000:1000 /data/tennis.db && \
+   chmod 600 /data/tennis.db && rm -f /data/tennis.db-wal /data/tennis.db-shm"
+
+docker compose start app
+docker compose ps app                        <span class="c"># muss wieder (healthy) sein</span></pre>
+    </div>
+    <div class="note dang"><span class="ico">🔑</span>
+      <div><b>Der <code class="inline">chown 1000:1000</code>-Schritt ist Pflicht.</b> Wird die DB-Datei
+        als <code class="inline">root</code> ins Volume gelegt (z.&nbsp;B. durch einen Root-Container),
+        kann die App nicht schreiben. Kontrolle:
+        <code class="inline">docker compose exec app ls -l /app/data/tennis.db</code> →
+        Eigentümer muss <code class="inline">appuser</code> sein.</div>
     </div>
 
     <h3 class="mini">App aktualisieren (neue Version)</h3>
