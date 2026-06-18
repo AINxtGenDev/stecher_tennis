@@ -1,11 +1,69 @@
 # Session Checkpoint
 
-**Date:** 2026-06-17
+**Date:** 2026-06-18
 **Branch:** docker
 **Version:** 3.63
 **Latest commit:** `4d62333` docs: add Round 3 import-hardening (WR-04) test results to report
 **Git Status:** `docker` pushed; `main` being merged up to it; untracked: `REVIEW*.md`, `test-screenshots/`
-**Production:** **v3.63 live on RPi** (deployed 2026-06-18; WR-07 + WR-04 fixes verified live; container hardening active since 2026-04-08)
+**Production #1 (club Nechvatal):** **v3.63 live** on RPi @ `nechvatal.duckdns.org:10443` (WR-07 + WR-04 verified live; container hardening since 2026-04-08)
+**Production #2 (club TC Breakpoint):** **v3.63 live NEW** on RPi 5 @ `tc-breakpoint-rangliste.duckdns.org:10445` — fresh stand-up 2026-06-18 (see below)
+**Test system:** RPi 5 @ `192.168.1.213` (FritzBox label `stechertennis`)
+
+## Current Session (2026-06-18, later) — NEW production server stand-up (club TC Breakpoint)
+
+Stood up a **second production deployment** from scratch on a fresh **Raspberry Pi 5** for club *TC Breakpoint*.
+**⚠️ This box is now production. The old `192.168.1.213` RPi is the TEST system.**
+
+### Box identity & access
+- **Prod:** `192.168.1.180`, OS hostname `stechertennis`, **FritzBox device label `tc-breakpoint`** (label ≠ hostname — see gotcha).
+- SSH: `ssh -i ~/.ssh/stecher_tennis_key -o IdentitiesOnly=yes stecher@192.168.1.180 -p 10115` (key-only, passwordless sudo).
+- RPi 5, Debian 12 bookworm, kernel 6.12, **NVMe SSD 917 GB**, 8 GB RAM, NTP synced (Europe/Vienna).
+
+### Housekeeping (removed dead scaffolding)
+- `~/stecher_tennis` was an **empty Python 3.11 venv** (no app code/DB) left from an abandoned native install → removed.
+- Old DuckDNS cron pointed at `tc-breakpoint-forderung` and was **failing (502)** → removed. No Docker/Caddy/systemd app remnants.
+
+### SSH hardening
+- Set **`PermitRootLogin no`** in `/etc/ssh/sshd_config.d/50-keys-only.conf` (was `prohibit-password`), `sshd -t` OK, reloaded.
+  Now: port 10115, password auth off, root login off, pubkey only.
+
+### Local `.env` production-block fixes (untracked file, both test+prod blocks)
+- `HTTPS_PORT` **10444 → 10445** (typo; must match FritzBox forward + CORS).
+- `DUCKDNS_DOMAIN` **tc-breakpoint → tc-breakpoint-rangliste** (real domain; cert hostname must match).
+- `SECRET_KEY` placeholder → **real 64-hex** (value lives only in `.env`, not here).
+- `ACME_CA` staging → **production** (`acme-v02`).
+- `.env` confirmed **git-ignored** (rule `.env` at `.gitignore:14`; never tracked/committed). Note: rule covers only `.env`, not `.env.*` variants.
+
+### DuckDNS updater (reboot-safe)
+- `~/duckdns/duck.sh` (perms 700), domain `tc-breakpoint-rangliste`, token in script (own DuckDNS acct, ≠ Nechvatal's).
+- Manual run returned **`OK`** → token owns the subdomain. `*/5` cron installed; `cron` enabled at boot + crontab persisted on disk → survives reboot.
+- `tc-breakpoint-rangliste.duckdns.org` resolves to **`178.190.41.149`** (the public IPv4).
+
+### FritzBox (7590, FRITZ!OS 8.25 @ `192.168.1.254`, user wpl)
+- Real **public IPv4 `178.190.41.149`** (not DS-Lite).
+- Verified via UI (chrome-devtools): port share **`TC-BREAKPOINT` ext TCP 10445 → `192.168.1.180:10445`** (green/active). User reserved `.180` (static DHCP).
+- Only 10445 forwarded — fine for **DNS-01** ACME (port 80 not needed). No conflict with test `.213` (which forwards 443/80/10556/10557).
+- **Gotcha:** FritzBox labels are confusing — `.180`(prod) is labelled `tc-breakpoint`, `.213`(test) is labelled `stechertennis`. Routing is by IP; `.180` is correct.
+
+### Docker install + deploy (v3.63)
+- Installed Docker **29.5.3** + Compose **v5.1.4** via official `get.docker.com` script; service **enabled at boot**; `stecher` added to `docker` group (root-equiv).
+- `git clone -b docker` → `~/stecher_tennis`; wrote **clean production-only `.env`** (KEY=VALUE only — did NOT copy the dual-block local `.env`, which would break parsing).
+- `compose pull` (arm64) + `up -d`: app **healthy**, DB initialized + **seeded initial players**, both containers `restart=unless-stopped`.
+- **Caddy obtained a real Let's Encrypt cert via DNS-01** for `tc-breakpoint-rangliste.duckdns.org` (issuer acme-v02, valid **Jun 18 → Sep 16 2026**). No staging volume to wipe (fresh box).
+- Verified from Pi (`curl --resolve`): TLS verify=0, `302 → /login`, `/login` = **200**; `:80 → https` redirect works.
+- Benign Caddy warning `unable to autosave config … read-only fs` — harmless (read_only container; cert storage on `caddy_data` volume).
+
+### Reboot survival — VERIFIED (actually rebooted prod)
+Rebooted `192.168.1.180` (boot_id changed) and confirmed the whole stack self-healed with **zero manual steps**:
+- Docker service `active` (enabled at boot); both containers auto-restarted via `restart=unless-stopped` — app **healthy** within ~18s.
+- HTTPS `/login` = **200**, `tls_verify=0` (trusted). **Caddy reused the cert from the `caddy_data` volume — no re-issuance** (no LE rate-limit hit).
+- DuckDNS `*/5` cron still present; SSH back on 10115 (key-only, root off).
+- Came back fully in ~30–40s. A power cut / unattended reboot recovers the site automatically.
+
+### ⏳ Still to confirm / do
+- **External inbound test from cellular (Wi-Fi off):** `https://tc-breakpoint-rangliste.duckdns.org:10445` — only thing not verifiable from LAN (NAT-hairpin limitation). Everything up to the Pi is green.
+- Consider changing the **default superadmin password** on the fresh DB (IN-04: default `DefaultPassword1!`).
+- Optional: rename FritzBox `.180` device label to reduce confusion; add `@reboot` DuckDNS entry.
 
 ## Current Session (2026-06-18) — WR-04 DB-import fix + v3.63
 
