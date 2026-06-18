@@ -2,10 +2,26 @@
 
 **Date:** 2026-06-17
 **Branch:** docker
-**Version:** 3.62
-**Latest commit:** `9692cb1` docs: record E2E test + WR-07 fix + v3.62 in session checkpoint
-**Git Status:** `docker` pushed; `main` being merged up to it; untracked: `REVIEW*.md`, `testing-17062026.md`, `test-screenshots/`
-**Production:** **v3.62 live on RPi** (deployed 2026-06-17; WR-07 fix verified live; container hardening active since 2026-04-08)
+**Version:** 3.63
+**Latest commit:** `4d62333` docs: add Round 3 import-hardening (WR-04) test results to report
+**Git Status:** `docker` pushed; `main` being merged up to it; untracked: `REVIEW*.md`, `test-screenshots/`
+**Production:** **v3.63 live on RPi** (deployed 2026-06-18; WR-07 + WR-04 fixes verified live; container hardening active since 2026-04-08)
+
+## Current Session (2026-06-18) — WR-04 DB-import fix + v3.63
+
+### WR-04 fix: concurrency-safe DB import (testing-17062026.md "Round 3")
+Tested the `/db_settings` DB import live (v3.62): worked but not "always-safe" — it used `shutil.copy2`
+to overwrite the live DB (can corrupt concurrent readers mid-write), and only validated players/challenges.
+Fixed in **v3.63**:
+- `import_database` now uses the SQLite **backup API** (`src.backup(dst)`, same as export) — page-by-page under
+  SQLite locking, safe with concurrent connections. Dropped the manual WAL-checkpoint/-wal/-shm cleanup and the
+  now-unused `import shutil`.
+- Validation additionally requires the `app_settings` table and `completed_challenges_view` (rejects
+  structurally-incompatible `.db` up front instead of breaking at runtime).
+Deployed v3.63, re-tested live: import fired with **25 parallel reads** → all returned 41 players, **zero
+corruption**; data intact + writable after import; garbage/wrong-ext rejected (400); partial-schema DB rejected
+(unit-verified). Production backed up (`~/tennis.preimport-v363.db`) and unchanged.
+Note: web-UI import is the *safe* way to swap the DB — the app (appuser) writes it, so no root-owned/readonly trap.
 
 ## Current Session (2026-06-17, evening) — Production E2E test + WR-07 fix + v3.62
 
@@ -123,7 +139,7 @@ all 9 tests pass (7 existing + 2 new smoke tests).
   lives only in worktree branch `worktree-agent-a2f0416f`. Revisit if that fix is still wanted.
 
 ### Still open (deferred)
-- REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06 + 5 Info  (~~WR-07~~ fixed 2026-06-17 in v3.62)
+- REVIEW.md: WR-01, WR-02, WR-05, WR-06 + 5 Info  (~~WR-07~~ v3.62, ~~WR-04~~ v3.63; IN-04 default passwords still open)
 - REVIEW-TEMPLATES.md: all 13 findings (6 Warning, 7 Info)
 - Deploy to second club (ts-breaking.duckdns.org)
 - ~~Push + deploy v3.62 (WR-07 fix) + merge docker → main~~ done 2026-06-17/18
