@@ -17,3 +17,6 @@ SESSION_CHECKPOINT.md
 __pycache__/
 *.db
 
+
+# Player/admin login handouts (contain credentials — keep out of git)
+spieler*.txt

@@ -60,6 +60,11 @@ Rebooted `192.168.1.180` (boot_id changed) and confirmed the whole stack self-he
 - DuckDNS `*/5` cron still present; SSH back on 10115 (key-only, root off).
 - Came back fully in ~30–40s. A power cut / unattended reboot recovers the site automatically.
 
+### Post-deploy (same session) — DB restore + login handouts
+- User **restored a newer DB** onto prod: now **41 accounts** = 39 players + 2 superadmins (M. Stecher `MStecher` r9, M. Nechvatal `MNechvatal` r19). Roster still carries the original Stecher-club names (restored from there, not a fresh TC-Breakpoint roster).
+- Generated German login handouts from the **live** DB: `spieler.txt` (39 players) + `spieler_admins.txt` (2 admins). Login URL = `https://tc-breakpoint-rangliste.duckdns.org:10445`; usernames = initial(s)+surname; `/change_password` is admin-only (players can't self-change).
+- Both handouts are **git-ignored** (`.gitignore: spieler*.txt`) — credentials never committed (passwords live only in the local files).
+
 ### ⏳ Still to confirm / do
 - **External inbound test from cellular (Wi-Fi off):** `https://tc-breakpoint-rangliste.duckdns.org:10445` — only thing not verifiable from LAN (NAT-hairpin limitation). Everything up to the Pi is green.
 - Consider changing the **default superadmin password** on the fresh DB (IN-04: default `DefaultPassword1!`).
