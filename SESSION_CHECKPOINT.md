@@ -2,10 +2,10 @@
 
 **Date:** 2026-06-17
 **Branch:** docker
-**Version:** 3.62 (committed, NOT yet deployed)
-**Latest commit:** `515975b` fix: validate match winner against set scores server-side (WR-07)
-**Git Status:** `docker` ahead of `origin/docker` (testing/WR-07 commits unpushed); `main` behind; untracked: `REVIEW*.md`, `testing-17062026.md`, `test-screenshots/`
-**Production:** **v3.61 live on RPi** (v3.62 built but not deployed; container hardening active since 2026-04-08)
+**Version:** 3.62
+**Latest commit:** `9692cb1` docs: record E2E test + WR-07 fix + v3.62 in session checkpoint
+**Git Status:** `docker` pushed; `main` being merged up to it; untracked: `REVIEW*.md`, `testing-17062026.md`, `test-screenshots/`
+**Production:** **v3.62 live on RPi** (deployed 2026-06-17; WR-07 fix verified live; container hardening active since 2026-04-08)
 
 ## Current Session (2026-06-17, evening) — Production E2E test + WR-07 fix + v3.62
 
@@ -32,7 +32,19 @@ Added `_parse_set_score()` (server port of client `parseSetScore()`), recompute 
 in `submit_result`, reject when it contradicts the claimed result — before any DB write. Added an early
 result allowlist. Aufgabe/Disqualifikation/not_happened skip the score check. Bumped 3.61→3.62.
 Verified: 9/9 tests pass; the exact bug case now rejects; valid 2/3-set + tie-break accept.
-**Not yet pushed or deployed.**
+
+### v3.62 pushed, deployed + re-tested live (testing-17062026.md "Round 2")
+Pushed `docker`, built multi-arch, deployed to RPi (`compose pull && up -d`, healthy, `APP_VERSION="3.62"`).
+Re-ran the full suite against production (fresh backup `~/tennis.pretest-v362.db` → test → restore).
+**WR-07 fix confirmed live**: `challenger_wins` + `1:6 2:6` now rejected (no write/no promotion); contradictory
+`opponent_wins` and invalid formats rejected; valid results still accept + re-rank. 0 regressions; all Round-1
+features re-pass. Production restored (41 players, Harbarth r1) and **writable**.
+
+**⚠️ Operational gotcha found & fixed:** the earlier v3.61 restore left `/app/data/tennis.db` owned by `root`,
+so the app (`appuser` uid 1000) could read but NOT write — production was effectively read-only between that
+restore and the v3.62 round (challenge/result submits would have failed with "readonly database"). Hardened
+containers (`cap_drop: ALL`) can't `chown` even as root; fixed via a one-off container `chown 1000:1000`.
+**Lesson: any DB placed into the volume out-of-band MUST be chowned to uid 1000, then restart app.**
 
 ## Current Session (2026-06-17, later) — RPi 5 install guide
 
@@ -114,7 +126,7 @@ all 9 tests pass (7 existing + 2 new smoke tests).
 - REVIEW.md: WR-01, WR-02, WR-04, WR-05, WR-06 + 5 Info  (~~WR-07~~ fixed 2026-06-17 in v3.62)
 - REVIEW-TEMPLATES.md: all 13 findings (6 Warning, 7 Info)
 - Deploy to second club (ts-breaking.duckdns.org)
-- **Push + deploy v3.62** (WR-07 fix) to RPi, then merge docker → main
+- ~~Push + deploy v3.62 (WR-07 fix) + merge docker → main~~ done 2026-06-17/18
 
 ## Prior Session (2026-04-17)
 
