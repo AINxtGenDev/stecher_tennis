@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Tennis-Rangliste (Ansicht)</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" />
+  <style>
+    body { background: #fff; }
+    .ranking-header { text-align: center; margin-bottom: 20px; background-color: #f8e473; padding: 20px; border-bottom: 3px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 10px; }
+    .ranking-header h2 { font-size: 2.2rem; margin: 0; color: #000; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .view-badge { display: inline-block; margin-top: 8px; font-size: 0.85rem; background: #2c7a2c; color: #fff; padding: 2px 12px; border-radius: 12px; }
+    .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-bottom: 15px; }
+    .legend-item { display: flex; align-items: center; font-size: 0.75rem; }
+    .legend-color { width: 16px; height: 16px; border-radius: 3px; margin-right: 5px; border: 1px solid #999; }
+    .legend-item.available .legend-color { background: linear-gradient(145deg, #ffa500, #ff8c00); border-color: #ff8c00; }
+    .legend-item.challenger .legend-color { background: linear-gradient(145deg, #e6ffe6, #ccffcc); border-color: #28a745; }
+    .legend-item.opponent .legend-color { background: linear-gradient(145deg, #ffe6e6, #ffcccc); border-color: #dc3545; }
+    .legend-item.blocked .legend-color { background: linear-gradient(145deg, #ffa500, #ff8c00); border-color: #6c757d; }
+    .legend-item.blocked-loser .legend-color { background: linear-gradient(145deg, #e6e6e6, #cccccc); border-color: #6c757d; }
+    .legend-item.unavailable .legend-color { background: #ffffff; border-color: #cccccc; }
+    .ranking-list { perspective: 800px; display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+    .ranking-list .row { display: flex; justify-content: center; flex-wrap: nowrap; margin: 10px 0; transform: rotateX(8deg); }
+    .ranking-list .player { width: 100px; height: auto; aspect-ratio: 1; flex-shrink: 1; min-width: 0; background: linear-gradient(145deg, #ffa500, #ff8c00); border: 2px solid #ff8c00; color: #000; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-size: 0.75rem; margin: 5px; position: relative; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); overflow: visible; line-height: 1.2; }
+    .ranking-list .player.unavailable { background: #ffffff; border: 2px solid #cccccc; color: #333; }
+    .ranking-list .player.challenger { background: linear-gradient(145deg, #e6ffe6, #ccffcc); border-color: #28a745; color: #333; }
+    .ranking-list .player.opponent { background: linear-gradient(145deg, #ffe6e6, #ffcccc); border-color: #dc3545; color: #333; }
+    .ranking-list .player.blocked { background: linear-gradient(145deg, #ffa500, #ff8c00); border-color: #ff8c00; color: #000; }
+    .ranking-list .player.blocked-loser { background: linear-gradient(145deg, #e6e6e6, #cccccc); border: 2px solid #6c757d; color: #333; }
+    .ranking-list .player.blocked::before, .ranking-list .player.blocked-loser::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient( to top right, rgba(108, 117, 125, 0) 0%, rgba(108, 117, 125, 0) calc(50% - 1px), rgba(108, 117, 125, 0.4) 50%, rgba(108, 117, 125, 0) calc(50% + 1px), rgba(108, 117, 125, 0) 100% ); z-index: 1; pointer-events: none; border-radius: inherit; }
+    .ranking-list .player .player-info { position: relative; z-index: 2; text-align: center; overflow: hidden; text-overflow: ellipsis; width: 100%; box-sizing: border-box; }
+    .ranking-list .player .rank-label { font-weight: 700; white-space: nowrap; }
+    .ranking-list .player .player-name { font-weight: 500; }
+    .ranking-list .player.missing { background: #eee; border-color: #ccc; color: #888; }
+    .info-card { max-width: 700px; margin: 0 auto 12px; text-align: left; background: #fafafa; border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
+    .card-head { cursor: pointer; padding: 10px 15px; user-select: none; }
+    .card-head h4 { margin: 0; font-size: 1.05rem; display: flex; justify-content: space-between; align-items: center; }
+    .card-head .arrow { transition: transform 0.2s; }
+    .card-head.collapsed .arrow { transform: rotate(-90deg); }
+    .badge-count { background: #6c757d; color: #fff; border-radius: 10px; padding: 0 8px; font-size: 0.8rem; margin-right: 8px; }
+    .card-body-list { padding: 0 15px 12px; }
+    .entry { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px dotted #ddd; gap: 10px; flex-wrap: wrap; }
+    .challenger-name-color { color: #28a745; font-weight: bold; }
+    .opponent-name-color { color: #dc3545; font-weight: bold; }
+    .meta-info { white-space: nowrap; font-size: 0.8rem; color: #555; }
+    .result-challenger-wins { color: #28a745; }
+    .result-opponent-wins { color: #dc3545; }
+    .result-not-happened { color: #777; font-style: italic; }
+    footer { margin-top: 30px; padding: 15px; text-align: center; font-size: 0.8rem; color: #777; }
+    @media (max-width: 576px) {
+      .ranking-header h2 { font-size: 1.4rem; }
+      .ranking-list { perspective: none; }
+      .ranking-list .row { transform: none; margin: 3px 0; }
+      .ranking-list .player { width: 64px; font-size: 0.6rem; margin: 2px; }
+      .rank-prefix { display: none; }
+      .info-card { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-3">
+    <header class="ranking-header">
+      <h2>Tennis-Rangliste 2026</h2>
+      <span class="view-badge">Nur-Lese-Ansicht</span>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item available"><div class="legend-color"></div>Verfügbar</div>
+      <div class="legend-item challenger"><div class="legend-color"></div>Herausforderer</div>
+      <div class="legend-item opponent"><div class="legend-color"></div>Gegner</div>
+      <div class="legend-item blocked"><div class="legend-color"></div>Gegner (Gesperrt)</div>
+      <div class="legend-item blocked-loser"><div class="legend-color"></div>Herausforderer (Gesperrt)</div>
+      <div class="legend-item unavailable"><div class="legend-color"></div>Nicht verfügbar</div>
+    </div>
+
+    <div class="ranking-list">{# Populated by JS #}</div>
+
+    <div class="info-card"><div class="card-head collapsed" data-target="#active-list"><h4>Aktive Herausforderungen <span><span class="badge-count" id="active-count">0</span><span class="arrow">▼</span></span></h4></div><div id="active-list" class="card-body-list" style="display:none;"></div></div>
+    <div class="info-card"><div class="card-head collapsed" data-target="#blocked-list"><h4>Gesperrte Spieler <span><span class="badge-count" id="blocked-count">0</span><span class="arrow">▼</span></span></h4></div><div id="blocked-list" class="card-body-list" style="display:none;"></div></div>
+    <div class="info-card"><div class="card-head collapsed" data-target="#unavailable-list"><h4>Nicht verfügbare Spieler <span><span class="badge-count" id="unavailable-count">0</span><span class="arrow">▼</span></span></h4></div><div id="unavailable-list" class="card-body-list" style="display:none;"></div></div>
+    <div class="info-card"><div class="card-head collapsed" data-target="#completed-list"><h4>Durchgeführte Herausforderungen <span><span class="badge-count" id="completed-count">0</span><span class="arrow">▼</span></span></h4></div><div id="completed-list" class="card-body-list" style="display:none;"></div></div>
+
+    <footer>
+      <div id="last-updated"></div>
+      <div class="mt-2">Tennis-Rangliste · Nur-Lese-Ansicht · <a href="/login">Anmelden</a></div>
+    </footer>
+  </div>
+
+  <script>
+    $(function () {
+      function escapeHtml(str) { if (str == null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+      $(document).on('click', '.card-head', function () {
+        const $h = $(this); $h.toggleClass('collapsed'); $($h.data('target')).slideToggle(200);
+      });
+
+      function renderPyramid(players, activeChallenges) {
+        const rowSizes = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        const pyramid = []; let start = 0;
+        for (const size of rowSizes) { const row = []; for (let i = 0; i < size; i++) { row.push(start < players.length ? players[start] : null); start++; } pyramid.push(row); }
+        const challengerIds = new Set(activeChallenges.map(c => c.challenger_id));
+        const opponentIds = new Set(activeChallenges.map(c => c.opponent_id));
+        const $list = $('.ranking-list'); $list.empty();
+        pyramid.forEach((row, rowIndex) => {
+          const $rowDiv = $('<div class="row"></div>');
+          const isRowEmpty = !row.some(p => p !== null);
+          row.forEach(player => {
+            if (player) {
+              let cls = 'player';
+              if (!player.available) cls += ' unavailable';
+              else if (challengerIds.has(player.id)) cls += ' challenger';
+              else if (opponentIds.has(player.id)) cls += ' opponent';
+              else if (player.blocked_opponent) cls += ' blocked';
+              else if (player.blocked_challenger) cls += ' blocked-loser';
+              $rowDiv.append(`<div class="${cls}"><div class="player-info"><span class="rank-label"><span class="rank-prefix">Rang </span>${player.rank}</span><br><span class="player-name">${escapeHtml(player.name)}</span></div></div>`);
+            } else {
+              $rowDiv.append('<div class="player missing"><div class="player-info">Leer</div></div>');
+            }
+          });
+          if (rowIndex === pyramid.length - 1 && isRowEmpty) { $rowDiv.hide(); }
+          $list.append($rowDiv);
+        });
+      }
+
+      function renderActive(challenges) {
+        $('#active-count').text(challenges.length);
+        const $l = $('#active-list'); $l.empty();
+        if (!challenges.length) { $l.html('<p class="text-muted mb-0">Derzeit keine aktiven Herausforderungen.</p>'); return; }
+        challenges.forEach(c => {
+          let termin = 'Termin: offen';
+          if (c.scheduled_date) { termin = 'Termin: ' + escapeHtml(c.scheduled_date) + (c.scheduled_time ? ' ' + escapeHtml(c.scheduled_time) : ''); }
+          $l.append(`<div class="entry"><span><span class="challenger-name-color">${escapeHtml(c.challenger_name)}</span> gegen <span class="opponent-name-color">${escapeHtml(c.opponent_name)}</span></span><span class="meta-info">${termin} · Frist: ${escapeHtml(c.deadline_formatted || 'N/A')}</span></div>`);
+        });
+      }
+
+      function renderBlocked(challengers, opponents) {
+        const total = new Set([...challengers.map(p => p.id), ...opponents.map(p => p.id)]).size;
+        $('#blocked-count').text(total);
+        const $l = $('#blocked-list'); let html = '<strong>Gesperrte Herausforderer:</strong>';
+        if (challengers.length) { challengers.forEach(p => { html += `<div class="entry"><span>${escapeHtml(p.name)}</span><span class="meta-info">gesperrt bis: ${escapeHtml(p.block_challenger_until_formatted || 'N/A')}</span></div>`; }); }
+        else { html += '<p class="ms-3 fst-italic mb-1">Keine.</p>'; }
+        html += '<br><strong>Gesperrte Gegner:</strong>';
+        if (opponents.length) { opponents.forEach(p => { html += `<div class="entry"><span>${escapeHtml(p.name)}</span><span class="meta-info">gesperrt bis: ${escapeHtml(p.block_opponent_until_formatted || 'N/A')}</span></div>`; }); }
+        else { html += '<p class="ms-3 fst-italic mb-0">Keine.</p>'; }
+        $l.html(html);
+      }
+
+      function renderUnavailable(list) {
+        $('#unavailable-count').text(list.length);
+        const $l = $('#unavailable-list'); $l.empty();
+        if (!list.length) { $l.html('<p class="text-muted mb-0">Alle Spieler sind derzeit verfügbar.</p>'); return; }
+        list.forEach(p => { const reason = p.unavailability_reason ? `(${escapeHtml(p.unavailability_reason)})` : ''; $l.append(`<div class="entry"><span>${escapeHtml(p.name)}</span><span class="meta-info">nicht verfügbar seit: ${escapeHtml(p.unavailable_since_formatted || 'N/A')} ${reason}</span></div>`); });
+      }
+
+      function renderCompleted(list) {
+        $('#completed-count').text(list.length);
+        const $l = $('#completed-list'); $l.empty();
+        if (!list.length) { $l.html('<p class="text-muted mb-0">Bisher keine durchgeführten Herausforderungen.</p>'); return; }
+        list.forEach(c => {
+          let text = 'Unbekannt', cls = '';
+          if (c.result === 'challenger_wins') { cls = 'result-challenger-wins'; text = `${escapeHtml(c.challenger_name)} gewann: ${escapeHtml(c.score_details || '')}`; }
+          else if (c.result === 'opponent_wins') { cls = 'result-opponent-wins'; text = `${escapeHtml(c.opponent_name)} gewann: ${escapeHtml(c.score_details || '')}`; }
+          else if (c.result === 'not_happened') { cls = 'result-not-happened'; text = 'Nicht stattgefunden'; }
+          $l.append(`<div class="entry"><span>${escapeHtml(c.challenger_name)} gegen ${escapeHtml(c.opponent_name)}</span><span class="completed-result ${cls}">${text.trim()}</span><span class="meta-info">(${escapeHtml(c.resolved_at_formatted || 'N/A')})</span></div>`);
+        });
+      }
+
+      function render(data) {
+        if (!data) return;
+        const players = data.players || [];
+        const active = data.active_challenges || [];
+        renderPyramid(players, active);
+        renderActive(active);
+        renderBlocked(data.blocked_challenger_players || [], data.blocked_opponent_players || []);
+        renderUnavailable(data.unavailable_players || []);
+        renderCompleted(data.completed_challenges || []);
+        if (data.timestamp) { $('#last-updated').text('Stand: ' + data.timestamp); }
+      }
+
+      function load() {
+        $.getJSON('/api/public/ranking').done(function (resp) { if (resp && resp.success) { render(resp.data); } })
+          .fail(function () { console.error('Konnte Ranglistendaten nicht laden.'); });
+      }
+
+      load();
+      setInterval(load, 20000); // poll every 20s; backed by the server's 10s cache
+    });
+  </script>
+</body>
+</html>

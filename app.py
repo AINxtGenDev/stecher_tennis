@@ -31,6 +31,7 @@ from flask import (
     flash,
     send_file,
     after_this_request,
+    make_response,
 )
 from flask_socketio import (
     SocketIO,
@@ -94,7 +95,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.63"
+APP_VERSION = "3.64"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -1176,6 +1177,62 @@ def index():
         logger.exception("Unexpected error on /index route.")
         flash("Ein unerwarteter Fehler ist aufgetreten.", "danger")
         return render_template("error.html", error_message="Unerwarteter Fehler"), 500
+
+
+# --- Public, unauthenticated, read-only ranking ---
+# Whitelisted fields only: the public payload must never leak login identifiers
+# (username), credentials (password_hash) or roles (privilege_level).
+_PUBLIC_PLAYER_FIELDS = (
+    "id", "name", "rank", "available", "in_challenge",
+    "blocked_challenger", "blocked_opponent",
+    "block_challenger_until_formatted", "block_opponent_until_formatted",
+    "unavailable_since_formatted", "unavailability_reason",
+)
+_PUBLIC_CHALLENGE_FIELDS = (
+    "id", "challenger_id", "opponent_id", "challenger_name", "opponent_name",
+    "deadline_formatted", "scheduled_date", "scheduled_time",
+    "result", "score_details", "resolved_at_formatted",
+)
+
+
+def _pick(source, fields):
+    return {key: source.get(key) for key in fields}
+
+
+def _public_ranking_payload():
+    """Minimized, read-only projection of the cached realtime data.
+
+    Reuses get_realtime_data_cached() (10s TTL) so many concurrent public
+    viewers cause at most one DB read per cache window, then strips every
+    field that is not needed to render the ranking.
+    """
+    data = get_realtime_data_cached() or {}
+    return {
+        "timestamp": data.get("timestamp"),
+        "players": [_pick(p, _PUBLIC_PLAYER_FIELDS) for p in data.get("players", [])],
+        "active_challenges": [_pick(c, _PUBLIC_CHALLENGE_FIELDS) for c in data.get("active_challenges", [])],
+        "completed_challenges": [_pick(c, _PUBLIC_CHALLENGE_FIELDS) for c in data.get("completed_challenges", [])],
+        "blocked_challenger_players": [_pick(p, _PUBLIC_PLAYER_FIELDS) for p in data.get("blocked_challenger_players", [])],
+        "blocked_opponent_players": [_pick(p, _PUBLIC_PLAYER_FIELDS) for p in data.get("blocked_opponent_players", [])],
+        "unavailable_players": [_pick(p, _PUBLIC_PLAYER_FIELDS) for p in data.get("unavailable_players", [])],
+    }
+
+
+@app.route("/rangliste")
+def public_ranking():
+    """Public read-only ranking page. No auth, no session, GET only."""
+    resp = make_response(render_template("public_ranking.html"))
+    resp.headers["X-Robots-Tag"] = "noindex"
+    return resp
+
+
+@app.route("/api/public/ranking")
+def api_public_ranking():
+    """Public read-only JSON feed for the ranking page (polled by the client)."""
+    resp = jsonify({"success": True, "data": _public_ranking_payload()})
+    resp.headers["Cache-Control"] = "public, max-age=10"
+    resp.headers["X-Robots-Tag"] = "noindex"
+    return resp
 
 
 @app.route("/admin")

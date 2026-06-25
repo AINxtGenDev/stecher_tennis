@@ -1,13 +1,54 @@
 # Session Checkpoint
 
-**Date:** 2026-06-18
+**Date:** 2026-06-25
 **Branch:** docker
-**Version:** 3.63
-**Latest commit:** `4d62333` docs: add Round 3 import-hardening (WR-04) test results to report
-**Git Status:** `docker` pushed; `main` being merged up to it; untracked: `REVIEW*.md`, `test-screenshots/`
-**Production #1 (club Nechvatal):** **v3.63 live** on RPi @ `nechvatal.duckdns.org:10443` (WR-07 + WR-04 verified live; container hardening since 2026-04-08)
-**Production #2 (club TC Breakpoint):** **v3.63 live NEW** on RPi 5 @ `tc-breakpoint-rangliste.duckdns.org:10445` — fresh stand-up 2026-06-18 (see below)
-**Test system:** RPi 5 @ `192.168.1.213` (FritzBox label `stechertennis`)
+**Version:** 3.64
+**Latest commit:** v3.64 — public read-only ranking page `/rangliste` (this session)
+**Git Status:** `docker`; untracked: `REVIEW*.md`
+**⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
+- **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
+- **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.64 live here.**
+  (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
+
+## Current Session (2026-06-25) — Public read-only ranking page + v3.64
+
+### Feature: public, unauthenticated, read-only ranking (`/rangliste`)
+Implemented the "strongest" viewer-access option from the planning discussion: a public page
+anyone can open with **no login, no credentials, no session** — nothing to leak, infinitely
+concurrent, structurally read-only.
+- `app.py`: two **GET-only** routes — `/rangliste` (renders `templates/public_ranking.html`,
+  `X-Robots-Tag: noindex`) and `/api/public/ranking` (minimized JSON, `Cache-Control: public,
+  max-age=10`, served from the existing 10s `get_realtime_data_cached()` so N viewers cause ≤1 DB
+  read per cache window).
+- Strict field whitelist (`_PUBLIC_PLAYER_FIELDS` / `_PUBLIC_CHALLENGE_FIELDS`) — the payload can
+  **never** carry `username`, `password_hash`, or `privilege_level` (the authenticated `SELECT *`
+  → `serialize_player` path leaks those; deliberately not reused).
+- `templates/public_ranking.html`: self-contained read-only page (pyramid + collapsible status
+  cards, 20s polling). No `<form>`, no CSRF, no Socket.IO, no write controls. Render logic adapted
+  from index.html with all write/interactive parts stripped.
+- **No DB writes** — purely additive read routes, no schema change, existing data untouched.
+- Decision: this replaces the mandated shared-login "Zuseher" viewer account (that separate plan
+  was NOT implemented — public page is more robust: no shared credential, no rate-limit lockout).
+
+### Build + deploy
+- Bumped 3.63 → **3.64** (`APP_VERSION` + index.html footer `25. Juni 2026`).
+- Built multi-arch (amd64+arm64) via `build-and-push.sh`, pushed `:v3.64` + `:latest`. Deployed to
+  the **nechvatal TEST box** (`ssh stecher`, `compose pull && up -d`) — both containers healthy,
+  running `APP_VERSION="3.64"`.
+
+### Tested live (chrome-devtools + curl) on nechvatal
+- `/rangliste` loads unauthenticated (no session cookie); pyramid renders 39 players; cards
+  active 8 / blocked 2 / unavailable 7 / completed 17.
+- Feed: no `username`/`password_hash`/`privilege_level`; `POST /api/public/ranking` → **405**
+  (no write path); headers `Cache-Control: public, max-age=10` + `X-Robots-Tag: noindex`.
+- **Concurrency: 5 then 20 simultaneous viewers → 20/20 page 200 + 39 players, 16× parallel
+  speedup (0.42s wall vs 6.78s serial), zero failures.**
+- Verified locally first against a **COPY** of `db_backup_2026-06-25T19-12-09.db` (original untouched).
+
+### Still open / next
+- Deploy `/rangliste` to **PRODUCTION** (tc-breakpoint) when ready. Tip: app-image-only + arm64-only
+  build is much faster than the full multi-arch (the Caddy image recompiles Caddy from source and
+  hasn't changed).
 
 ## Current Session (2026-06-18, later) — NEW production server stand-up (club TC Breakpoint)
 
