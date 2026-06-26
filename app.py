@@ -95,7 +95,7 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-APP_VERSION = "3.65"
+APP_VERSION = "3.66"
 logger.info(f"Starting Tennis App version: {APP_VERSION}")
 
 app = Flask(__name__)
@@ -1625,7 +1625,9 @@ def _parse_set_score(score_str):
             return None
         if mx == 6 and diff < 2:
             return None
-        if mx == 7 and diff != 2:
+        # mx == 7 is valid only as 7:5 (diff 2) or the abbreviated tiebreak
+        # set 7:6 (diff 1). 7:7 (diff 0) and 7:4-or-lower (diff > 2) are invalid.
+        if mx == 7 and diff not in (1, 2):
             return None
         if p1g == p2g:
             return None
