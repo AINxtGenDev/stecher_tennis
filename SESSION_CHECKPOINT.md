@@ -81,11 +81,22 @@ backup** of the SQLite DB. Commit `11031e7` on `docker` (pushed). Live on **both
   Recent-Changes 2026-06-26 entry. Anchors verified, code fences balanced. (LOC table left stale.)
 - `documentation/db-backup-plan.md` = full design/ops reference (also covers off-site sync).
 
+### Reboot survival re-verified on PROD (after adding backup sidecar + timer)
+- Actually rebooted PROD (boot_id `e6e4be22…`→`235df7e6…`, new uptime 2026-06-26 20:46:21); **back in ~25s**.
+- Self-healed with zero manual steps: Docker `enabled`; **app/caddy/backup** all Up/healthy within ~8s;
+  backup sidecar auto-ran a fresh post-boot backup (18:46:30Z); offsite **timer enabled+active**, re-armed
+  (next 21:10 CEST); `Persistent` correctly did NOT spurious-fire (no run missed in the 25s window);
+  `/login` → 200. Safety backup taken pre-reboot (`tennis-20260626T184558Z.db`).
+- **Pending:** background watcher confirming the offsite timer *fires* at 21:10 CEST (post-reboot) — not yet
+  in this checkpoint.
+
 ### Commits this session (branch `docker`, all pushed)
 - `11031e7` feat: hourly transaction-safe local DB backup sidecar
 - `c25c9a1` feat: off-box backup mirror PROD → TEST (restricted rrsync key + systemd timer)
 - `c5e3e3e` docs: README Docker-focused Install + Database Backups section
+- `8291ab8` docs: checkpoint (backup + off-box + README)
 - PROD app updated 3.63 → **3.67** live (no commit — image pull only); player DB verified identical.
+- PROD rebooted for survival re-verification (no commit — operational).
 
 ### Notes / next
 - **Box identity gotcha:** BOTH RPis report OS hostname `stechertennis`. Disambiguate by
