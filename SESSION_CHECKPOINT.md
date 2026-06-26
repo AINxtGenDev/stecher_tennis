@@ -3,7 +3,7 @@
 **Date:** 2026-06-25
 **Branch:** docker
 **Version:** 3.64
-**Latest commit:** v3.64 — public read-only ranking page `/rangliste` (this session)
+**Latest commit:** `29cf32a` feat: public read-only ranking page `/rangliste` + v3.64
 **Git Status:** `docker`; untracked: `REVIEW*.md`
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
