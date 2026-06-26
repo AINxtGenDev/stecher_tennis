@@ -33,6 +33,12 @@
     .special-result-section select { grid-column: 2 / 3; }
     .score-display-section { margin: 10px 0; padding: 10px; background-color: #f0f0f0; border: 1px dashed var(--border-color); border-radius: 4px; text-align: center; font-size: 1.2rem; font-weight: bold; min-height: 2em; line-height: 1.5em; color: #333; }
     .score-display-section.score-error { color: var(--error-color); border-color: var(--error-color); background-color: #ffe6e6; }
+    /* Live-validation feedback for result entry */
+    .score-display-section { background-color: #d1e7dd; border: 1px solid #badbcc; color: #0f5132; border-style: solid; }
+    .score-input.is-invalid { border-color: var(--error-color) !important; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important; background-color: #fff5f5; }
+    .score-validation { display: none; margin: 8px 0 4px; padding: 8px 12px; border-radius: 6px; font-size: 0.95rem; line-height: 1.35; }
+    .score-validation.error { color: #842029; background-color: #f8d7da; border: 1px solid #f5c2c7; }
+    .score-validation.info { color: #664d03; background-color: #fff3cd; border: 1px solid #ffecb5; }
     .result-dropdown-section { grid-column: 1 / 3; display: grid; grid-template-columns: auto 1fr; gap: 10px 15px; align-items: center; margin-top: 5px; margin-bottom: 0px; }
     .result-dropdown-section label { grid-column: 1 / 2; text-align: right; }
     .result-dropdown-section select { grid-column: 2 / 3; }
@@ -105,7 +111,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="challenge_id" value="{{ challenge.id }}">
             <div class="result-dropdown-section"><label for="result-{{ challenge.id }}">Sieger:</label><select id="result-{{ challenge.id }}" name="result" class="result-select"><option value="">-- Bitte wählen --</option><option class="option-challenger-wins" value="challenger_wins">{{ challenge.challenger_name }} gewinnt</option><option class="option-opponent-wins" value="opponent_wins">{{ challenge.opponent_name }} gewinnt</option><option class="option-not-happened" value="not_happened">Nicht stattgefunden</option></select></div>
-            <div class="result-details-wrapper" style="display: none;"><div class="score-input-section"><label class="score-label">Endergebnis:</label><input type="text" name="set1_score" class="score-input" placeholder="Satz 1: z.B. 0:6" aria-label="Satz 1 Ergebnis"><input type="text" name="set2_score" class="score-input" placeholder="Satz 2: z.B. 7:6(8:6)" aria-label="Satz 2 Ergebnis"><input type="text" name="set3_score" class="score-input" placeholder="Satz 3: z.B. 6:4" aria-label="Satz 3 Ergebnis"></div><div class="special-result-section"><label for="special_result-{{ challenge.id }}">Sonderfall:</label><select id="special_result-{{ challenge.id }}" name="special_result" class="special-result-select"><option value="">-- Kein Sonderfall --</option><option value="Aufgabe">Aufgabe</option><option value="Disqualifikation">Disqualifikation</option></select></div><div id="score-display-{{ challenge.id }}" class="score-display-section"></div><div class="submit-button-section"><button type="submit" class="submit-button" disabled>Ergebnis absenden</button></div></div>
+            <div class="result-details-wrapper" style="display: none;"><div class="score-input-section"><label class="score-label">Endergebnis:</label><input type="text" name="set1_score" class="score-input" placeholder="Satz 1: z.B. 6:4" aria-label="Satz 1 Ergebnis" aria-describedby="score-validation-{{ challenge.id }}" autocomplete="off" inputmode="numeric"><input type="text" name="set2_score" class="score-input" placeholder="Satz 2: z.B. 7:6(8:6)" aria-label="Satz 2 Ergebnis" aria-describedby="score-validation-{{ challenge.id }}" autocomplete="off" inputmode="numeric"><input type="text" name="set3_score" class="score-input" placeholder="Satz 3: z.B. 6:4" aria-label="Satz 3 Ergebnis" aria-describedby="score-validation-{{ challenge.id }}" autocomplete="off" inputmode="numeric"></div><div class="score-validation" id="score-validation-{{ challenge.id }}" role="alert" aria-live="assertive"></div><div class="special-result-section"><label for="special_result-{{ challenge.id }}">Sonderfall:</label><select id="special_result-{{ challenge.id }}" name="special_result" class="special-result-select"><option value="">-- Kein Sonderfall --</option><option value="Aufgabe">Aufgabe</option><option value="Disqualifikation">Disqualifikation</option></select></div><div id="score-display-{{ challenge.id }}" class="score-display-section" aria-live="polite"></div><div class="submit-button-section"><button type="submit" class="submit-button" disabled>Ergebnis absenden</button></div></div>
           </form>
         </div>
       {% endfor %}
@@ -212,14 +218,110 @@
       function add3DEffects() { $(".challenge-container").each(function(index) { if (window.getComputedStyle(document.body).perspective !== 'none') { $(this).css({'transition-delay': `${index * 0.1}s`, 'transform': `translateZ(${10 + index * 2}px)`}); } else { $(this).css({'transition-delay': '', 'transform': ''}); } }); }
       function sanitizeScoreInput(event) { const input = event.target; const originalValue = input.value; const sanitizedValue = originalValue.replace(allowedScoreCharsRegex, ''); if (originalValue !== sanitizedValue) { let start = input.selectionStart; let end = input.selectionEnd; const diff = originalValue.length - sanitizedValue.length; input.value = sanitizedValue; input.setSelectionRange(Math.max(0, start - diff), Math.max(0, end - diff)); } handleInputChange(event); }
       function showConfirmScoreModal(message, callback) { $('#confirmScoreModalBody').text(message); const modal = new bootstrap.Modal($('#confirmScoreModal')[0]); const $btn = $('#confirmScoreBtn'); let answered = false; const cleanup = function() { $btn.off('click.confirm'); $('#confirmScoreModal').off('hidden.bs.modal.confirm'); }; $btn.off('click.confirm').on('click.confirm', function() { answered = true; cleanup(); modal.hide(); callback(true); }); $('#confirmScoreModal').off('hidden.bs.modal.confirm').on('hidden.bs.modal.confirm', function() { if (!answered) { cleanup(); callback(false); } }); modal.show(); }
-      function handleScoreInputBlur(event) { const input = event.target; const $input = $(input); const currentValue = input.value.trim(); const lastConfirmedValue = $input.data('confirmed-value') || ''; if (currentValue && currentValue !== lastConfirmedValue && validScoreFormatRegex.test(currentValue)) { let setName = ''; if (input.name === 'set1_score') setName = 'Satz 1'; else if (input.name === 'set2_score') setName = 'Satz 2'; else if (input.name === 'set3_score') setName = 'Satz 3'; const confirmationMessage = `Bitte bestätige, dass ${setName} mit ${currentValue} beendet wurde.`; showConfirmScoreModal(confirmationMessage, function(confirmed) { if (confirmed) { $input.data('confirmed-value', currentValue); } else { input.value = ''; $input.removeData('confirmed-value'); } handleInputChange(event); }); return; } else if (!currentValue || !validScoreFormatRegex.test(currentValue)) { $input.removeData('confirmed-value'); } handleInputChange(event); }
+      const FORMAT_HINT = 'Erlaubt sind z. B. 6:4, 7:5, 7:6 oder 7:6(7:4).';
+      function clearResetTimer($form) { const t = $form.data(formTimeoutKey); if (t) { clearTimeout(t); $form.removeData(formTimeoutKey); } }
+      function startResetTimer($form) { clearResetTimer($form); $form.data(formTimeoutKey, setTimeout(() => resetForm($form), resetTimeoutDuration)); }
+      // 'empty' nothing typed | 'partial' still being typed (no complete X:Y shape yet) |
+      // 'invalid' complete shape but not a legal set (e.g. 8:6, 7:7) | 'valid' legal set.
+      function classifySet(v) { if (!v) return 'empty'; if (!validScoreFormatRegex.test(v)) return 'partial'; if (parseSetScore(v) === null) return 'invalid'; return 'valid'; }
+      // Single source of truth for live validation, submit-enabling and the confirm summary.
+      function evaluateForm($form) {
+        const winner = $form.find('.result-select').val();
+        const special = $form.find('.special-result-select').val();
+        const $c = $form.closest('.challenge-container');
+        const winnerName = winner === 'challenger_wins' ? $c.find('.challenger-name').text().trim() : winner === 'opponent_wins' ? $c.find('.opponent-name').text().trim() : '';
+        const v = [1, 2, 3].map(n => $form.find('input[name="set' + n + '_score"]').val().trim());
+        const res = { ok: false, severity: 'none', message: '', summary: '', invalidSets: [] };
+        if (!winner) return res;
+        if (winner === 'not_happened') { res.ok = true; res.summary = 'Nicht stattgefunden'; return res; }
+        if (special === 'Aufgabe' || special === 'Disqualifikation') { res.ok = true; res.summary = `${winnerName} gewinnt (${special})`; return res; }
+        const cls = v.map(classifySet);
+        const firstInvalid = cls.indexOf('invalid');
+        if (firstInvalid !== -1) { res.severity = 'error'; res.invalidSets = [firstInvalid + 1]; res.message = `Ungültiges Ergebnis für Satz ${firstInvalid + 1}: „${v[firstInvalid]}". ${FORMAT_HINT}`; return res; }
+        if (cls[0] !== 'valid' || cls[1] !== 'valid') { const anyTyped = v.some(x => x); res.severity = anyTyped ? 'info' : 'none'; res.message = anyTyped ? 'Bitte ein gültiges Ergebnis für Satz 1 und Satz 2 eingeben (z. B. 6:4).' : ''; return res; }
+        let c = 0, o = 0;
+        if (parseSetScore(v[0]).challengerWins) c++; else o++;
+        if (parseSetScore(v[1]).challengerWins) c++; else o++;
+        if (c === 1 && o === 1) {
+          if (cls[2] === 'empty') { res.severity = 'info'; res.message = 'Das Match steht 1:1 nach Sätzen — bitte Satz 3 eingeben.'; return res; }
+          if (cls[2] !== 'valid') { res.severity = 'info'; res.message = 'Bitte ein gültiges Ergebnis für Satz 3 eingeben (z. B. 6:4).'; return res; }
+          if (parseSetScore(v[2]).challengerWins) c++; else o++;
+        } else if (cls[2] !== 'empty') {
+          res.severity = 'error'; res.invalidSets = [3]; res.message = 'Das Match war nach 2 Sätzen entschieden — Satz 3 darf nicht eingegeben werden.'; return res;
+        }
+        if (c < 2 && o < 2) { res.severity = 'error'; res.message = `Ungültiger Gesamtstand (${c}:${o} Sätze). Ein Spieler muss 2 Sätze gewinnen.`; return res; }
+        const calc = c > o ? 'challenger_wins' : 'opponent_wins';
+        if (calc !== winner) { res.severity = 'error'; res.message = `Der gewählte Sieger (${winnerName}) passt nicht zum Satzergebnis (${c}:${o} Sätze). Bitte Sieger oder Sätze korrigieren.`; return res; }
+        res.ok = true; res.summary = `${winnerName} gewinnt: ${v.filter(Boolean).join('  ')}`; return res;
+      }
       function resetForm($form) { if (!$form || !$form.length) return; const challengeId = $form.find('input[name="challenge_id"]').val(); console.log(`Resetting form for challenge ID: ${challengeId} due to inactivity.`); handleInputChange({ target: $form.find('.result-select')[0] }); $form.removeData(formTimeoutKey); const $container = $form.closest('.challenge-container'); if ($container.length) { $container.css('background-color', '#fff3cd'); setTimeout(() => { $container.css('background-color', 'var(--container-bg)'); }, 1500); } }
       function parseSetScore(scoreString) { if (!scoreString) return null; scoreString = scoreString.trim(); const tieBreakRegex = /^(\d+):(\d+)\((\d+):(\d+)\)$/; const standardRegex = /^(\d+):(\d+)$/; let match = scoreString.match(tieBreakRegex); let isTieBreak = false; let p1Games, p2Games, p1TieBreak, p2TieBreak; if (match) { isTieBreak = true; p1Games = parseInt(match[1], 10); p2Games = parseInt(match[2], 10); p1TieBreak = parseInt(match[3], 10); p2TieBreak = parseInt(match[4], 10); } else { match = scoreString.match(standardRegex); if (!match) return null; p1Games = parseInt(match[1], 10); p2Games = parseInt(match[2], 10); } if (isNaN(p1Games) || isNaN(p2Games)) return null; if (isTieBreak) { if (isNaN(p1TieBreak) || isNaN(p2TieBreak)) return null; if (!((p1Games === 7 && p2Games === 6) || (p1Games === 6 && p2Games === 7))) return null; const tieBreakDiff = Math.abs(p1TieBreak - p2TieBreak); const maxTieBreak = Math.max(p1TieBreak, p2TieBreak); if (tieBreakDiff < 2 || (maxTieBreak < 7)) return null; const p1WonGames = p1Games > p2Games; const p1WonTieBreak = p1TieBreak > p2TieBreak; if (p1WonGames !== p1WonTieBreak) return null; return { challengerWins: p1WonGames }; } else { const gameDiff = Math.abs(p1Games - p2Games); const maxGames = Math.max(p1Games, p2Games); if (maxGames < 6) return null; if (maxGames === 6 && gameDiff < 2) return null; if (maxGames > 7) return null; if (maxGames === 7 && (gameDiff < 1 || gameDiff > 2)) return null; return { challengerWins: p1Games > p2Games }; } }
-      function validateMatchResult($form) { const selectedWinner = $form.find('.result-select').val(); const specialResult = $form.find('.special-result-select').val(); const s1 = $form.find('input[name="set1_score"]').val().trim(); const s2 = $form.find('input[name="set2_score"]').val().trim(); const s3 = $form.find('input[name="set3_score"]').val().trim(); if (selectedWinner === 'not_happened') return true; if (specialResult) { if (selectedWinner === 'challenger_wins' || selectedWinner === 'opponent_wins') return true; else return "Bitte wähle einen Sieger für das Ergebnis '" + specialResult + "'."; } if (!selectedWinner || selectedWinner === 'not_happened') return "Bitte wähle einen Sieger oder 'Nicht stattgefunden'."; if (!s1 || !s2) return "Bitte das Ergebnis für Satz 1 und Satz 2 eingeben."; let challengerSetsWon = 0, opponentSetsWon = 0; const setResult1 = parseSetScore(s1); if (setResult1 === null) return `Ungültiges Format oder Ergebnis für Satz 1: "${s1}".`; if (setResult1.challengerWins) challengerSetsWon++; else opponentSetsWon++; const setResult2 = parseSetScore(s2); if (setResult2 === null) return `Ungültiges Format oder Ergebnis für Satz 2: "${s2}".`; if (setResult2.challengerWins) challengerSetsWon++; else opponentSetsWon++; if (challengerSetsWon === 2 || opponentSetsWon === 2) { if (s3) return `Das Match war bereits nach 2 Sätzen entschieden. Satz 3 darf nicht eingegeben werden.`; } else { if (!s3) return `Das Match ist nach 2 Sätzen unentschieden (1:1). Satz 3 muss eingegeben werden.`; const setResult3 = parseSetScore(s3); if (setResult3 === null) return `Ungültiges Format oder Ergebnis für Satz 3: "${s3}".`; if (setResult3.challengerWins) challengerSetsWon++; else opponentSetsWon++; } let calculatedWinner = null; if (challengerSetsWon > opponentSetsWon) calculatedWinner = 'challenger_wins'; else if (opponentSetsWon > challengerSetsWon) calculatedWinner = 'opponent_wins'; else return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`; if (challengerSetsWon < 2 && opponentSetsWon < 2) return `Ungültiger Gesamtspielstand: ${challengerSetsWon}:${opponentSetsWon} Sätze. Ein Spieler muss 2 Sätze gewinnen.`; if (calculatedWinner !== selectedWinner) { const selectedWinnerName = $form.find('.result-select option:selected').text(); return `Der ausgewählte Sieger (${selectedWinnerName}) stimmt nicht mit dem Ergebnis der Sätze (${challengerSetsWon}:${opponentSetsWon}) überein.`; } return true; }
-      function handleInputChange(event) { const $form = $(event.target).closest('form.result-form'); if (!$form.length) return; const $submitButton = $form.find('.submit-button'); const $scoreDisplay = $form.find('.score-display-section'); const $resultSelect = $form.find('.result-select'); const selectedResult = $resultSelect.val(); const $detailsWrapper = $form.find('.result-details-wrapper'); const $scoreInputs = $form.find('.score-input'); const $specialResultSelect = $form.find('.special-result-select'); if (selectedResult) { $detailsWrapper.slideDown(200); } else { $detailsWrapper.slideUp(200); $scoreInputs.val('').removeData('confirmed-value'); $specialResultSelect.val(''); $scoreDisplay.text('...').removeClass('score-error'); $submitButton.prop('disabled', true); const currentTimerId = $form.data(formTimeoutKey); if (currentTimerId) { clearTimeout(currentTimerId); $form.removeData(formTimeoutKey); } return; } if (selectedResult === "not_happened") { $scoreInputs.prop('disabled', true).val('').removeData('confirmed-value'); $specialResultSelect.prop('disabled', true).val(''); } else { $scoreInputs.prop('disabled', false); $specialResultSelect.prop('disabled', false); } const s1 = $form.find('input[name="set1_score"]').val().trim(); const s2 = $form.find('input[name="set2_score"]').val().trim(); const s3 = $form.find('input[name="set3_score"]').val().trim(); const specialResult = $specialResultSelect.val(); let displayScore = "", scoreIsPotentiallyComplete = false, requiresConfirmation = false; $scoreDisplay.removeClass('score-error'); if (selectedResult === "not_happened") { displayScore = "Nicht stattgefunden"; scoreIsPotentiallyComplete = true; } else if (specialResult === "Aufgabe" || specialResult === "Disqualifikation") { displayScore = specialResult; scoreIsPotentiallyComplete = true; $scoreDisplay.addClass('score-error'); } else if (s1 || s2 || s3) { const s1ValidFormat = !s1 || validScoreFormatRegex.test(s1); const s2ValidFormat = !s2 || validScoreFormatRegex.test(s2); const s3ValidFormat = !s3 || validScoreFormatRegex.test(s3); const s1Confirmed = !s1 || $form.find('input[name="set1_score"]').data('confirmed-value') === s1; const s2Confirmed = !s2 || $form.find('input[name="set2_score"]').data('confirmed-value') === s2; const s3Confirmed = !s3 || $form.find('input[name="set3_score"]').data('confirmed-value') === s3; if (s1ValidFormat && s2ValidFormat && s3ValidFormat) { if (s1 && s2) { let sets = [s1, s2]; if (s3) { sets.push(s3); } displayScore = sets.join(' '); if (s1Confirmed && s2Confirmed && s3Confirmed) { scoreIsPotentiallyComplete = true; } else { displayScore += " (Bestätigung ausstehend)"; requiresConfirmation = true; scoreIsPotentiallyComplete = false; } } else if (s1 && !s2 && !s3) { displayScore = s1 + " (Satz 2 fehlt)"; scoreIsPotentiallyComplete = false; if (!s1Confirmed) requiresConfirmation = true; } else { displayScore = "Unvollständig"; scoreIsPotentiallyComplete = false; if ((s1 && !s1Confirmed) || (s2 && !s2Confirmed) || (s3 && !s3Confirmed)) requiresConfirmation = true; } } else { displayScore = "Ungültiges Format"; scoreIsPotentiallyComplete = false; $scoreDisplay.addClass('score-error'); } } else { displayScore = "..."; scoreIsPotentiallyComplete = false; } $scoreDisplay.text(displayScore); let enableButton = selectedResult && (selectedResult === "not_happened" || specialResult || (scoreIsPotentiallyComplete && !requiresConfirmation)); $submitButton.prop('disabled', !enableButton); let currentTimerId = $form.data(formTimeoutKey); if (enableButton) { if (currentTimerId) { clearTimeout(currentTimerId); } const newTimerId = setTimeout(() => { resetForm($form); }, resetTimeoutDuration); $form.data(formTimeoutKey, newTimerId); } else { if (currentTimerId) { clearTimeout(currentTimerId); $form.removeData(formTimeoutKey); } } }
-      function bindInputListeners() { const scoreInputSelector = '.result-form .score-input'; const otherControlsSelector = '.result-form .result-select, .result-form .special-result-select'; $challengesContainer.off('input', scoreInputSelector).on('input', scoreInputSelector, sanitizeScoreInput); $challengesContainer.off('blur', scoreInputSelector).on('blur', scoreInputSelector, handleScoreInputBlur); $challengesContainer.off('change', otherControlsSelector).on('change', otherControlsSelector, handleInputChange); }
+      // validateMatchResult() was replaced by evaluateForm() above (single source of truth).
+      function handleInputChange(event) {
+        const $form = $(event.target).closest('form.result-form');
+        if (!$form.length) return;
+        const $submit = $form.find('.submit-button');
+        const $preview = $form.find('.score-display-section');
+        const $msg = $form.find('.score-validation');
+        const selectedResult = $form.find('.result-select').val();
+        const $details = $form.find('.result-details-wrapper');
+        const $scoreInputs = $form.find('.score-input');
+        const $special = $form.find('.special-result-select');
+        if (selectedResult) { $details.slideDown(200); }
+        else {
+          $details.slideUp(200);
+          $scoreInputs.val('').removeClass('is-invalid').removeAttr('aria-invalid');
+          $special.val('');
+          $preview.hide().text('');
+          $msg.hide().text('').removeClass('error info');
+          $submit.prop('disabled', true);
+          clearResetTimer($form);
+          return;
+        }
+        if (selectedResult === 'not_happened') {
+          $scoreInputs.prop('disabled', true).val('').removeClass('is-invalid').removeAttr('aria-invalid');
+          $special.prop('disabled', true).val('');
+        } else {
+          $scoreInputs.prop('disabled', false);
+          $special.prop('disabled', false);
+        }
+        const r = evaluateForm($form);
+        [1, 2, 3].forEach(n => {
+          const $i = $form.find('input[name="set' + n + '_score"]');
+          const bad = r.invalidSets.indexOf(n) !== -1;
+          $i.toggleClass('is-invalid', bad);
+          if (bad) $i.attr('aria-invalid', 'true'); else $i.removeAttr('aria-invalid');
+        });
+        if (r.ok) {
+          $preview.text(r.summary).show();
+          $msg.hide().text('').removeClass('error info');
+        } else {
+          $preview.hide().text('');
+          if (r.message) { $msg.text(r.message).removeClass('error info').addClass(r.severity === 'error' ? 'error' : 'info').show(); }
+          else { $msg.hide().text('').removeClass('error info'); }
+        }
+        $submit.prop('disabled', !r.ok);
+        if (r.ok) startResetTimer($form); else clearResetTimer($form);
+      }
+      function bindInputListeners() { const scoreInputSelector = '.result-form .score-input'; const otherControlsSelector = '.result-form .result-select, .result-form .special-result-select'; $challengesContainer.off('input', scoreInputSelector).on('input', scoreInputSelector, sanitizeScoreInput); $challengesContainer.off('change', otherControlsSelector).on('change', otherControlsSelector, handleInputChange); }
       socket.on("connect", function() { console.log("Connected to server via Socket.IO"); updateChallenges(); }); socket.on("data_update", function(payload) { console.log("Received 'data_update' event from server", payload); updateChallenges(); }); socket.on("connect_error", function(error) { console.error("Socket.IO connection error:", error); }); socket.on("disconnect", function(reason) { console.log("Disconnected from server:", reason); }); socket.on("database_reset", function(data) { console.log("Received 'database_reset' event on admin page:", data); $('#infoModalBody').text('Die Datenbank wurde zurückgesetzt. Die Liste der Herausforderungen wird aktualisiert.'); new bootstrap.Modal($('#infoModal')[0]).show(); updateChallenges(); });
-      $challengesContainer.on("submit", ".result-form", function(e) { e.preventDefault(); const $form = $(this); const $container = $form.closest(".challenge-container"); const $button = $form.find('.submit-button'); const $scoreDisplay = $form.find('.score-display-section'); const validationResult = validateMatchResult($form); if (validationResult !== true) { $scoreDisplay.text(validationResult).addClass('score-error'); $button.prop('disabled', false); return; } const timerId = $form.data(formTimeoutKey); if (timerId) { clearTimeout(timerId); $form.removeData(formTimeoutKey); } $container.css('opacity', '0.7'); $button.prop('disabled', true).text('Sende...'); $scoreDisplay.removeClass('score-error'); $.ajax({ url: $form.attr('action'), type: 'POST', data: $form.serialize(), success: function(response) { if (response.success === false) { $container.css('opacity', '1'); $button.prop('disabled', false).text('Ergebnis absenden'); $('#errorModalBody').text(response.message || response.error || 'Unbekannter Fehler.'); new bootstrap.Modal($('#errorModal')[0]).show(); } else { updateChallenges(); } }, error: function(xhr) { $container.css('opacity', '1'); $button.prop('disabled', false).text('Ergebnis absenden'); let msg = 'Ein Fehler ist aufgetreten.'; try { const data = JSON.parse(xhr.responseText); msg = data.message || data.error || msg; } catch(e) {} $('#errorModalBody').text(msg); new bootstrap.Modal($('#errorModal')[0]).show(); } }); });
+      function submitResult($form) {
+        const $container = $form.closest(".challenge-container");
+        const $button = $form.find('.submit-button');
+        clearResetTimer($form);
+        $container.css('opacity', '0.7');
+        $button.prop('disabled', true).text('Sende...');
+        $.ajax({ url: $form.attr('action'), type: 'POST', data: $form.serialize(),
+          success: function(response) { if (response.success === false) { $container.css('opacity', '1'); $button.prop('disabled', false).text('Ergebnis absenden'); $('#errorModalBody').text(response.message || response.error || 'Unbekannter Fehler.'); new bootstrap.Modal($('#errorModal')[0]).show(); } else { updateChallenges(); } },
+          error: function(xhr) { $container.css('opacity', '1'); $button.prop('disabled', false).text('Ergebnis absenden'); let msg = 'Ein Fehler ist aufgetreten.'; try { const data = JSON.parse(xhr.responseText); msg = data.message || data.error || msg; } catch(e) {} $('#errorModalBody').text(msg); new bootstrap.Modal($('#errorModal')[0]).show(); } });
+      }
+      $challengesContainer.on("submit", ".result-form", function(e) {
+        e.preventDefault();
+        const $form = $(this);
+        const r = evaluateForm($form);
+        if (!r.ok) { $form.find('.score-validation').text(r.message || 'Bitte Eingaben prüfen.').removeClass('info').addClass('error').show(); return; }
+        showConfirmScoreModal(r.summary + ' — jetzt absenden?', function(confirmed) { if (confirmed) submitResult($form); });
+      });
       add3DEffects(); bindInputListeners(); $('.result-form').each(function() { const $form = $(this); const $resultSelect = $form.find('.result-select'); if ($resultSelect.length) { handleInputChange({ target: $resultSelect[0] }); } });
     });
   </script>
