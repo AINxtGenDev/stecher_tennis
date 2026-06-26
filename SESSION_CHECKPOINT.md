@@ -2,8 +2,8 @@
 
 **Date:** 2026-06-26
 **Branch:** docker
-**Version:** 3.64
-**Latest commit:** `3bc11e5` fix(ui): mobile-first pyramid for /rangliste + clearer completed-challenges list
+**Version:** 3.65 (live on TEST/nechvatal)
+**Latest commit:** `6bbe294` chore: bump version 3.64 -> 3.65
 **Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players` (local DB backup)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
@@ -12,7 +12,7 @@
 
 ## Current Session (2026-06-26) — Mobile-first layout fixes + completed-challenges restyle
 
-Template-only work (CSS + small JS), no backend/schema/data changes. **NOT yet deployed** — TEST still runs v3.64.
+Template-only work (CSS + small JS), no backend/schema/data changes. **Bumped to v3.65 and deployed to TEST** (nechvatal).
 
 ### `/rangliste` footer
 - Removed the `Anmelden` (`<a href="/login">`) link; footer now reads "Tennis-Rangliste · Nur-Lese-Ansicht".
@@ -34,11 +34,16 @@ Template-only work (CSS + small JS), no backend/schema/data changes. **NOT yet d
 - Swapped local `tennis.db` to a copy of `db_backup_2026-06-25T19-12-09.db` (39 players); original backup untouched; previous DB kept as `tennis.db.prev-36players`.
 
 ### Committed this session
-- `templates/public_ranking.html`, `templates/index.html` (+ this checkpoint). Version **not** bumped (still 3.64) — no deploy yet.
+- `templates/public_ranking.html`, `templates/index.html`, `app.py` (version) + this checkpoint. Bumped **3.64 → 3.65**.
+
+### Build + deploy (TEST)
+- **arm64-only app-image build** (`docker buildx --platform linux/arm64 ... --push`, multiarch builder) — skipped the slow Caddy/multi-arch rebuild (Caddy unchanged; compose pins both to `:latest`). Pushed `:v3.65` + `:latest`, manifest `sha256:3fd74105…e0e427`.
+- Deployed to nechvatal (`ssh stecher`, `docker compose pull app && up -d`): app **Healthy**, running image digest matches the pushed manifest, startup log `version: 3.65`.
+- Verified on the Pi (`curl --resolve`, internal TLS): `/rangliste` → **200**; public API serves data with **no username/password/privilege leak**. (External LAN HTTPS not checkable — NAT hairpin.)
 
 ### Next
-- Build app-image + deploy to TEST (nechvatal), verify both pages on a real phone, then PROD when ready.
-- Carried over: deploy `/rangliste` to PROD (tc-breakpoint); IN-04 default superadmin password; deferred REVIEW findings.
+- Verify both pages on a real phone via the TEST URL (`https://nechvatal.duckdns.org:10443`), portrait + landscape.
+- Deploy to PROD (tc-breakpoint) when ready; IN-04 default superadmin password; deferred REVIEW findings.
 
 ## Current Session (2026-06-25) — Public read-only ranking page + v3.64
 
