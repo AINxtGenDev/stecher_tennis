@@ -87,8 +87,9 @@ backup** of the SQLite DB. Commit `11031e7` on `docker` (pushed). Live on **both
   backup sidecar auto-ran a fresh post-boot backup (18:46:30Z); offsite **timer enabled+active**, re-armed
   (next 21:10 CEST); `Persistent` correctly did NOT spurious-fire (no run missed in the 25s window);
   `/login` → 200. Safety backup taken pre-reboot (`tennis-20260626T184558Z.db`).
-- **Pending:** background watcher confirming the offsite timer *fires* at 21:10 CEST (post-reboot) — not yet
-  in this checkpoint.
+- **Offsite timer fire CONFIRMED** (post-reboot): systemd auto-triggered the service at 21:10:22 CEST
+  (journal `Starting → offsite sync ok → Finished`, not a manual run); `sync_status.json` last_run
+  `19:10:23Z`; timer re-armed `NEXT 22:10 CEST`. Proves scheduling + reboot-survival together.
 
 ### Commits this session (branch `docker`, all pushed)
 - `11031e7` feat: hourly transaction-safe local DB backup sidecar
