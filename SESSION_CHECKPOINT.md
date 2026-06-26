@@ -10,6 +10,93 @@
 - **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.67 live here.**
   (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
 
+## Current Session (2026-06-26, later) — Hourly local DB backup (sidecar) → TEST + PROD
+
+Built and deployed an automated, transaction-safe, versioned, self-verifying **hourly local
+backup** of the SQLite DB. Commit `11031e7` on `docker` (pushed). Live on **both** boxes.
+
+### What was added
+- **`backup_db.py`** (repo root, stdlib-only) — uses the SQLite **Online Backup API**
+  (`Connection.backup`, same primitive as `app.py:export_database`), never a file copy.
+  Per run: snapshot → verify the *copy* (`integrity_check` + `foreign_key_check` + players≥1 +
+  view selectable + 20 KB floor) → SHA-256 sidecar → **atomic rename** publish → fsync →
+  tiered promote/prune. Modes: default one-shot, `--loop` (sidecar), `--restore-test`,
+  `--healthcheck`. Daily automated restore test proves recoverability.
+- **`docker-compose.yml`** — new **`backup` sidecar** reusing the app image (NO rebuild):
+  `entrypoint: python /app/backup_db.py --loop`. Mounts `tennis_data:/app/data` **RW** (WAL
+  needs `-shm`; backup only reads), `./backups:/backups` (host bind-mount, **outside** the live
+  volume = DR isolation), and bind-mounts `backup_db.py` `:ro`. Hardened like app/caddy
+  (`read_only`, `cap_drop: ALL`, tmpfs `/tmp`). Docker `healthcheck` → **unhealthy if no
+  success in 75 min**.
+- **Retention (tiered, env-tunable):** `hourly/` 48 (2 d), `daily/` 30 (first/day), `weekly/`
+  12 (Mondays). Filenames `tennis-YYYYMMDDTHHMMSSZ.db` (UTC, sortable, unique) + `.sha256`.
+- **Monitoring:** per-run log → stdout + `backups/backup.log`; `backups/status.json` heartbeat
+  (last_success_utc, consecutive_failures, last_restore_test_date). **Alert hook
+  `BACKUP_ALERT_CMD` left empty/pluggable** (user choice: log+healthcheck for now).
+- **`documentation/db-backup-plan.md`** — full design + ops + manual restore drill.
+- `.gitignore`: added `backups/`.
+
+### Verified
+- **Local** (DB copy, scratchpad): backup ok, restore-test PASS, healthcheck=0; **negative
+  tests all caught** (missing source→fail+alert, corrupt backup→checksum-mismatch fail, stale
+  heartbeat→healthcheck=1). Fixed one robustness bug (write_status now `makedirs(BACKUP_DIR)`).
+- **TEST (nechvatal, .213, port 10443):** `git pull && mkdir backups && compose up -d` — only
+  the backup service created, app/caddy untouched. Backup of live DB (41 players, 125 ch) +
+  restore-test PASS; sidecar **healthy**.
+- **PROD (tc-breakpoint, .180, port 10445 — LIVE CLUB):** same deploy; backup of live DB (39
+  players, 125 ch) + restore-test PASS; sidecar **healthy**; **`/login` still HTTP 200** (app
+  never blocked). Box git was clean FF; box user is uid 1000 = container appuser (no chown).
+
+### PROD app updated 3.63 → 3.67 (user did phone check first)
+- PROD was running **v3.63** (Jun 18 stand-up); TEST already on 3.67. User confirmed phone check,
+  then asked to deploy latest to PROD **keeping the existing player DB**.
+- Pre-flight: explicit verified backup `tennis-20260626T181409Z.db` (sha256 `98d60020…`) on host;
+  recorded live state **39 players, 125 challenges, rank1 Patrick Krauskopf**.
+- `docker compose pull app && up -d app` — recreated only the app container; `tennis_data` volume
+  persisted; `init_db()` idempotent (no reseed). caddy/backup untouched.
+- **Verified:** version **3.67**, image digest `0dfca982…` (= TEST), app healthy; DB **intact &
+  identical** (39/125/Patrick Krauskopf, `integrity_check=ok`); `/login` + `/rangliste` → 200.
+- Both boxes now fully aligned: **app 3.67 + hourly backup sidecar**.
+
+### Off-box backup replication PROD → TEST (commit `c25c9a1`)
+- **Why:** local backups + live DB sat on the same RPi SSD — single-disk failure lost both.
+- **What:** PROD host-level `rsync -a --delete` mirrors `backups/` → TEST
+  `~/offsite-backups/from-tc-breakpoint/` over the LAN (192.168.1.213:10115).
+- **Auth (locked down):** dedicated `~/.ssh/offsite_backup` ed25519 key on PROD; TEST
+  `authorized_keys` entry `command="/usr/bin/rrsync -wo …",restrict,from="192.168.1.180"` —
+  rsync-write-only into that one dir, only from PROD's IP, no shell. **Verified** an arbitrary
+  command is rejected (`rrsync error: SSH_ORIGINAL_COMMAND does not run rsync`).
+- **Schedule:** systemd timer `tennis-backup-sync.timer` on PROD, hourly at `:10`,
+  `Persistent=true`, runs `sync_backups_offsite.sh` (in repo) as `User=stecher`. Units live in
+  `/etc/systemd/system/` (host-specific, not in git; content in `documentation/db-backup-plan.md`).
+- **Observability:** `backups/sync.log` + `backups/sync_status.json` on PROD; `journalctl -u
+  tennis-backup-sync`. First manual run = success; mirror confirmed on TEST.
+- **Mirror semantics:** `--delete` = exact bounded replica; dead source can't run sync → no
+  empty-mirror propagation. **TEST → PROD reverse NOT set up** (test data lower priority).
+
+### Docs (commit `c5e3e3e`)
+- **README.md**: "Installation & Setup" trimmed to **Docker-only** (removed conda/venv local-install
+  + pip dep list; local dev still under Development). New **"Database Backups"** section inside Docker
+  Deployment (sidecar mechanism + the `backups/` path & tiered layout + off-box PROD→TEST replication).
+  Recent-Changes 2026-06-26 entry. Anchors verified, code fences balanced. (LOC table left stale.)
+- `documentation/db-backup-plan.md` = full design/ops reference (also covers off-site sync).
+
+### Commits this session (branch `docker`, all pushed)
+- `11031e7` feat: hourly transaction-safe local DB backup sidecar
+- `c25c9a1` feat: off-box backup mirror PROD → TEST (restricted rrsync key + systemd timer)
+- `c5e3e3e` docs: README Docker-focused Install + Database Backups section
+- PROD app updated 3.63 → **3.67** live (no commit — image pull only); player DB verified identical.
+
+### Notes / next
+- **Box identity gotcha:** BOTH RPis report OS hostname `stechertennis`. Disambiguate by
+  IP/domain/port — TEST=.213/nechvatal/10443, PROD=.180/tc-breakpoint-rangliste/10445. Always
+  verify before deploying.
+- Legacy **`backup_tennis_db.sh` is superseded** (targeted the abandoned native path + host
+  `sqlite3`/`zip`). Not deleted. TEST box has local uncommitted edits to it + `check_db.sh`.
+- Not yet observed: a *scheduled* top-of-hour run (next 19:00 UTC) — startup run + loop proven;
+  watch `docker compose logs backup` after the hour to confirm cadence.
+- Optional future: off-box DR (`rclone`/`rsync` of `daily/` to the other RPi or cloud).
+
 ## Current Session (2026-06-26) — Mobile-first layout, completed-challenges restyle, abbreviated tiebreaks, result-entry UX
 
 Two UI rounds (v3.65), abbreviated tiebreaks (v3.66), result-entry UX rework (v3.67). **v3.67 live on TEST** (nechvatal).
