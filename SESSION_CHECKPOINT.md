@@ -1,14 +1,44 @@
 # Session Checkpoint
 
-**Date:** 2026-06-25
+**Date:** 2026-06-26
 **Branch:** docker
 **Version:** 3.64
-**Latest commit:** `29cf32a` feat: public read-only ranking page `/rangliste` + v3.64
-**Git Status:** `docker`; untracked: `REVIEW*.md`
+**Latest commit:** `<pending>` fix(ui): mobile-first pyramid for /rangliste + clearer completed-challenges list
+**Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players` (local DB backup)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
 - **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.64 live here.**
   (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
+
+## Current Session (2026-06-26) — Mobile-first layout fixes + completed-challenges restyle
+
+Template-only work (CSS + small JS), no backend/schema/data changes. **NOT yet deployed** — TEST still runs v3.64.
+
+### `/rangliste` footer
+- Removed the `Anmelden` (`<a href="/login">`) link; footer now reads "Tennis-Rangliste · Nur-Lese-Ansicht".
+
+### Mobile-first pyramid (public `/rangliste`)
+- The public pyramid clipped on phones (fixed-width boxes overflowed; rows 8–9 cut off both edges, portrait **and** landscape).
+- A first attempt (container-relative `min()` width + non-square boxes) fit width-wise but rendered tall rectangles — user rejected it.
+- **Final fix: mirror `index.html`'s pyramid CSS verbatim** so the public view matches the app at every breakpoint — square boxes stepping 100px → 90px (≤1200) → `calc((100vw-40px)/10-5px)` cap 65px (≤900, 3D off) → **32px (≤480)** → **`8vh` (phone landscape, max-height ≤500)**; ported the matching legend/entry font tweaks too.
+- Verified with real mobile emulation (DPR 2.6, touch): 412px portrait → 32px boxes, `scrollW≈clientW` (no overflow); 915×412 landscape → `8vh` boxes, `scrollW==clientW`; 1280 desktop unchanged.
+- **Gotcha:** chrome-devtools `resize_page` floors the CSS viewport at ~690px (devtools panel reserves width), so `≤480` never fires that way — use `emulate` (device viewport) for true phone testing.
+
+### Completed-challenges list — clearer layout (both `/rangliste` and `/index`)
+- Old: cramped `names · result · date` `space-between` row that wrapped awkwardly on mobile.
+- New: **stacked entry** — bold matchup line (muted, smaller "gegen"), colored result+score line (green = challenger won / red = opponent won), muted date line, light divider between entries.
+- Identical CSS/JS in both templates. Verified live on `/rangliste` (412px); `/index` shares the exact classes/markup but is login-gated, so not screenshotted.
+
+### Local dev fixes (NOT committed — git-ignored / local-only)
+- `.env`: the stacked prod block's `FLASK_DEBUG=false` (dotenv last-wins) won whenever the shell didn't export it → `SESSION_COOKIE_SECURE=True` over plain HTTP → no session cookie → **"CSRF session token is missing"** on local login. Set local `.env:71` `FLASK_DEBUG=false→true`. Prod box has its own clean `.env` (unaffected).
+- Swapped local `tennis.db` to a copy of `db_backup_2026-06-25T19-12-09.db` (39 players); original backup untouched; previous DB kept as `tennis.db.prev-36players`.
+
+### Committed this session
+- `templates/public_ranking.html`, `templates/index.html` (+ this checkpoint). Version **not** bumped (still 3.64) — no deploy yet.
+
+### Next
+- Build app-image + deploy to TEST (nechvatal), verify both pages on a real phone, then PROD when ready.
+- Carried over: deploy `/rangliste` to PROD (tc-breakpoint); IN-04 default superadmin password; deferred REVIEW findings.
 
 ## Current Session (2026-06-25) — Public read-only ranking page + v3.64
 
