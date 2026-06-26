@@ -21,6 +21,39 @@ services:
         max-file: "3"
     # No ports: block — port 5000 only reachable inside Docker network (COMP-02)
 
+  backup:
+    image: ghcr.io/ainxtgendev/stecher-tennis-app:latest
+    entrypoint: ["python", "/app/backup_db.py", "--loop"]
+    networks:
+      - tennis_net
+    volumes:
+      - tennis_data:/app/data          # RW: WAL needs the -shm; backup only reads
+      - ./backups:/backups             # host dir, OUTSIDE the live volume (DR isolation)
+      - ./backup_db.py:/app/backup_db.py:ro
+    env_file: .env
+    environment:
+      DB_PATH: /app/data/tennis.db
+      BACKUP_DIR: /backups
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "/app/backup_db.py", "--healthcheck"]
+      interval: 5m
+      timeout: 20s
+      retries: 2
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   caddy:
     image: ghcr.io/ainxtgendev/stecher-tennis-caddy:latest
     networks:

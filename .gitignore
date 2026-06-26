@@ -13,6 +13,7 @@ mobile_stecher_tennis/*
 # Exclude backup
 .env
 backup/*
+backups/
 SESSION_CHECKPOINT.md
 __pycache__/
 *.db
