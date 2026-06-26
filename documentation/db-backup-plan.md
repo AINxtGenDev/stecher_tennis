@@ -93,10 +93,41 @@ ls -R backups                                        # hourly/ daily/ + status.j
    app-owned safe path) **or** stop the app and replace the volume copy.
 4. Confirm the ranking renders and counts match.
 
+## Off-box replication (PROD → TEST)
+
+Local backups alone don't survive host/SSD death, so PROD mirrors its
+`backups/` to the TEST box (nechvatal, .213) over the LAN.
+
+- **Transport:** host-level `rsync -a --delete` via `sync_backups_offsite.sh`
+  (generic; config from env). Runs on the host, not in a container, because the
+  backups live on the host filesystem.
+- **Auth:** a dedicated `~/.ssh/offsite_backup` ed25519 key on PROD, authorized
+  on TEST with `command="rrsync -wo …",restrict,from="192.168.1.180"` — it can
+  **only** rsync-write into `~/offsite-backups/from-tc-breakpoint/`, only from
+  PROD's IP, no shell/forwarding. Verified: arbitrary commands are rejected.
+- **Schedule:** systemd timer `tennis-backup-sync.timer` on PROD, hourly at
+  `:10` (after the top-of-hour backup), `Persistent=true` (catches up after
+  downtime). Service runs as `User=stecher`.
+- **Observability:** `backups/sync.log` + `backups/sync_status.json` on PROD;
+  `journalctl -u tennis-backup-sync` for run history.
+- **Mirror semantics:** `--delete` keeps TEST an exact, bounded replica of
+  PROD's retention set. A dead/unreadable source can't run the sync, so real
+  disk-death does not propagate an empty mirror.
+
+Manual run / check:
+```bash
+# on PROD
+sudo systemctl start tennis-backup-sync.service     # run now
+systemctl list-timers tennis-backup-sync.timer      # next fire
+cat ~/stecher_tennis/backups/sync_status.json
+# on TEST
+ls -R ~/offsite-backups/from-tc-breakpoint
+```
+
 ## Notes / future
 
 - Supersedes the legacy `backup_tennis_db.sh` (targeted the abandoned native
   install path and host `sqlite3`/`zip` — wrong for the Docker deployment).
-- **Off-box DR (not yet implemented):** local backups don't survive host/disk
-  loss. Optional follow-on: `rclone`/`rsync` push of `daily/` to the other RPi
-  or a cloud bucket.
+- **Further DR (optional):** a third copy off-LAN (cloud bucket via `rclone`,
+  or pull to the workstation), and the symmetric TEST → PROD direction if TEST
+  data ever needs the same protection.
