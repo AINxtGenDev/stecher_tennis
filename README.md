@@ -113,88 +113,33 @@ stecher_tennis/
 
 ## 🚀 Installation & Setup
 
+The application is deployed as a **Docker Compose stack** (app + Caddy). Docker is
+the only supported production path — the full step-by-step Raspberry Pi walkthrough
+(TLS staging→production switch, verification, reboot survival) is in
+**[🐳 Docker Deployment](#-docker-deployment-recommended)** below.
+
 ### Prerequisites
-- Python 3.12+ (or use Miniconda for environment management)
-- pip and venv (if not using conda)
-- SQLite3
+- **Docker Engine** + **Docker Compose v2** — `curl -fsSL https://get.docker.com | sh`
+- **64-bit OS** (required for the ARM64 images on Raspberry Pi)
+- A **DuckDNS** domain + token (for automatic HTTPS via DNS-01 ACME)
+- Router port forwarding (external `443 → 10443`, external `80 → 80`)
 
-**Recommended**: Miniconda for development, especially on Ubuntu 24.04
+### Quick start
 
-### Local Development Setup
-
-#### Option 1: Using Miniconda (Recommended for Development on Ubuntu 24.04)
-
-1. **Setup Project Directory and Conda Environment**
 ```bash
-mkdir stecher_tennis
+git clone -b docker https://github.com/AINxtGenDev/stecher_tennis.git
 cd stecher_tennis
-git clone <repository-url> .
-
-# Create conda environment from environment.yml
-conda env create -f environment.yml
-
-# Activate the environment
-conda activate stecher_tennis
+cp .env.example .env        # set SECRET_KEY, DUCKDNS_*, ACME_*, CORS_ALLOWED_ORIGINS
+docker compose pull
+docker compose up -d
 ```
 
-2. **Verify Installation**
-```bash
-conda list  # Check installed packages
-python --version  # Should show Python 3.12
-```
+The stack auto-initializes the SQLite database and seeds the initial players on
+first run. Pre-built multi-arch images (AMD64 + ARM64) are pulled from GHCR, so no
+local build is required.
 
-#### Option 2: Using Python venv
-
-1. **Clone and Setup Environment**
-```bash
-git clone <repository-url>
-cd tennis-ranking-app
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. **Install Dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-3. **Environment Configuration**
-Create a `.env` file in the project root:
-```env
-SECRET_KEY=your-secret-key-here
-CORS_ALLOWED_ORIGINS=*
-FLASK_DEBUG=true
-FLASK_HOST=0.0.0.0
-FLASK_PORT=5000
-```
-
-**Note**: When using conda, all dependencies are managed through `environment.yml`. The environment includes development tools like pytest, black, flake8, and coverage for a complete development experience.
-
-4. **Initialize Database**
-```bash
-python app.py
-```
-This will automatically create the SQLite database and populate it with initial players.
-
-5. **Run Development Server**
-```bash
-python app.py
-```
-
-Access the application at `http://127.0.0.1:5000`
-Access the application on mobile device use the ip-address from your development server like `http://192.168.1.8:5000`
-
-### Production Requirements
-
-See `docker-requirements.txt` for pinned production dependencies. Core runtime packages:
-
-```
-Flask, Flask-SocketIO, Flask-Login, Flask-WTF, flask-cors
-gunicorn, eventlet, greenlet
-python-engineio, python-socketio
-bcrypt, Werkzeug, itsdangerous, Jinja2, click
-python-dotenv, pydantic, requests
-```
+> **Local development** (conda/venv, run without Docker) is covered under
+> [🔧 Development](#-development).
 
 ## ⚙️ Configuration
 
@@ -621,6 +566,56 @@ sudo chown 1000:1000 /var/lib/docker/volumes/stecher_tennis_tennis_data/_data/te
 docker compose start app
 ```
 
+### Database Backups
+
+A dedicated **`backup` sidecar** container (a third service in the compose stack,
+reusing the app image) backs up the database **every hour**. It uses the SQLite
+**Online Backup API** — a transaction-safe snapshot that never blocks or corrupts
+the running app — then verifies each copy (`integrity_check` + `foreign_key_check`
++ row/size sanity), writes a SHA-256 checksum, and publishes it into a tiered
+retention layout. Once per day it runs an automated **restore test** that restores
+the newest backup into a throwaway DB and re-validates it, proving recoverability.
+
+A Docker `healthcheck` marks the container **unhealthy** if no successful backup
+occurs within 75 minutes.
+
+**Path (both boxes):** `/home/stecher/stecher_tennis/backups/`
+Inside the backup container this is mounted as `/backups`.
+
+**Layout (tiered retention + metadata):**
+
+```
+/home/stecher/stecher_tennis/backups/
+├── hourly/    tennis-YYYYMMDDTHHMMSSZ.db (+ .sha256)   ← last 48 (2 days)
+├── daily/     tennis-...db (+ .sha256)                 ← last 30 (first of each day)
+├── weekly/    tennis-...db (+ .sha256)                 ← last 12 (Mondays; empty until next Mon)
+├── backup.log     ← per-run append-only log
+└── status.json    ← heartbeat (last_success, failures, last restore-test)
+```
+
+The backups live on the **host filesystem, outside** the Docker `tennis_data`
+volume, so a lost/corrupted volume does not take the backups with it. Each backup
+file is a directly-openable SQLite database — to restore one, follow the
+[Database Location](#database-location) restore steps above using any
+`backups/hourly/…` or `backups/daily/…` file.
+
+```bash
+docker compose logs -f backup                       # live backup activity
+cat ~/stecher_tennis/backups/status.json            # last success / failures
+sha256sum -c ~/stecher_tennis/backups/daily/<file>.sha256   # verify a backup
+```
+
+#### Off-box replication (PROD → TEST)
+
+Because the live DB and its local backups share one SSD, the production box
+additionally **mirrors `backups/` to the second Raspberry Pi** over the LAN with
+`rsync -a --delete` (script: `sync_backups_offsite.sh`), scheduled hourly by a
+`systemd` timer (`tennis-backup-sync.timer`, `Persistent=true`). Authentication
+uses a dedicated, **write-only, IP-restricted** SSH key (`rrsync -wo`), so the key
+can only rsync into one folder on the destination and cannot open a shell. The
+replica lands in `~/offsite-backups/from-tc-breakpoint/` on the TEST box; status is
+in `backups/sync_status.json` and `journalctl -u tennis-backup-sync`.
+
 ### Updating the Deployment
 
 When a new version is available:
@@ -821,6 +816,18 @@ docker compose ps
 ```
 
 ## 📋 Recent Changes
+
+### 2026-06-26 — Automated hourly DB backups + off-box replication
+
+- **Hourly backup sidecar** — a new `backup` service backs up the SQLite database
+  every hour via the SQLite Online Backup API (transaction-safe, non-blocking),
+  verifies each copy (`integrity_check` + `foreign_key_check` + checksum), keeps a
+  tiered hourly/daily/weekly retention set, runs a daily automated restore test,
+  and exposes a Docker healthcheck. See
+  [Database Backups](#database-backups).
+- **Off-box replication** — production mirrors its backups to the second
+  Raspberry Pi hourly over a restricted (write-only, IP-locked) `rrsync` key via a
+  `systemd` timer, so the club data survives a single-box/disk failure.
 
 ### 2026-06-17 — Critical fixes from code review
 
