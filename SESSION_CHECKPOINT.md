@@ -2,17 +2,17 @@
 
 **Date:** 2026-06-26
 **Branch:** docker
-**Version:** 3.65 (live on TEST/nechvatal)
-**Latest commit:** `6bbe294` chore: bump version 3.64 -> 3.65
-**Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players` (local DB backup)
+**Version:** 3.66 (live on TEST/nechvatal)
+**Latest commit:** `9a01a11` feat: accept abbreviated tiebreak set scores (7:6 / 6:7) + v3.66
+**Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
-- **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.64 live here.**
+- **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.66 live here.**
   (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
 
-## Current Session (2026-06-26) — Mobile-first layout fixes + completed-challenges restyle
+## Current Session (2026-06-26) — Mobile-first layout, completed-challenges restyle, abbreviated tiebreaks
 
-Template-only work (CSS + small JS), no backend/schema/data changes. **Bumped to v3.65 and deployed to TEST** (nechvatal).
+Two UI rounds (v3.65) + a scoring-logic feature (v3.66). **v3.66 live on TEST** (nechvatal).
 
 ### `/rangliste` footer
 - Removed the `Anmelden` (`<a href="/login">`) link; footer now reads "Tennis-Rangliste · Nur-Lese-Ansicht".
@@ -41,8 +41,32 @@ Template-only work (CSS + small JS), no backend/schema/data changes. **Bumped to
 - Deployed to nechvatal (`ssh stecher`, `docker compose pull app && up -d`): app **Healthy**, running image digest matches the pushed manifest, startup log `version: 3.65`.
 - Verified on the Pi (`curl --resolve`, internal TLS): `/rangliste` → **200**; public API serves data with **no username/password/privilege leak**. (External LAN HTTPS not checkable — NAT hairpin.)
 
+### Abbreviated tiebreak set scores (7:6 / 6:7) — v3.66
+- **Sensitive logic** (winner is recomputed server-side from set scores, WR-07). Goal: accept `7:6`/`6:7`
+  (tiebreak set, points omitted) in addition to the explicit `7:6(7:4)`.
+- Rule for a `max==7` set: loser must have 5 or 6 games → valid `7:5` (diff 2) and `7:6` (diff 1); `7:7` and
+  `7:4`-or-lower stay rejected.
+- Two changes, kept in lockstep: `app.py:_parse_set_score` (`mx==7 and diff not in (1,2)`) and
+  `admin.html:parseSetScore` (`maxGames===7 && (gameDiff<1 || gameDiff>2)`). The input sanitizer +
+  `validScoreFormatRegex` already accepted bare `7:6` — only the winner logic rejected it.
+- `tests/test_set_score.py`: 29-case truth-table regression. Server truth table 29/29; client parser
+  (extracted from admin.html, run in node) matches server on all cases; `pytest` 11 passed.
+- **Live E2E** (chrome-devtools, local app, real DB copy): logged in **THofer** (player) → `/admin` →
+  challenge #149 Thomas Hofer→Erik Werner → entered `7:6` `7:6` through the real UI (winner select →
+  per-set confirmation modals → submit). Server accepted; stored `score_details="7:6 7:6"`; re-ranked
+  **Thomas Hofer 7→2, Erik Werner 2→3**. Logged in **MNechvatal** (superadmin) → `/index` shows it in
+  the new stacked layout alongside an explicit-form entry `7:6(7:4) 7:6(8:6)`.
+- **⚠️ The live test mutated the local `tennis.db`** (challenge #149 resolved, ranks shifted). Pre-test
+  backup at `tennis.db.pretest-tiebreak` — restore with the app stopped if you want the untouched state.
+
+### Build + deploy (TEST) — v3.66
+- arm64-only app build pushed `:v3.66` + `:latest`, manifest `sha256:15c71e56…ea21d5a`.
+- Deployed to nechvatal: app **Healthy**, running digest matches the push, startup log `version: 3.66`,
+  `/rangliste` → **200**.
+
 ### Next
-- Verify both pages on a real phone via the TEST URL (`https://nechvatal.duckdns.org:10443`), portrait + landscape.
+- Verify on a real phone via the TEST URL (`https://nechvatal.duckdns.org:10443`): mobile pyramid
+  (portrait + landscape), completed-challenges layout, and a `7:6 7:6` result entry.
 - Deploy to PROD (tc-breakpoint) when ready; IN-04 default superadmin password; deferred REVIEW findings.
 
 ## Current Session (2026-06-25) — Public read-only ranking page + v3.64
