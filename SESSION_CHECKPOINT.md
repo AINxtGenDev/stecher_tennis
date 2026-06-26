@@ -2,17 +2,35 @@
 
 **Date:** 2026-06-26
 **Branch:** docker
-**Version:** 3.66 (live on TEST/nechvatal)
-**Latest commit:** `9a01a11` feat: accept abbreviated tiebreak set scores (7:6 / 6:7) + v3.66
+**Version:** 3.67 (live on TEST/nechvatal)
+**Latest commit:** `126f7d0` feat: real-time result-entry validation & confirmation (admin) + v3.67
 **Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
-- **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.66 live here.**
+- **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.67 live here.**
   (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
 
-## Current Session (2026-06-26) — Mobile-first layout, completed-challenges restyle, abbreviated tiebreaks
+## Current Session (2026-06-26) — Mobile-first layout, completed-challenges restyle, abbreviated tiebreaks, result-entry UX
 
-Two UI rounds (v3.65) + a scoring-logic feature (v3.66). **v3.66 live on TEST** (nechvatal).
+Two UI rounds (v3.65), abbreviated tiebreaks (v3.66), result-entry UX rework (v3.67). **v3.67 live on TEST** (nechvatal).
+
+### Result-entry UX rework (admin) — v3.67
+- **Problem (many user complaints):** the score confirmation only fired on **blur** — typing a valid result
+  did nothing visible; users had to click another field before the confirm prompt appeared.
+- **Fix (client/template-only, `admin.html`; server `_parse_set_score`/WR-07 untouched):**
+  - Validate live on every `input` (no focus change). New `evaluateForm()` is the single client source of
+    truth, replacing `validateMatchResult`; removed the `blur` handler + `confirmed-value` gating.
+  - Inline per-set errors: red border + `role="alert"`/`aria-live` message naming the set + expected
+    formats — but only once a value is a *complete* score shape (so "6:" mid-typing isn't flagged early).
+    Incomplete states show neutral amber guidance ("enter set 1 & 2", "1:1 — enter set 3").
+  - Submit button enables the instant the result is valid, with a live green preview; **one** summary
+    confirmation dialog on submit ("X gewinnt: 6:0 6:0 — jetzt absenden?") replaces the per-set blur modals.
+  - A11y: `role=alert`/`aria-live`, `aria-invalid`, `aria-describedby`, `inputmode="numeric"`, `autocomplete=off`.
+- **Verified live (chrome-devtools, real `input` events, no blur):** `6:0`→info; `8:6`→instant red error +
+  format hint + red border; `6:`→reverts to neutral; `6:0`→submit enabled + green preview; winner mismatch→
+  instant error; submit→confirm dialog with correct summary (cancelled, no DB write).
+- Build/deploy: arm64 app image `:v3.67` + `:latest`, manifest `sha256:0dfca982…`; deployed to nechvatal,
+  app Healthy, digest matches, startup log `version: 3.67`, `/login` → 200.
 
 ### `/rangliste` footer
 - Removed the `Anmelden` (`<a href="/login">`) link; footer now reads "Tennis-Rangliste · Nur-Lese-Ansicht".
