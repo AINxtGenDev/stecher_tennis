@@ -3,7 +3,7 @@
 **Date:** 2026-06-26
 **Branch:** docker
 **Version:** 3.64
-**Latest commit:** `<pending>` fix(ui): mobile-first pyramid for /rangliste + clearer completed-challenges list
+**Latest commit:** `3bc11e5` fix(ui): mobile-first pyramid for /rangliste + clearer completed-challenges list
 **Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players` (local DB backup)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
