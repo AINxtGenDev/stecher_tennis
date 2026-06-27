@@ -86,6 +86,12 @@ never a file copy — required for safe hot backups of the WAL-mode DB.
 - `TEST_DATE` — override system time for testing (`YYYY-MM-DD-HH-MM-SS`)
 - HTTPS/Caddy: `DUCKDNS_DOMAIN` `DUCKDNS_TOKEN` `ACME_EMAIL` `ACME_CA` `HTTPS_PORT`
 
+## Guardrails
+
+- Never commit or sync credential handout files `spieler*.txt` (e.g. `spieler_admins.txt`) —
+  they hold real player/admin logins. They are git-ignored (`.gitignore`); keep it that way.
+  Same for `.env` and local `*.db` backups.
+
 ## Deployment
 
 Production runs as a **Docker Compose stack**, NOT a systemd/native service (the
