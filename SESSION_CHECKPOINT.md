@@ -96,8 +96,16 @@ backup** of the SQLite DB. Commit `11031e7` on `docker` (pushed). Live on **both
 - `c25c9a1` feat: off-box backup mirror PROD → TEST (restricted rrsync key + systemd timer)
 - `c5e3e3e` docs: README Docker-focused Install + Database Backups section
 - `8291ab8` docs: checkpoint (backup + off-box + README)
+- `213ea59` docs: checkpoint (PROD reboot survival re-verified)
+- `12f0c77` docs: checkpoint (offsite timer fire confirmed, post-reboot)
 - PROD app updated 3.63 → **3.67** live (no commit — image pull only); player DB verified identical.
 - PROD rebooted for survival re-verification (no commit — operational).
+
+### Branch state (end of session)
+- **Merged `docker` → `main`** (clean fast-forward, pushed). Verified **fully in sync**:
+  `main` = `docker` = `origin/main` = `origin/docker` = `12f0c77`; divergence `0 0` all comparisons;
+  no unique commits on either side.
+- (This checkpoint edit is a later local change — commit/push it to carry forward.)
 
 ### Notes / next
 - **Box identity gotcha:** BOTH RPis report OS hostname `stechertennis`. Disambiguate by
