@@ -98,14 +98,24 @@ backup** of the SQLite DB. Commit `11031e7` on `docker` (pushed). Live on **both
 - `8291ab8` docs: checkpoint (backup + off-box + README)
 - `213ea59` docs: checkpoint (PROD reboot survival re-verified)
 - `12f0c77` docs: checkpoint (offsite timer fire confirmed, post-reboot)
+- `2d91581` docs: checkpoint (end-of-session branch state)
+- `24065ef` docs: optimize CLAUDE.md (accurate Docker deploy + backup system + greppable app.py map)
 - PROD app updated 3.63 → **3.67** live (no commit — image pull only); player DB verified identical.
 - PROD rebooted for survival re-verification (no commit — operational).
 
+### CLAUDE.md optimized (`24065ef`)
+Fixed stale facts (version→`APP_VERSION` 3.67, app.py `~2,500`→2,785, gunicorn `8000`→**5000**,
+Docker-Compose deploy instead of the abandoned systemd/native-Caddy), flagged `backup_tennis_db.sh`
+as dead, replaced the drifted line-number index with **greppable symbol/route anchors**, and added
+the backup sidecar, public `/rangliste`, WR-07 server-side winner recompute, and the two-box
+same-hostname gotcha.
+
 ### Branch state (end of session)
-- **Merged `docker` → `main`** (clean fast-forward, pushed). Verified **fully in sync**:
-  `main` = `docker` = `origin/main` = `origin/docker` = `12f0c77`; divergence `0 0` all comparisons;
-  no unique commits on either side.
-- (This checkpoint edit is a later local change — commit/push it to carry forward.)
+- **`docker` merged → `main`** twice (clean fast-forwards, pushed). Verified **fully in sync**:
+  `main` = `docker` = `origin/main` = `origin/docker` = **`24065ef`**; divergence `0 0`; no unique
+  commits on either side.
+- (This checkpoint edit is a later local change — commit/push to carry it forward; will then sit 1
+  commit ahead of `main` until the next merge.)
 
 ### Notes / next
 - **Box identity gotcha:** BOTH RPis report OS hostname `stechertennis`. Disambiguate by
