@@ -21,3 +21,9 @@ __pycache__/
 
 # Player/admin login handouts (contain credentials — keep out of git)
 spieler*.txt
+
+# Local DB backup copies (real player data — *.db above misses the .db.<suffix> variants)
+tennis.db.*
+
+# Security review artifacts (list unfixed findings — keep out of the public repo)
+REVIEW*.md
