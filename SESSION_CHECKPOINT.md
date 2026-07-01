@@ -36,9 +36,23 @@ TEST + PROD still run 3.67.**
 - The logo PNG has a **non-transparent light-gray background**, so it shows a faint rectangle against the
   footer's `#f8f9fa`. Blending seamlessly needs a transparent-background version of the image (not done).
 
-### Only in `/index` (not `/rangliste`)
-- The public read-only footer (`public_ranking.html`) was **not** touched — the logo lives only on the
-  logged-in `/index` footer (the one in the user's screenshot).
+### `/index` footer + `/rangliste` header both carry the logo now
+- **`/index`** footer (logged-in): logo bottom-left (see above).
+- **`/rangliste`** (public) header: logo added in the yellow `.ranking-header` (`#f8e473`) on the **left**,
+  title/badge stay centered (logo is `position: absolute` on desktop). Committed separately (see next entry).
+
+### `/rangliste` header logo — responsive + spinning (commit follows)
+- **Placement:** logo in the yellow header. Desktop 90px on the left; ≤900px 55px; **phones ≤600px it stacks
+  centered above the title** (`position: static; width: fit-content; margin: 0 auto`) so it never overlaps the
+  centered title; phone-landscape 38px back on the left.
+- **Why the stack-on-phone:** first attempt hid the logo `<600px` (`display:none`) to avoid title overlap →
+  user reported it **missing on their Android phone**. Fixed by showing it centered-on-top instead of hiding.
+- **Spin:** the `<img>` is wrapped in a `.club-logo` div (positioning) so the spin animation doesn't fight the
+  positioning `transform`. Inner img: `animation: logo-spin-y 8s linear infinite` (`rotateY 0→360°`),
+  `perspective: 600px` on the wrapper for real 3D; `prefers-reduced-motion` opt-out. Verified live: matrix
+  advances ~360°/8s. Note: being a flat image, half of each turn shows the **mirrored back face** (expected
+  for a 360° Y spin — user confirmed "perfect").
+- **Not a link** on `/rangliste` (unlike the `/index` footer logo, which links to `https://tc-breakpoint.at/`).
 
 ### Next
 - Build arm64 app image `:v3.68` + `:latest` and deploy to TEST (then PROD when ready) if this should go live.

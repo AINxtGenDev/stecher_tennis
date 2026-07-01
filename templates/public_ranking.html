@@ -9,7 +9,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" />
   <style>
     body { background: #fff; }
-    .ranking-header { text-align: center; margin-bottom: 20px; background-color: #f8e473; padding: 20px; border-bottom: 3px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 10px; }
+    .ranking-header { position: relative; text-align: center; margin-bottom: 20px; background-color: #f8e473; padding: 20px; border-bottom: 3px solid #ccc; box-shadow: 0 10px 25px rgba(0,0,0,0.2); border-radius: 10px; }
+    .ranking-header .club-logo { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); height: 90px; perspective: 600px; }
+    .ranking-header .club-logo img { display: block; height: 100%; width: auto; animation: logo-spin-y 8s linear infinite; }
+    @keyframes logo-spin-y { from { transform: rotateY(0deg); } to { transform: rotateY(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .ranking-header .club-logo img { animation: none; } }
+    @media (max-width: 900px) { .ranking-header .club-logo { height: 55px; left: 10px; } }
+    @media (max-width: 600px) { .ranking-header .club-logo { position: static; transform: none; height: 44px; left: auto; width: fit-content; margin: 0 auto 10px; } }
+    @media (max-height: 500px) and (orientation: landscape) { .ranking-header .club-logo { position: absolute; transform: translateY(-50%); height: 38px; left: 10px; } }
     .ranking-header h2 { font-size: 2.2rem; margin: 0; color: #000; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
     .view-badge { display: inline-block; margin-top: 8px; font-size: 0.85rem; background: #2c7a2c; color: #fff; padding: 2px 12px; border-radius: 12px; }
     .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-bottom: 15px; }
@@ -112,6 +119,7 @@
 <body>
   <div class="container py-3">
     <header class="ranking-header">
+      <div class="club-logo"><img src="/static/02_tennislogo.png" alt="TC Breakpoint Leopoldsdorf" /></div>
       <h2>Tennis-Rangliste 2026</h2>
       <span class="view-badge">Nur-Lese-Ansicht</span>
     </header>
