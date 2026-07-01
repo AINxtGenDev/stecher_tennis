@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-01
 **Branch:** docker
-**Version:** 3.68 — **live on TEST (nechvatal)**; PROD (tc-breakpoint) still on 3.67
+**Version:** 3.68 — **live on BOTH TEST (nechvatal) and PROD (tc-breakpoint)**
 **Git Status:** `docker`; untracked: `REVIEW*.md`, `02_tennislogo.png` (root source), `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
@@ -64,10 +64,25 @@ TEST + PROD still run 3.67.**
 - Confirmed box identity first: `ssh stecher` = TEST `192.168.1.213`, was on 3.67 (digest 0dfca9820f65).
 - **PROD (tc-breakpoint) left on 3.67** — not deployed.
 
+### Deploy to PROD (tc-breakpoint, LIVE CLUB) — v3.68
+Careful deploy per user's explicit instructions (back up first, DB must stay functional, keep rollback).
+- **Confirmed identity first:** `ssh stechertennis` = PROD `192.168.1.180`, was on 3.67 (image `0dfca9820f65`).
+- **Golden pre-state:** integrity ok, FK ok, **39 players / 127 challenges / rank1 Patrick Krauskopf**.
+- **Verified backup:** one-shot `backup_db.py` → `backups/hourly/tennis-20260701T173534Z.db`
+  (sha256 `4d0afd54b551…`, 39/127); **restore-test PASS**. Extra named copy `~/tennis.pre-v368.db`.
+- **Deploy:** `docker compose pull app && up -d app` — only app recreated; `tennis_data` volume + caddy +
+  backup untouched. (Image `:latest` was already the arm64 `:v3.68` built for TEST, manifest `ef0e91e4538d`.)
+- **Verified post-deploy:** app **healthy**, `version: 3.68`, running digest `ef0e91e4538d` (= TEST); DB
+  **intact & identical** (integrity ok, 39/127, Patrick Krauskopf); DB owned by appuser uid 1000 (writable —
+  no ownership trap); `/login`, `/rangliste`, `/static/02_tennislogo.png` → 200.
+- **Rollback available:** (1) app-only — old v3.67 image `0dfca9820f65` still on box:
+  `docker tag 0dfca9820f65 …app:latest && docker compose up -d app`; (2) DB — restore
+  `~/tennis.pre-v368.db` or `tennis-20260701T173534Z.db` (chown 1000, restart app). DB never touched, so no
+  rollback needed — change is templates/static only.
+
 ### Next
-- Verify `/rangliste` on a real phone via the TEST URL (`https://nechvatal.duckdns.org:10443/rangliste`):
-  spinning logo, phone-centered placement, no title overlap.
-- Deploy v3.68 to **PROD** (tc-breakpoint) when ready.
+- Verify `/rangliste` on a real phone (PROD `https://tc-breakpoint-rangliste.duckdns.org:10445/rangliste`,
+  or TEST `:10443`): spinning logo, phone-centered placement, no title overlap.
 - Optional: supply/produce a transparent-background logo to drop the gray box.
 
 ## Current Session (2026-06-26, later) — Hourly local DB backup (sidecar) → TEST + PROD
