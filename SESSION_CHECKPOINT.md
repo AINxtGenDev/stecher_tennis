@@ -1,14 +1,48 @@
 # Session Checkpoint
 
-**Date:** 2026-06-26
+**Date:** 2026-07-01
 **Branch:** docker
-**Version:** 3.67 (live on TEST/nechvatal)
-**Latest commit:** `126f7d0` feat: real-time result-entry validation & confirmation (admin) + v3.67
-**Git Status:** `docker`; untracked: `REVIEW*.md`, `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
+**Version:** 3.68 (code only — NOT yet built/deployed; TEST + PROD still on 3.67)
+**Git Status:** `docker`; untracked: `REVIEW*.md`, `02_tennislogo.png` (root source), `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
 - **TEST system:** `nechvatal.duckdns.org` on RPi 5 @ `192.168.1.213` (ssh `stecher`). Safe to deploy/experiment. **v3.67 live here.**
   (Earlier checkpoint called nechvatal "Production #1" — that label is now stale.)
+
+## Current Session (2026-07-01) — Footer TC Breakpoint logo + v3.68
+
+Small template/asset change on the logged-in `/index` footer. **Code only — not built or deployed;
+TEST + PROD still run 3.67.**
+
+### What changed
+- **`static/02_tennislogo.png`** (new) — copied from repo-root `02_tennislogo.png` (the "tc breakpoint
+  leopoldsdorf" wordmark, 1921×819). Served by Flask from `/static/`.
+- **`templates/index.html`** — added the logo to the footer at the **bottom-left**, mirroring the existing
+  duck logo's spacing (`position: absolute; bottom: 15px; left: 15px`). Height matched to the duck (46px);
+  width 108px to preserve the 2.35:1 aspect ratio. Wrapped in `<a href="https://tc-breakpoint.at/"
+  target="_blank" rel="noopener">` so it opens the club homepage in a new tab.
+- **Version bump 3.67 → 3.68**: footer string `Version: 3.68 • 01. Juli 2026` + `APP_VERSION` in `app.py`.
+- **Copyright** `© 2025 → © 2026 Matthias Stecher` in the footer (only occurrence in templates).
+
+### Verified
+- Ran the app locally (`FLASK_PORT=5055 python app.py`), logged in as MStecher (superadmin), screenshotted
+  the `/index` footer: tennis logo bottom-left, duck bottom-right, `Version: 3.68 • 01. Juli 2026` centered,
+  logo `<a>` points to `https://tc-breakpoint.at/`. Layout matches the mirrored-spacing intent.
+- **Login note:** local `tennis.db` is the throwaway test-mutated copy; its MStecher password is unknown, so
+  the screenshot used a **temporary** bcrypt password that was **restored to the original hash afterward**
+  (no lasting DB change).
+
+### Known cosmetic issue
+- The logo PNG has a **non-transparent light-gray background**, so it shows a faint rectangle against the
+  footer's `#f8f9fa`. Blending seamlessly needs a transparent-background version of the image (not done).
+
+### Only in `/index` (not `/rangliste`)
+- The public read-only footer (`public_ranking.html`) was **not** touched — the logo lives only on the
+  logged-in `/index` footer (the one in the user's screenshot).
+
+### Next
+- Build arm64 app image `:v3.68` + `:latest` and deploy to TEST (then PROD when ready) if this should go live.
+- Optional: supply/produce a transparent-background logo to drop the gray box.
 
 ## Current Session (2026-06-26, later) — Hourly local DB backup (sidecar) → TEST + PROD
 
