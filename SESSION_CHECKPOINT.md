@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-01
 **Branch:** docker
-**Version:** 3.68 (code only — NOT yet built/deployed; TEST + PROD still on 3.67)
+**Version:** 3.68 — **live on TEST (nechvatal)**; PROD (tc-breakpoint) still on 3.67
 **Git Status:** `docker`; untracked: `REVIEW*.md`, `02_tennislogo.png` (root source), `tennis.db.prev-36players`, `tennis.db.pretest-tiebreak` (local DB backups)
 **⚠️ DEPLOYMENT ROLES (corrected by user 2026-06-25 — overrides older entries below):**
 - **PRODUCTION (club TC Breakpoint):** `tc-breakpoint-rangliste.duckdns.org:10445` on RPi 5 @ `192.168.1.180` (ssh `stechertennis`). Be careful — live club.
@@ -54,8 +54,20 @@ TEST + PROD still run 3.67.**
   for a 360° Y spin — user confirmed "perfect").
 - **Not a link** on `/rangliste` (unlike the `/index` footer logo, which links to `https://tc-breakpoint.at/`).
 
+### Build + deploy (TEST) — v3.68
+- **arm64-only app-image build** (`docker buildx --builder multiarch --platform linux/arm64 ... --push`),
+  skipping Caddy (unchanged). Pushed `:v3.68` + `:latest`, manifest list `sha256:ef0e91e4538d…`.
+- Deployed to nechvatal (`ssh stecher`, `docker compose pull app && up -d app`) — only the app container
+  recreated; caddy/backup untouched, `tennis_data` volume persisted.
+- **Verified:** app **healthy**, startup log `version: 3.68`, running digest `ef0e91e4538d` = pushed manifest;
+  internal HTTPS (`curl --resolve`) `/rangliste` → 200, `/login` → 200, `/static/02_tennislogo.png` → 200.
+- Confirmed box identity first: `ssh stecher` = TEST `192.168.1.213`, was on 3.67 (digest 0dfca9820f65).
+- **PROD (tc-breakpoint) left on 3.67** — not deployed.
+
 ### Next
-- Build arm64 app image `:v3.68` + `:latest` and deploy to TEST (then PROD when ready) if this should go live.
+- Verify `/rangliste` on a real phone via the TEST URL (`https://nechvatal.duckdns.org:10443/rangliste`):
+  spinning logo, phone-centered placement, no title overlap.
+- Deploy v3.68 to **PROD** (tc-breakpoint) when ready.
 - Optional: supply/produce a transparent-background logo to drop the gray box.
 
 ## Current Session (2026-06-26, later) — Hourly local DB backup (sidecar) → TEST + PROD
