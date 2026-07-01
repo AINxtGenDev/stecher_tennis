@@ -27,3 +27,6 @@ tennis.db.*
 
 # Security review artifacts (list unfixed findings — keep out of the public repo)
 REVIEW*.md
+
+# Root logo source (duplicate of the served static/02_tennislogo.png — no need to track)
+/02_tennislogo.png
